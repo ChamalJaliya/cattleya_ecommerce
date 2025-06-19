@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./cattleya-backend
+      dockerfile: Dockerfile
+    container_name: cattleya-backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=mongodb+srv://owner_tailored_furnitures:3fxLADcjAYP9L8Ob@tailored-furnitures.c0enz.mongodb.net/cattleya?retryWrites=true&w=majority
+      - JWT_SECRET=cattleya-super-secret-jwt-key-2024
+      - JWT_EXPIRES_IN=24h
+      - PORT=3001
+      - NODE_ENV=development
+      - FRONTEND_URL=http://localhost:3000
+    # No local dependencies needed with cloud database
+    volumes:
+      - ./cattleya-backend:/app
+      - /app/node_modules
+    networks:
+      - cattleya-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./cattleya-frontend
+      dockerfile: Dockerfile
+    container_name: cattleya-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - NODE_ENV=development
+    depends_on:
+      - backend
+    volumes:
+      - ./cattleya-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - cattleya-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cattleya-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - cattleya-network
+
+# No volumes needed for cloud database
+
+networks:
+  cattleya-network:
+    driver: bridge 
