@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from 'react-hot-toast';
+import ThemeProvider from '@/shared/components/ThemeProvider';
 import "./globals.css";
 
 const inter = Inter({
@@ -54,7 +55,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased bg-white text-gray-900">
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <Toaster
           position="top-right"
           toastOptions={{

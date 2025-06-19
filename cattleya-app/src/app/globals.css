@@ -24,3 +24,234 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Root theme variables */
+:root {
+  /* Default Orchid Theme */
+  --color-primary-50: 253 244 255;
+  --color-primary-100: 250 232 255;
+  --color-primary-200: 245 208 254;
+  --color-primary-300: 240 171 252;
+  --color-primary-400: 232 121 249;
+  --color-primary-500: 217 70 239;
+  --color-primary-600: 192 38 211;
+  --color-primary-700: 162 28 175;
+  --color-primary-800: 134 25 143;
+  --color-primary-900: 112 26 117;
+  --color-primary-950: 74 4 78;
+
+  --color-surface-50: 249 250 251;
+  --color-surface-100: 243 244 246;
+  --color-surface-200: 229 231 235;
+  --color-surface-300: 209 213 219;
+  --color-surface-400: 156 163 175;
+  --color-surface-500: 107 114 128;
+  --color-surface-600: 75 85 99;
+  --color-surface-700: 55 65 81;
+  --color-surface-800: 31 41 55;
+  --color-surface-900: 17 24 39;
+  --color-surface-950: 3 7 18;
+}
+
+/* Light Theme */
+[data-theme="light"], .light {
+  --color-primary-50: 239 246 255;
+  --color-primary-100: 219 234 254;
+  --color-primary-200: 191 219 254;
+  --color-primary-300: 147 197 253;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-primary-800: 30 64 175;
+  --color-primary-900: 30 58 138;
+  --color-primary-950: 23 37 84;
+
+  --color-surface-50: 249 250 251;
+  --color-surface-100: 243 244 246;
+  --color-surface-200: 229 231 235;
+  --color-surface-300: 209 213 219;
+  --color-surface-400: 156 163 175;
+  --color-surface-500: 107 114 128;
+  --color-surface-600: 75 85 99;
+  --color-surface-700: 55 65 81;
+  --color-surface-800: 31 41 55;
+  --color-surface-900: 17 24 39;
+  --color-surface-950: 3 7 18;
+}
+
+/* Dark Theme */
+[data-theme="dark"], .dark {
+  --color-primary-50: 239 246 255;
+  --color-primary-100: 219 234 254;
+  --color-primary-200: 191 219 254;
+  --color-primary-300: 147 197 253;
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-primary-800: 30 64 175;
+  --color-primary-900: 30 58 138;
+  --color-primary-950: 23 37 84;
+
+  --color-surface-50: 3 7 18;
+  --color-surface-100: 17 24 39;
+  --color-surface-200: 31 41 55;
+  --color-surface-300: 55 65 81;
+  --color-surface-400: 75 85 99;
+  --color-surface-500: 107 114 128;
+  --color-surface-600: 156 163 175;
+  --color-surface-700: 209 213 219;
+  --color-surface-800: 229 231 235;
+  --color-surface-900: 243 244 246;
+  --color-surface-950: 249 250 251;
+}
+
+/* Orchid Theme (Default) */
+[data-theme="orchid"], .orchid {
+  --color-primary-50: 253 244 255;
+  --color-primary-100: 250 232 255;
+  --color-primary-200: 245 208 254;
+  --color-primary-300: 240 171 252;
+  --color-primary-400: 232 121 249;
+  --color-primary-500: 217 70 239;
+  --color-primary-600: 192 38 211;
+  --color-primary-700: 162 28 175;
+  --color-primary-800: 134 25 143;
+  --color-primary-900: 112 26 117;
+  --color-primary-950: 74 4 78;
+
+  --color-surface-50: 249 250 251;
+  --color-surface-100: 243 244 246;
+  --color-surface-200: 229 231 235;
+  --color-surface-300: 209 213 219;
+  --color-surface-400: 156 163 175;
+  --color-surface-500: 107 114 128;
+  --color-surface-600: 75 85 99;
+  --color-surface-700: 55 65 81;
+  --color-surface-800: 31 41 55;
+  --color-surface-900: 17 24 39;
+  --color-surface-950: 3 7 18;
+}
+
+/* Dark theme specific styles */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  @apply bg-surface-900 text-surface-100;
+}
+
+.light body {
+  @apply bg-white text-surface-900;
+}
+
+.orchid body {
+  @apply bg-white text-surface-900;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-400;
+}
+
+.dark ::-webkit-scrollbar-track {
+  @apply bg-surface-800;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-surface-600;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-500;
+}
+
+/* Focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+}
+
+.dark .focus-ring {
+  @apply focus:ring-offset-surface-900;
+}
+
+/* Button variants */
+.btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+}
+
+.btn-secondary {
+  @apply bg-surface-200 text-surface-900 hover:bg-surface-300 focus:ring-surface-500;
+}
+
+.dark .btn-secondary {
+  @apply bg-surface-700 text-surface-100 hover:bg-surface-600;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white border border-surface-200 shadow-sm;
+}
+
+.dark .card {
+  @apply bg-surface-800 border-surface-700;
+}
+
+/* Animation classes */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #d946ef 0%, #c026d3 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(135deg, #e879f9 0%, #d946ef 50%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass morphism */
+.glass {
+  @apply backdrop-blur-xl bg-white/10 border border-white/20;
+}
+
+.dark .glass {
+  @apply backdrop-blur-xl bg-surface-900/10 border border-surface-700/20;
+}
+
+/* Utilities */
+.text-balance {
+  text-wrap: balance;
+}

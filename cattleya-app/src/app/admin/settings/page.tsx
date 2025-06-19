@@ -14,12 +14,17 @@ import {
   DocumentTextIcon,
   KeyIcon,
   PaintBrushIcon,
-  CloudIcon
+  CloudIcon,
+  SunIcon,
+  MoonIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
+import { useThemeStore, themeConfig, type Theme } from '@/core/application/stores/useThemeStore';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
+  const { theme, setTheme } = useThemeStore();
   const [settings, setSettings] = useState({
     siteName: 'Cattleya Orchids',
     siteDescription: 'Premium orchids and plant care supplies',
@@ -337,6 +342,164 @@ export default function SettingsPage() {
     </div>
   );
 
+  const renderAppearanceSettings = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Theme Selection</h3>
+        <p className="text-sm text-gray-600 mb-6">Choose your preferred theme for the admin interface</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {(Object.keys(themeConfig) as Theme[]).map((themeName) => {
+            const config = themeConfig[themeName];
+            const isActive = theme === themeName;
+            
+            return (
+              <motion.div
+                key={themeName}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  isActive 
+                    ? 'border-purple-500 bg-purple-50 shadow-lg' 
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                }`}
+                onClick={() => setTheme(themeName)}
+              >
+                {/* Theme Icon */}
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl mb-4 mx-auto">
+                  {themeName === 'light' && (
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                      <SunIcon className="w-6 h-6 text-white" />
+                    </div>
+                  )}
+                  {themeName === 'dark' && (
+                    <div className="w-12 h-12 bg-gradient-to-r from-gray-700 to-gray-900 rounded-xl flex items-center justify-center">
+                      <MoonIcon className="w-6 h-6 text-white" />
+                    </div>
+                  )}
+                  {themeName === 'orchid' && (
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                      <SparklesIcon className="w-6 h-6 text-white" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Theme Info */}
+                <div className="text-center">
+                  <h4 className="font-semibold text-gray-900 mb-2">{config.name}</h4>
+                  <p className="text-sm text-gray-600 mb-4">{config.description}</p>
+                </div>
+
+                {/* Theme Preview */}
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <div className={`w-4 h-4 rounded ${
+                      themeName === 'light' ? 'bg-blue-500' : 
+                      themeName === 'dark' ? 'bg-blue-400' : 
+                      'bg-purple-500'
+                    }`}></div>
+                    <div className={`w-4 h-4 rounded ${
+                      themeName === 'light' ? 'bg-gray-300' : 
+                      themeName === 'dark' ? 'bg-gray-600' : 
+                      'bg-pink-400'
+                    }`}></div>
+                    <div className={`w-4 h-4 rounded ${
+                      themeName === 'light' ? 'bg-gray-200' : 
+                      themeName === 'dark' ? 'bg-gray-700' : 
+                      'bg-green-400'
+                    }`}></div>
+                  </div>
+                  <div className={`h-8 rounded ${
+                    themeName === 'light' ? 'bg-white border border-gray-200' : 
+                    themeName === 'dark' ? 'bg-gray-800 border border-gray-700' : 
+                    'bg-white border border-gray-200'
+                  }`}></div>
+                </div>
+
+                {/* Active indicator */}
+                {isActive && (
+                  <div className="absolute top-3 right-3">
+                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Additional Appearance Settings */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Display Options</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+            <div>
+              <h4 className="font-medium text-gray-900">Compact Mode</h4>
+              <p className="text-sm text-gray-600">Reduce spacing for more content on screen</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+            <div>
+              <h4 className="font-medium text-gray-900">Animations</h4>
+              <p className="text-sm text-gray-600">Enable smooth transitions and animations</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                defaultChecked
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+            <div>
+              <h4 className="font-medium text-gray-900">High Contrast</h4>
+              <p className="text-sm text-gray-600">Increase contrast for better accessibility</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Current Theme Info */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <PaintBrushIcon className="w-6 h-6 text-purple-600" />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-purple-900">Current Theme: {themeConfig[theme].name}</h3>
+            <p className="text-sm text-purple-700 mt-1">{themeConfig[theme].description}</p>
+            <p className="text-xs text-purple-600 mt-2">
+              Theme changes are applied instantly and saved automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'general':
@@ -345,6 +508,8 @@ export default function SettingsPage() {
         return renderNotificationSettings();
       case 'shipping':
         return renderShippingSettings();
+      case 'appearance':
+        return renderAppearanceSettings();
       default:
         return (
           <div className="text-center py-12">
