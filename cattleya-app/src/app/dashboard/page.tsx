@@ -16,113 +16,116 @@ import {
   GiftIcon
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
+import { useCartStore } from '@/core/application/stores/useCartStore';
 import { UserRole } from '@/core/domain/entities/User';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
 
-// Mock data for customer dashboard
-const userStats = [
-  {
-    name: 'Cart Items',
-    value: '3',
-    icon: ShoppingBagIcon,
-    color: 'from-purple-500 to-pink-500',
-    href: '/dashboard/cart'
-  },
-  {
-    name: 'Wishlist',
-    value: '12',
-    icon: HeartIcon,
-    color: 'from-red-500 to-pink-500',
-    href: '/dashboard/wishlist'
-  },
-  {
-    name: 'Orders',
-    value: '8',
-    icon: ClipboardDocumentListIcon,
-    color: 'from-blue-500 to-cyan-500',
-    href: '/dashboard/orders'
-  },
-  {
-    name: 'Profile',
-    value: `${85}%`,
-    icon: UserIcon,
-    color: 'from-green-500 to-emerald-500',
-    href: '/dashboard/profile'
-  }
-];
-
-const recentOrders = [
-  {
-    id: 'ORD-001',
-    product: 'Cattleya Orchid Premium',
-    status: 'delivered',
-    date: '2024-01-10',
-    amount: '$149.99',
-    image: '🌺'
-  },
-  {
-    id: 'ORD-002',
-    product: 'Orchid Care Kit',
-    status: 'shipped',
-    date: '2024-01-12',
-    amount: '$89.99',
-    image: '🧴'
-  },
-  {
-    id: 'ORD-003',
-    product: 'Rare Cattleya Collection',
-    status: 'processing',
-    date: '2024-01-14',
-    amount: '$299.99',
-    image: '🌸'
-  }
-];
-
-const recommendedProducts = [
-  {
-    name: 'Cattleya Sunset',
-    price: '$179.99',
-    rating: 4.8,
-    image: '🌅',
-    badge: 'Popular'
-  },
-  {
-    name: 'Orchid Fertilizer Pro',
-    price: '$29.99',
-    rating: 4.9,
-    image: '🌿',
-    badge: 'Best Seller'
-  },
-  {
-    name: 'Premium Potting Mix',
-    price: '$24.99',
-    rating: 4.7,
-    image: '🏺',
-    badge: 'New'
-  }
-];
-
-const careTips = [
-  {
-    title: 'Watering Schedule',
-    tip: 'Water your Cattleya orchids once a week, allowing the potting medium to dry slightly between waterings.',
-    icon: '💧'
-  },
-  {
-    title: 'Light Requirements',
-    tip: 'Provide bright, indirect light. East or south-facing windows with sheer curtains work perfectly.',
-    icon: '☀️'
-  },
-  {
-    title: 'Humidity Control',
-    tip: 'Maintain 50-70% humidity around your orchids. Use a humidity tray or room humidifier.',
-    icon: '💨'
-  }
-];
-
 export default function CustomerDashboard() {
   const { user, isAuthenticated } = useAuthStore();
+  const { getItemCount } = useCartStore();
   const router = useRouter();
+  const cartCount = getItemCount();
+
+  // Mock data for customer dashboard (updated with real cart count)
+  const userStats = [
+    {
+      name: 'Cart Items',
+      value: cartCount.toString(),
+      icon: ShoppingBagIcon,
+      color: 'from-purple-500 to-pink-500',
+      href: '/customer/cart'
+    },
+    {
+      name: 'Wishlist',
+      value: '12',
+      icon: HeartIcon,
+      color: 'from-red-500 to-pink-500',
+      href: '/customer/wishlist'
+    },
+    {
+      name: 'Orders',
+      value: '8',
+      icon: ClipboardDocumentListIcon,
+      color: 'from-blue-500 to-cyan-500',
+      href: '/customer/orders'
+    },
+    {
+      name: 'Profile',
+      value: `${85}%`,
+      icon: UserIcon,
+      color: 'from-green-500 to-emerald-500',
+      href: '/customer/profile'
+    }
+  ];
+
+  const recentOrders = [
+    {
+      id: 'ORD-001',
+      product: 'Cattleya Orchid Premium',
+      status: 'delivered',
+      date: '2024-01-10',
+      amount: '$149.99',
+      image: '🌺'
+    },
+    {
+      id: 'ORD-002',
+      product: 'Orchid Care Kit',
+      status: 'shipped',
+      date: '2024-01-12',
+      amount: '$89.99',
+      image: '🧴'
+    },
+    {
+      id: 'ORD-003',
+      product: 'Rare Cattleya Collection',
+      status: 'processing',
+      date: '2024-01-14',
+      amount: '$299.99',
+      image: '🌸'
+    }
+  ];
+
+  const recommendedProducts = [
+    {
+      name: 'Cattleya Sunset',
+      price: '$179.99',
+      rating: 4.8,
+      image: '🌅',
+      badge: 'Popular'
+    },
+    {
+      name: 'Orchid Fertilizer Pro',
+      price: '$29.99',
+      rating: 4.9,
+      image: '🌿',
+      badge: 'Best Seller'
+    },
+    {
+      name: 'Premium Potting Mix',
+      price: '$24.99',
+      rating: 4.7,
+      image: '🏺',
+      badge: 'New'
+    }
+  ];
+
+  const careTips = [
+    {
+      title: 'Watering Schedule',
+      tip: 'Water your Cattleya orchids once a week, allowing the potting medium to dry slightly between waterings.',
+      icon: '💧'
+    },
+    {
+      title: 'Light Requirements',
+      tip: 'Provide bright, indirect light. East or south-facing windows with sheer curtains work perfectly.',
+      icon: '☀️'
+    },
+    {
+      title: 'Humidity Control',
+      tip: 'Maintain 50-70% humidity around your orchids. Use a humidity tray or room humidifier.',
+      icon: '💨'
+    }
+  ];
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -218,7 +221,7 @@ export default function CustomerDashboard() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
                 <button 
-                  onClick={() => router.push('/dashboard/orders')}
+                  onClick={() => router.push('/customer/orders')}
                   className="text-sm text-purple-600 hover:text-purple-700 font-medium"
                 >
                   View all

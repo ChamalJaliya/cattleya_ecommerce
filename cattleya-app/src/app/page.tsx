@@ -10,8 +10,12 @@ import {
   ShieldCheckIcon,
   ChatBubbleLeftRightIcon,
   ArrowRightIcon,
-  CheckIcon
+  CheckIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
+import { useCartStore } from '@/core/application/stores/useCartStore';
+import { useAuthStore } from '@/core/application/stores/useAuthStore';
+import toast from 'react-hot-toast';
 
 const features = [
   {
@@ -83,6 +87,24 @@ const testimonials = [
 ];
 
 export default function HomePage() {
+  const { getItemCount, addItem } = useCartStore();
+  const { user } = useAuthStore();
+  const cartCount = getItemCount();
+
+  const handleAddToCart = (product: any) => {
+    addItem({
+      productId: product.id.toString(),
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      inStock: true,
+      maxQuantity: 10,
+      quantity: 1
+    });
+    toast.success(`${product.name} added to cart!`);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -114,18 +136,42 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Link 
-                href="/auth/login" 
-                className="text-gray-700 hover:text-purple-600 px-4 py-2 text-sm font-medium transition-colors duration-200"
-              >
-                Sign In
-              </Link>
-              <Link 
-                href="/auth/register" 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 transform hover:-translate-y-0.5"
-              >
-                Get Started
-              </Link>
+              {user ? (
+                <>
+                  <button 
+                    onClick={() => useCartStore.getState().toggleCart()}
+                    className="relative text-gray-700 hover:text-purple-600 p-2 transition-colors duration-200"
+                  >
+                    <ShoppingCartIcon className="w-6 h-6" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                        {cartCount}
+                      </span>
+                    )}
+                  </button>
+                  <Link 
+                    href="/dashboard" 
+                    className="text-gray-700 hover:text-purple-600 px-4 py-2 text-sm font-medium transition-colors duration-200"
+                  >
+                    Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    href="/auth/login" 
+                    className="text-gray-700 hover:text-purple-600 px-4 py-2 text-sm font-medium transition-colors duration-200"
+                  >
+                    Sign In
+                  </Link>
+                  <Link 
+                    href="/auth/register" 
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 transform hover:-translate-y-0.5"
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -339,7 +385,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   
-                  <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center">
+                  <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center" onClick={() => handleAddToCart(product)}>
                     <ShoppingBagIcon className="w-5 h-5 mr-2" />
                     Add to Collection
                   </button>

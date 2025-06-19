@@ -81,7 +81,7 @@ export default function CustomerPaymentMethodsPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof typeof prev],
+          ...(prev[parent as keyof typeof prev] as Record<string, any>),
           [child]: value
         }
       }));

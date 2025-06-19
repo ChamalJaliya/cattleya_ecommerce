@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useProductStore } from '@/core/application/stores/useProductStore';
+import { useCartStore } from '@/core/application/stores/useCartStore';
 import { Product } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 
@@ -29,15 +30,15 @@ export default function ProductsPage() {
     loading,
     filters,
     wishlist,
-    cart,
     fetchProducts,
     setFilters,
     resetFilters,
-    addToCart,
     addToWishlist,
     removeFromWishlist,
     isInWishlist
   } = useProductStore();
+
+  const { addItem } = useCartStore();
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('featured');
@@ -53,7 +54,7 @@ export default function ProductsPage() {
 
     // Apply filters
     if (filters.category) {
-      filtered = filtered.filter(product => product.category === filters.category);
+      filtered = filtered.filter(product => product.category.name === filters.category);
     }
 
     if (filters.searchQuery) {
@@ -65,16 +66,16 @@ export default function ProductsPage() {
     }
 
     if (filters.inStock) {
-      filtered = filtered.filter(product => product.quantity > 0);
+      filtered = filtered.filter(product => product.stockQuantity > 0);
     }
 
     if (filters.rating > 0) {
-      filtered = filtered.filter(product => product.rating >= filters.rating);
+      filtered = filtered.filter(product => product.averageRating >= filters.rating);
     }
 
     // Price range filter
     filtered = filtered.filter(product => 
-      product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1]
+      product.basePrice >= filters.priceRange[0] && product.basePrice <= filters.priceRange[1]
     );
 
     // Apply sorting
@@ -86,20 +87,20 @@ export default function ProductsPage() {
         filtered.sort((a, b) => b.name.localeCompare(a.name));
         break;
       case 'price-asc':
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => a.basePrice - b.basePrice);
         break;
       case 'price-desc':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => b.basePrice - a.basePrice);
         break;
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => b.averageRating - a.averageRating);
         break;
       case 'newest':
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
       case 'featured':
       default:
-        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        filtered.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
         break;
     }
 
@@ -107,7 +108,16 @@ export default function ProductsPage() {
   }, [products, filters, sortBy]);
 
   const handleAddToCart = (product: Product) => {
-    addToCart(product, 1);
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.isOnSale && product.salePrice ? product.salePrice : product.basePrice,
+      originalPrice: product.isOnSale ? product.basePrice : undefined,
+      image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg',
+      inStock: product.stockQuantity > 0,
+      maxQuantity: product.stockQuantity,
+      quantity: 1
+    });
     toast.success(`${product.name} added to cart!`);
   };
 
@@ -123,9 +133,9 @@ export default function ProductsPage() {
 
   const ProductCard = ({ product, index }: { product: Product; index: number }) => {
     const inWishlist = isInWishlist(product.id);
-    const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price;
+    const hasDiscount = product.isOnSale && product.salePrice && product.salePrice < product.basePrice;
     const discountPercent = hasDiscount 
-      ? Math.round(((product.compareAtPrice! - product.price) / product.compareAtPrice!) * 100)
+      ? Math.round(((product.basePrice - product.salePrice!) / product.basePrice) * 100)
       : 0;
 
     return (
@@ -145,7 +155,7 @@ export default function ProductsPage() {
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col space-y-2">
-            {product.featured && (
+            {product.isFeatured && (
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
                 Featured
               </span>
@@ -155,7 +165,7 @@ export default function ProductsPage() {
                 -{discountPercent}%
               </span>
             )}
-            {product.quantity === 0 && (
+            {product.stockQuantity === 0 && (
               <span className="bg-gray-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
                 Out of Stock
               </span>
@@ -178,11 +188,11 @@ export default function ProductsPage() {
           <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => handleAddToCart(product)}
-              disabled={product.quantity === 0}
+              disabled={product.stockQuantity === 0}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <ShoppingCartIcon className="w-4 h-4 mr-2" />
-              {product.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+              {product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
             </button>
           </div>
         </div>
@@ -197,7 +207,7 @@ export default function ProductsPage() {
               >
                 {product.name}
               </Link>
-              <p className="text-sm text-gray-600 mt-1">{product.category}</p>
+              <p className="text-sm text-gray-600 mt-1">{product.category.name}</p>
             </div>
           </div>
 
@@ -208,7 +218,7 @@ export default function ProductsPage() {
                 <StarIcon
                   key={i}
                   className={`w-4 h-4 ${
-                    i < Math.floor(product.rating) 
+                    i < Math.floor(product.averageRating) 
                       ? 'text-yellow-400 fill-current' 
                       : 'text-gray-300'
                   }`}
@@ -216,7 +226,7 @@ export default function ProductsPage() {
               ))}
             </div>
             <span className="text-sm text-gray-600 ml-2">
-              {product.rating} ({product.reviewCount})
+              {product.averageRating} ({product.totalReviews})
             </span>
           </div>
 
@@ -231,11 +241,11 @@ export default function ProductsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-lg font-bold text-gray-900">
-                ${product.price.toFixed(2)}
+                ${product.isOnSale && product.salePrice ? product.salePrice.toFixed(2) : product.basePrice.toFixed(2)}
               </span>
               {hasDiscount && (
                 <span className="text-sm text-gray-500 line-through">
-                  ${product.compareAtPrice!.toFixed(2)}
+                  ${product.basePrice.toFixed(2)}
                 </span>
               )}
             </div>
@@ -243,7 +253,7 @@ export default function ProductsPage() {
             {viewMode === 'list' && (
               <button
                 onClick={() => handleAddToCart(product)}
-                disabled={product.quantity === 0}
+                disabled={product.stockQuantity === 0}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 <ShoppingCartIcon className="w-4 h-4 mr-2" />

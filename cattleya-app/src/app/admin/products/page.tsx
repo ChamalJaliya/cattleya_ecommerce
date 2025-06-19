@@ -18,6 +18,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
+import Link from 'next/link';
 
 // Mock products data
 const mockProducts = [
@@ -156,13 +157,13 @@ export default function ProductsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Products</h1>
               <p className="text-gray-600 mt-2">Manage your orchid inventory and catalog</p>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
+            <Link
+              href="/admin/products/add"
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 flex items-center"
             >
               <PlusIcon className="w-5 h-5 mr-2" />
               Add Product
-            </button>
+            </Link>
           </div>
         </div>
 

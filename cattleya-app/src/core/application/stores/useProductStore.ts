@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Product } from '@/core/domain/entities/Product';
+import { Product, OrchidSize } from '@/core/domain/entities/Product';
 
 interface CartItem {
   product: Product;
@@ -34,6 +34,14 @@ interface ProductState {
     searchQuery: string;
   };
   
+  // Additional filter states
+  searchQuery: string;
+  selectedCategory: string | null;
+  priceRange: [number, number];
+  selectedRating: number | null;
+  sortBy: 'name' | 'price' | 'rating' | 'newest';
+  sortOrder: 'asc' | 'desc';
+  
   // Actions
   setProducts: (products: Product[]) => void;
   setFeaturedProducts: (products: Product[]) => void;
@@ -59,240 +67,300 @@ interface ProductState {
   fetchProducts: () => Promise<void>;
   fetchFeaturedProducts: () => Promise<void>;
   searchProducts: (query: string) => Promise<void>;
+
+  // New actions
+  addProduct: (product: Product) => void;
+  updateProduct: (id: string, product: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
+
+  // New filters
+  setSearchQuery: (query: string) => void;
+  setSelectedCategory: (category: string | null) => void;
+  setPriceRange: (range: [number, number]) => void;
+  setSelectedRating: (rating: number | null) => void;
+  setSortBy: (sortBy: 'name' | 'price' | 'rating' | 'newest') => void;
+  setSortOrder: (order: 'asc' | 'desc') => void;
+
+  // Computed
+  getFilteredProducts: () => Product[];
 }
 
-// Mock products data
+// Enhanced mock data with orchid-specific properties
 const mockProducts: Product[] = [
   {
     id: '1',
-    name: 'Cattleya Orchid - Purple Beauty',
-    description: 'A stunning purple Cattleya orchid with large, fragrant blooms. Perfect for experienced orchid enthusiasts.',
-    shortDescription: 'Stunning purple Cattleya with fragrant blooms',
-    price: 89.99,
-    compareAtPrice: 109.99,
-    cost: 45.00,
+    name: 'Cattleya Purple Majesty',
+    slug: 'cattleya-purple-majesty',
     sku: 'CATT-001',
-    barcode: '1234567890123',
-    trackQuantity: true,
-    quantity: 15,
-    allowBackorder: false,
-    weight: 2.5,
-    dimensions: { length: 12, width: 8, height: 16 },
-    category: 'Orchids',
-    subcategory: 'Cattleya',
-    tags: ['purple', 'fragrant', 'premium', 'flowering'],
-    images: ['/images/cattleya-purple-1.jpg', '/images/cattleya-purple-2.jpg'],
-    variants: [
-      { id: 'small', name: 'Small (4" pot)', price: 89.99, sku: 'CATT-001-S', quantity: 8 },
-      { id: 'medium', name: 'Medium (6" pot)', price: 129.99, sku: 'CATT-001-M', quantity: 5 },
-      { id: 'large', name: 'Large (8" pot)', price: 189.99, sku: 'CATT-001-L', quantity: 2 },
+    shortDescription: 'Stunning purple Cattleya with fragrant ruffled blooms',
+    description: 'The Cattleya Purple Majesty is a magnificent orchid that produces large, fragrant flowers with deep purple petals and a darker purple lip. This hybrid is known for its robust growth and reliable blooming. The flowers can reach up to 6 inches across and have a delightful fragrance that is most pronounced in the morning. This orchid prefers bright, indirect light and intermediate temperatures.',
+    basePrice: 149.99,
+    salePrice: 129.99,
+    isOnSale: true,
+    stockQuantity: 15,
+    lowStockThreshold: 5,
+    weight: 1.2,
+    
+    // Orchid-specific properties
+    defaultSize: OrchidSize.YOUNG_PLANT,
+    availableSizes: [OrchidSize.SAPLING, OrchidSize.YOUNG_PLANT, OrchidSize.MATURE, OrchidSize.BLOOMING_SIZE],
+    primaryColors: ['#8B5CF6', '#6B46C1'], // Purple shades
+    colorPattern: 'solid',
+    
+    category: {
+      id: 'orchids',
+      name: 'Orchids',
+      slug: 'orchids',
+      description: 'Beautiful flowering orchids',
+      isActive: true,
+      sortOrder: 1,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01')
+    },
+    images: [
+      {
+        id: '1',
+        productId: '1',
+        url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=800&fit=crop',
+        altText: 'Cattleya Purple Majesty - Main View',
+        isMain: true,
+        sortOrder: 1,
+        createdAt: new Date(),
+        color: '#8B5CF6',
+        size: OrchidSize.YOUNG_PLANT
+      },
+      {
+        id: '2',
+        productId: '1',
+        url: 'https://images.unsplash.com/photo-1583214659441-2b8b40b0d55d?w=800&h=800&fit=crop',
+        altText: 'Cattleya Purple Majesty - Close-up',
+        isMain: false,
+        sortOrder: 2,
+        createdAt: new Date(),
+        color: '#8B5CF6',
+        size: OrchidSize.BLOOMING_SIZE
+      }
     ],
     attributes: [
-      { name: 'Bloom Season', value: 'Spring/Fall' },
-      { name: 'Light Requirements', value: 'Bright, indirect light' },
-      { name: 'Care Level', value: 'Intermediate' },
-      { name: 'Fragrance', value: 'Strong' },
+      { id: '1', name: 'Bloom Season', value: 'Spring/Fall', type: 'TEXT' },
+      { id: '2', name: 'Light Requirements', value: 'Bright, indirect light', type: 'TEXT' },
+      { id: '3', name: 'Care Level', value: 'Intermediate', type: 'TEXT' },
+      { id: '4', name: 'Fragrance', value: 'Strong', type: 'TEXT' },
+      { id: '5', name: 'Flower Size', value: '6 inches', type: 'TEXT' }
     ],
-    status: 'active',
-    featured: true,
-    rating: 4.8,
-    reviewCount: 24,
-    seoTitle: 'Purple Cattleya Orchid - Premium Flowering Plant',
-    seoDescription: 'Beautiful purple Cattleya orchid with fragrant blooms. Perfect for collectors.',
-    seoKeywords: ['cattleya', 'orchid', 'purple', 'fragrant', 'flowering plant'],
+    tags: ['purple', 'fragrant', 'cattleya', 'intermediate', 'spring-blooming'],
+    
+    isActive: true,
+    isFeatured: true,
+    isDigital: false,
+    
+    averageRating: 4.8,
+    totalReviews: 24,
+    totalSales: 156,
+    viewCount: 1250,
+    
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-20'),
+    publishedAt: new Date('2024-01-15')
   },
   {
     id: '2',
-    name: 'Orchid Care Kit - Premium',
-    description: 'Complete care kit for orchids including specialized fertilizer, bark mix, and care guide.',
-    shortDescription: 'Complete orchid care essentials kit',
-    price: 34.99,
-    compareAtPrice: 44.99,
-    cost: 18.00,
-    sku: 'CARE-001',
-    barcode: '1234567890124',
-    trackQuantity: true,
-    quantity: 50,
-    allowBackorder: true,
-    weight: 1.2,
-    dimensions: { length: 10, width: 8, height: 6 },
-    category: 'Care Products',
-    subcategory: 'Fertilizers',
-    tags: ['care', 'fertilizer', 'essential', 'beginner'],
-    images: ['/images/care-kit-1.jpg', '/images/care-kit-2.jpg'],
-    variants: [],
-    attributes: [
-      { name: 'Kit Contents', value: 'Fertilizer, Bark Mix, Care Guide' },
-      { name: 'Suitable For', value: 'All orchid types' },
-      { name: 'Duration', value: '3-4 months supply' },
+    name: 'Phalaenopsis Bicolor Sunset',
+    slug: 'phalaenopsis-bicolor-sunset',
+    sku: 'PHAL-002',
+    shortDescription: 'Beautiful bicolor orchid with orange and pink gradient petals',
+    description: 'This stunning Phalaenopsis features a unique bicolor pattern with warm orange centers that gradually fade to soft pink edges. Each flower displays this beautiful gradient, creating a sunset-like effect. Known for its long-lasting blooms and easy care requirements, this orchid is perfect for beginners. The flowers can last 2-3 months and the plant may rebloom multiple times per year.',
+    basePrice: 89.99,
+    salePrice: 74.99,
+    isOnSale: true,
+    stockQuantity: 8,
+    lowStockThreshold: 3,
+    weight: 0.8,
+    
+    // Orchid-specific properties
+    defaultSize: OrchidSize.MATURE,
+    availableSizes: [OrchidSize.YOUNG_PLANT, OrchidSize.MATURE, OrchidSize.BLOOMING_SIZE],
+    primaryColors: ['#F97316', '#EC4899'], // Orange to Pink
+    colorPattern: 'bicolor',
+    
+    category: {
+      id: 'orchids',
+      name: 'Orchids',
+      slug: 'orchids',
+      description: 'Beautiful flowering orchids',
+      isActive: true,
+      sortOrder: 1,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01')
+    },
+    images: [
+      {
+        id: '3',
+        productId: '2',
+        url: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=800&h=800&fit=crop',
+        altText: 'Phalaenopsis Bicolor Sunset - Main View',
+        isMain: true,
+        sortOrder: 1,
+        createdAt: new Date(),
+        color: '#F97316',
+        size: OrchidSize.MATURE
+      }
     ],
-    status: 'active',
-    featured: true,
-    rating: 4.6,
-    reviewCount: 18,
-    seoTitle: 'Premium Orchid Care Kit - Complete Plant Care Solution',
-    seoDescription: 'Everything you need to care for your orchids. Includes fertilizer, bark mix, and expert care guide.',
-    seoKeywords: ['orchid care', 'fertilizer', 'plant care', 'orchid supplies'],
-    createdAt: new Date('2024-01-10'),
-    updatedAt: new Date('2024-01-18'),
+    attributes: [
+      { id: '6', name: 'Bloom Season', value: 'Year-round', type: 'TEXT' },
+      { id: '7', name: 'Light Requirements', value: 'Medium light', type: 'TEXT' },
+      { id: '8', name: 'Care Level', value: 'Beginner', type: 'TEXT' },
+      { id: '9', name: 'Flower Pattern', value: 'Bicolor gradient', type: 'TEXT' },
+      { id: '10', name: 'Bloom Duration', value: '2-3 months', type: 'TEXT' }
+    ],
+    tags: ['bicolor', 'orange', 'pink', 'phalaenopsis', 'beginner', 'long-blooming'],
+    
+    isActive: true,
+    isFeatured: false,
+    isDigital: false,
+    
+    averageRating: 4.6,
+    totalReviews: 18,
+    totalSales: 89,
+    viewCount: 890,
+    
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-25'),
+    publishedAt: new Date('2024-01-20')
   },
   {
     id: '3',
-    name: 'Phalaenopsis White Elegance',
-    description: 'Classic white Phalaenopsis orchid with pristine white blooms. Perfect for beginners and elegant decor.',
-    shortDescription: 'Classic white Phalaenopsis orchid',
-    price: 49.99,
-    compareAtPrice: 59.99,
-    cost: 25.00,
-    sku: 'PHAL-001',
-    barcode: '1234567890125',
-    trackQuantity: true,
-    quantity: 25,
-    allowBackorder: false,
-    weight: 1.8,
-    dimensions: { length: 10, width: 6, height: 14 },
-    category: 'Orchids',
-    subcategory: 'Phalaenopsis',
-    tags: ['white', 'beginner', 'elegant', 'long-lasting'],
-    images: ['/images/phalaenopsis-white-1.jpg', '/images/phalaenopsis-white-2.jpg'],
-    variants: [
-      { id: 'single', name: 'Single Spike', price: 49.99, sku: 'PHAL-001-S', quantity: 15 },
-      { id: 'double', name: 'Double Spike', price: 69.99, sku: 'PHAL-001-D', quantity: 10 },
+    name: 'Dendrobium Multicolor Rainbow',
+    slug: 'dendrobium-multicolor-rainbow',
+    sku: 'DEND-003',
+    shortDescription: 'Spectacular multicolor orchid with purple, pink, and white petals',
+    description: 'An extraordinary Dendrobium that showcases nature\'s artistry with its multicolor blooms. Each flower displays a stunning combination of deep purple, bright pink, and pure white, often with intricate patterns and color bleeding. This variety is known for producing clusters of colorful flowers along tall canes. The plant is deciduous and requires a winter rest period to bloom properly.',
+    basePrice: 199.99,
+    salePrice: undefined,
+    isOnSale: false,
+    stockQuantity: 5,
+    lowStockThreshold: 2,
+    weight: 1.5,
+    
+    // Orchid-specific properties
+    defaultSize: OrchidSize.BLOOMING_SIZE,
+    availableSizes: [OrchidSize.MATURE, OrchidSize.BLOOMING_SIZE, OrchidSize.SPECIMEN],
+    primaryColors: ['#8B5CF6', '#EC4899', '#FFFFFF'], // Purple, Pink, White
+    colorPattern: 'multicolor',
+    
+    category: {
+      id: 'orchids',
+      name: 'Orchids',
+      slug: 'orchids',
+      description: 'Beautiful flowering orchids',
+      isActive: true,
+      sortOrder: 1,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01')
+    },
+    images: [
+      {
+        id: '4',
+        productId: '3',
+        url: 'https://images.unsplash.com/photo-1615719413546-198b25453f85?w=800&h=800&fit=crop',
+        altText: 'Dendrobium Multicolor Rainbow - Main View',
+        isMain: true,
+        sortOrder: 1,
+        createdAt: new Date(),
+        color: '#8B5CF6',
+        size: OrchidSize.BLOOMING_SIZE
+      }
     ],
     attributes: [
-      { name: 'Bloom Season', value: 'Year-round' },
-      { name: 'Light Requirements', value: 'Low to medium light' },
-      { name: 'Care Level', value: 'Beginner' },
-      { name: 'Bloom Duration', value: '2-3 months' },
+      { id: '11', name: 'Bloom Season', value: 'Spring', type: 'TEXT' },
+      { id: '12', name: 'Light Requirements', value: 'Bright light', type: 'TEXT' },
+      { id: '13', name: 'Care Level', value: 'Advanced', type: 'TEXT' },
+      { id: '14', name: 'Color Pattern', value: 'Multicolor variegated', type: 'TEXT' },
+      { id: '15', name: 'Winter Rest', value: 'Required', type: 'TEXT' }
     ],
-    status: 'active',
-    featured: true,
-    rating: 4.9,
-    reviewCount: 42,
-    seoTitle: 'White Phalaenopsis Orchid - Perfect for Beginners',
-    seoDescription: 'Beautiful white Phalaenopsis orchid, ideal for beginners. Long-lasting blooms and easy care.',
-    seoKeywords: ['phalaenopsis', 'white orchid', 'beginner orchid', 'moth orchid'],
-    createdAt: new Date('2024-01-05'),
-    updatedAt: new Date('2024-01-15'),
+    tags: ['multicolor', 'purple', 'pink', 'white', 'dendrobium', 'advanced', 'spring-blooming'],
+    
+    isActive: true,
+    isFeatured: true,
+    isDigital: false,
+    
+    averageRating: 4.9,
+    totalReviews: 12,
+    totalSales: 34,
+    viewCount: 567,
+    
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-05'),
+    publishedAt: new Date('2024-02-01')
   },
   {
     id: '4',
-    name: 'Dendrobium Nobile - Spring Beauty',
-    description: 'Beautiful Dendrobium Nobile with clusters of pink and white flowers. Blooms in spring with proper care.',
-    shortDescription: 'Spring-blooming Dendrobium with pink flowers',
-    price: 64.99,
-    compareAtPrice: 79.99,
-    cost: 32.00,
-    sku: 'DEND-001',
-    barcode: '1234567890126',
-    trackQuantity: true,
-    quantity: 12,
-    allowBackorder: false,
-    weight: 2.0,
-    dimensions: { length: 8, width: 8, height: 18 },
-    category: 'Orchids',
-    subcategory: 'Dendrobium',
-    tags: ['pink', 'spring', 'clusters', 'intermediate'],
-    images: ['/images/dendrobium-pink-1.jpg', '/images/dendrobium-pink-2.jpg'],
-    variants: [],
-    attributes: [
-      { name: 'Bloom Season', value: 'Spring' },
-      { name: 'Light Requirements', value: 'Bright light' },
-      { name: 'Care Level', value: 'Intermediate' },
-      { name: 'Flower Color', value: 'Pink & White' },
-    ],
-    status: 'active',
-    featured: false,
-    rating: 4.5,
-    reviewCount: 16,
-    seoTitle: 'Dendrobium Nobile Orchid - Spring Flowering Beauty',
-    seoDescription: 'Stunning Dendrobium Nobile with pink and white spring blooms. Perfect for intermediate growers.',
-    seoKeywords: ['dendrobium', 'spring orchid', 'pink flowers', 'nobile'],
-    createdAt: new Date('2024-01-08'),
-    updatedAt: new Date('2024-01-16'),
-  },
-  {
-    id: '5',
-    name: 'Orchid Fertilizer - Bloom Booster',
-    description: 'Specialized fertilizer designed to promote healthy blooms and strong root development in orchids.',
-    shortDescription: 'Premium bloom-boosting orchid fertilizer',
-    price: 19.99,
-    compareAtPrice: 24.99,
-    cost: 8.00,
-    sku: 'FERT-001',
-    barcode: '1234567890127',
-    trackQuantity: true,
-    quantity: 75,
-    allowBackorder: true,
-    weight: 0.8,
-    dimensions: { length: 6, width: 4, height: 8 },
-    category: 'Care Products',
-    subcategory: 'Fertilizers',
-    tags: ['fertilizer', 'bloom', 'nutrition', 'liquid'],
-    images: ['/images/fertilizer-1.jpg', '/images/fertilizer-2.jpg'],
-    variants: [
-      { id: '250ml', name: '250ml Bottle', price: 19.99, sku: 'FERT-001-S', quantity: 50 },
-      { id: '500ml', name: '500ml Bottle', price: 34.99, sku: 'FERT-001-L', quantity: 25 },
+    name: 'Oncidium Dancing Lady',
+    slug: 'oncidium-dancing-lady',
+    sku: 'ONCI-004',
+    shortDescription: 'Cheerful yellow oncidium with dancing lady-like flowers',
+    description: 'The Oncidium Dancing Lady is beloved for its cheerful yellow flowers that resemble tiny dancing ladies in flowing skirts. This orchid produces long, arching sprays with dozens of small, bright yellow flowers marked with brown spots. It\'s a reliable bloomer that can flower multiple times per year with proper care. The compact size makes it perfect for windowsill growing.',
+    basePrice: 74.99,
+    salePrice: undefined,
+    isOnSale: false,
+    stockQuantity: 12,
+    lowStockThreshold: 4,
+    weight: 0.6,
+    
+    // Orchid-specific properties
+    defaultSize: OrchidSize.YOUNG_PLANT,
+    availableSizes: [OrchidSize.SAPLING, OrchidSize.YOUNG_PLANT, OrchidSize.MATURE],
+    primaryColors: ['#F59E0B'], // Golden yellow
+    colorPattern: 'solid',
+    
+    category: {
+      id: 'orchids',
+      name: 'Orchids',
+      slug: 'orchids',
+      description: 'Beautiful flowering orchids',
+      isActive: true,
+      sortOrder: 1,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01')
+    },
+    images: [
+      {
+        id: '5',
+        productId: '4',
+        url: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?w=800&h=800&fit=crop',
+        altText: 'Oncidium Dancing Lady - Main View',
+        isMain: true,
+        sortOrder: 1,
+        createdAt: new Date(),
+        color: '#F59E0B',
+        size: OrchidSize.YOUNG_PLANT
+      }
     ],
     attributes: [
-      { name: 'Type', value: 'Liquid Fertilizer' },
-      { name: 'NPK Ratio', value: '20-20-20' },
-      { name: 'Application', value: 'Weekly feeding' },
-      { name: 'Coverage', value: '3-6 months' },
+      { id: '16', name: 'Bloom Season', value: 'Fall/Winter', type: 'TEXT' },
+      { id: '17', name: 'Light Requirements', value: 'Bright light', type: 'TEXT' },
+      { id: '18', name: 'Care Level', value: 'Intermediate', type: 'TEXT' },
+      { id: '19', name: 'Flower Count', value: '50+ per spike', type: 'TEXT' },
+      { id: '20', name: 'Growth Habit', value: 'Compact', type: 'TEXT' }
     ],
-    status: 'active',
-    featured: false,
-    rating: 4.7,
-    reviewCount: 28,
-    seoTitle: 'Premium Orchid Bloom Booster Fertilizer',
-    seoDescription: 'Specialized liquid fertilizer for orchids. Promotes healthy blooms and strong growth.',
-    seoKeywords: ['orchid fertilizer', 'bloom booster', 'plant nutrition', 'liquid fertilizer'],
-    createdAt: new Date('2024-01-12'),
-    updatedAt: new Date('2024-01-19'),
-  },
-  {
-    id: '6',
-    name: 'Decorative Orchid Pot - Ceramic White',
-    description: 'Beautiful white ceramic pot with drainage holes, perfect for displaying your orchids in style.',
-    shortDescription: 'Elegant white ceramic orchid pot',
-    price: 24.99,
-    compareAtPrice: 32.99,
-    cost: 12.00,
-    sku: 'POT-001',
-    barcode: '1234567890128',
-    trackQuantity: true,
-    quantity: 30,
-    allowBackorder: false,
-    weight: 1.5,
-    dimensions: { length: 6, width: 6, height: 6 },
-    category: 'Accessories',
-    subcategory: 'Pots',
-    tags: ['ceramic', 'white', 'decorative', 'drainage'],
-    images: ['/images/pot-white-1.jpg', '/images/pot-white-2.jpg'],
-    variants: [
-      { id: '4inch', name: '4" Pot', price: 24.99, sku: 'POT-001-S', quantity: 20 },
-      { id: '6inch', name: '6" Pot', price: 34.99, sku: 'POT-001-M', quantity: 8 },
-      { id: '8inch', name: '8" Pot', price: 44.99, sku: 'POT-001-L', quantity: 2 },
-    ],
-    attributes: [
-      { name: 'Material', value: 'Ceramic' },
-      { name: 'Color', value: 'White' },
-      { name: 'Drainage', value: 'Multiple holes' },
-      { name: 'Style', value: 'Modern minimalist' },
-    ],
-    status: 'active',
-    featured: false,
-    rating: 4.4,
-    reviewCount: 12,
-    seoTitle: 'White Ceramic Orchid Pot - Decorative Plant Container',
-    seoDescription: 'Stylish white ceramic pot with proper drainage for orchids. Modern design complements any decor.',
-    seoKeywords: ['orchid pot', 'ceramic pot', 'plant container', 'white pot'],
-    createdAt: new Date('2024-01-06'),
-    updatedAt: new Date('2024-01-14'),
-  },
+    tags: ['yellow', 'oncidium', 'dancing-lady', 'compact', 'fall-blooming', 'multiple-flowers'],
+    
+    isActive: true,
+    isFeatured: false,
+    isDigital: false,
+    
+    averageRating: 4.7,
+    totalReviews: 31,
+    totalSales: 78,
+    viewCount: 456,
+    
+    createdAt: new Date('2024-01-25'),
+    updatedAt: new Date('2024-01-30'),
+    publishedAt: new Date('2024-01-25')
+  }
 ];
+
+const mockCategories = ['Orchids', 'Care Products', 'Accessories', 'Fertilizers'];
 
 const defaultFilters = {
   category: '',
@@ -306,7 +374,7 @@ export const useProductStore = create<ProductState>()(
   persist(
     (set, get) => ({
       // Initial state
-      products: [],
+      products: mockProducts,
       featuredProducts: [],
       categories: ['Orchids', 'Care Products', 'Accessories', 'Fertilizers'],
       loading: false,
@@ -316,6 +384,12 @@ export const useProductStore = create<ProductState>()(
       cartCount: 0,
       wishlist: [],
       filters: defaultFilters,
+      searchQuery: '',
+      selectedCategory: null,
+      priceRange: [0, 500],
+      selectedRating: null,
+      sortBy: 'name',
+      sortOrder: 'asc',
 
       // Product actions
       setProducts: (products) => set({ products }),
@@ -326,56 +400,49 @@ export const useProductStore = create<ProductState>()(
       // Cart actions
       addToCart: (product, quantity = 1, variant, attributes) => {
         const { cart } = get();
-        const existingItemIndex = cart.findIndex(
-          item => item.product.id === product.id && 
-          item.selectedVariant === variant
+        const existingItem = cart.find(item => 
+          item.product.id === product.id && 
+          item.selectedVariant === variant &&
+          JSON.stringify(item.selectedAttributes) === JSON.stringify(attributes)
         );
 
-        if (existingItemIndex >= 0) {
-          // Update existing item
-          const updatedCart = [...cart];
-          updatedCart[existingItemIndex].quantity += quantity;
-          const cartTotal = updatedCart.reduce((total, item) => {
-            const price = item.selectedVariant 
-              ? item.product.variants?.find(v => v.id === item.selectedVariant)?.price || item.product.price
-              : item.product.price;
-            return total + (price * item.quantity);
-          }, 0);
-          const cartCount = updatedCart.reduce((count, item) => count + item.quantity, 0);
-          
-          set({ cart: updatedCart, cartTotal, cartCount });
+        const price = product.isOnSale && product.salePrice ? product.salePrice : product.basePrice;
+
+        if (existingItem) {
+          set({
+            cart: cart.map(item =>
+              item === existingItem
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            )
+          });
         } else {
-          // Add new item
-          const newItem: CartItem = {
-            product,
-            quantity,
-            selectedVariant: variant,
-            selectedAttributes: attributes,
-          };
-          const updatedCart = [...cart, newItem];
-          const cartTotal = updatedCart.reduce((total, item) => {
-            const price = item.selectedVariant 
-              ? item.product.variants?.find(v => v.id === item.selectedVariant)?.price || item.product.price
-              : item.product.price;
-            return total + (price * item.quantity);
-          }, 0);
-          const cartCount = updatedCart.reduce((count, item) => count + item.quantity, 0);
-          
-          set({ cart: updatedCart, cartTotal, cartCount });
+          set({
+            cart: [...cart, { product, quantity, selectedVariant: variant, selectedAttributes: attributes }]
+          });
         }
+
+        // Update cart totals
+        const updatedCart = get().cart;
+        const cartTotal = updatedCart.reduce((total, item) => {
+          const itemPrice = item.product.isOnSale && item.product.salePrice ? item.product.salePrice : item.product.basePrice;
+          return total + (itemPrice * item.quantity);
+        }, 0);
+        const cartCount = updatedCart.reduce((count, item) => count + item.quantity, 0);
+
+        set({ cartTotal, cartCount });
       },
 
       removeFromCart: (productId) => {
         const { cart } = get();
         const updatedCart = cart.filter(item => item.product.id !== productId);
+        
         const cartTotal = updatedCart.reduce((total, item) => {
-          const price = item.selectedVariant 
-            ? item.product.variants?.find(v => v.id === item.selectedVariant)?.price || item.product.price
-            : item.product.price;
-          return total + (price * item.quantity);
+          const itemPrice = item.product.isOnSale && item.product.salePrice ? item.product.salePrice : item.product.basePrice;
+          return total + (itemPrice * item.quantity);
         }, 0);
         const cartCount = updatedCart.reduce((count, item) => count + item.quantity, 0);
-        
+
         set({ cart: updatedCart, cartTotal, cartCount });
       },
 
@@ -384,31 +451,28 @@ export const useProductStore = create<ProductState>()(
         const updatedCart = cart.map(item =>
           item.product.id === productId ? { ...item, quantity } : item
         );
+
         const cartTotal = updatedCart.reduce((total, item) => {
-          const price = item.selectedVariant 
-            ? item.product.variants?.find(v => v.id === item.selectedVariant)?.price || item.product.price
-            : item.product.price;
-          return total + (price * item.quantity);
+          const itemPrice = item.product.isOnSale && item.product.salePrice ? item.product.salePrice : item.product.basePrice;
+          return total + (itemPrice * item.quantity);
         }, 0);
         const cartCount = updatedCart.reduce((count, item) => count + item.quantity, 0);
-        
+
         set({ cart: updatedCart, cartTotal, cartCount });
       },
 
       clearCart: () => set({ cart: [], cartTotal: 0, cartCount: 0 }),
 
       // Wishlist actions
-      addToWishlist: (product) => {
-        const { wishlist } = get();
-        if (!wishlist.find(item => item.id === product.id)) {
-          set({ wishlist: [...wishlist, product] });
-        }
-      },
+      addToWishlist: (product) => set((state) => ({
+        wishlist: state.wishlist.find(item => item.id === product.id) 
+          ? state.wishlist 
+          : [...state.wishlist, product]
+      })),
 
-      removeFromWishlist: (productId) => {
-        const { wishlist } = get();
-        set({ wishlist: wishlist.filter(item => item.id !== productId) });
-      },
+      removeFromWishlist: (productId) => set((state) => ({
+        wishlist: state.wishlist.filter(item => item.id !== productId)
+      })),
 
       isInWishlist: (productId) => {
         const { wishlist } = get();
@@ -439,7 +503,7 @@ export const useProductStore = create<ProductState>()(
         set({ loading: true, error: null });
         try {
           await new Promise(resolve => setTimeout(resolve, 500));
-          const featured = mockProducts.filter(product => product.featured);
+          const featured = mockProducts.filter(product => product.isFeatured);
           set({ featuredProducts: featured, loading: false });
         } catch (error) {
           set({ error: 'Failed to fetch featured products', loading: false });
@@ -460,6 +524,84 @@ export const useProductStore = create<ProductState>()(
           set({ error: 'Failed to search products', loading: false });
         }
       },
+
+      // New actions
+      addProduct: (product) => set((state) => ({
+        products: [...state.products, product]
+      })),
+      
+      updateProduct: (id, productUpdate) => set((state) => ({
+        products: state.products.map(product => 
+          product.id === id ? { ...product, ...productUpdate } : product
+        )
+      })),
+      
+      deleteProduct: (id) => set((state) => ({
+        products: state.products.filter(product => product.id !== id)
+      })),
+
+      // New filters
+      setSearchQuery: (query) => set({ searchQuery: query }),
+      setSelectedCategory: (category) => set({ selectedCategory: category }),
+      setPriceRange: (range) => set({ priceRange: range }),
+      setSelectedRating: (rating) => set({ selectedRating: rating }),
+      setSortBy: (sortBy) => set({ sortBy }),
+      setSortOrder: (order) => set({ sortOrder: order }),
+
+      // Computed
+      getFilteredProducts: () => {
+        const { 
+          products, 
+          searchQuery, 
+          selectedCategory, 
+          priceRange, 
+          selectedRating,
+          sortBy,
+          sortOrder 
+        } = get();
+
+        let filtered = products.filter(product => {
+          const matchesSearch = !searchQuery || 
+            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+          
+          const matchesCategory = !selectedCategory || product.category.name === selectedCategory;
+          
+          const currentPrice = product.isOnSale && product.salePrice ? product.salePrice : product.basePrice;
+          const matchesPrice = currentPrice >= priceRange[0] && currentPrice <= priceRange[1];
+          
+          const matchesRating = !selectedRating || product.averageRating >= selectedRating;
+          
+          return matchesSearch && matchesCategory && matchesPrice && matchesRating && product.isActive;
+        });
+
+        // Sort products
+        filtered.sort((a, b) => {
+          let comparison = 0;
+          
+          switch (sortBy) {
+            case 'name':
+              comparison = a.name.localeCompare(b.name);
+              break;
+            case 'price':
+              const priceA = a.isOnSale && a.salePrice ? a.salePrice : a.basePrice;
+              const priceB = b.isOnSale && b.salePrice ? b.salePrice : b.basePrice;
+              comparison = priceA - priceB;
+              break;
+            case 'rating':
+              comparison = a.averageRating - b.averageRating;
+              break;
+            case 'newest':
+              comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+              break;
+          }
+          
+          return sortOrder === 'desc' ? -comparison : comparison;
+        });
+
+        return filtered;
+      }
     }),
     {
       name: 'cattleya-products',
@@ -469,6 +611,12 @@ export const useProductStore = create<ProductState>()(
         cartCount: state.cartCount,
         wishlist: state.wishlist,
         filters: state.filters,
+        searchQuery: state.searchQuery,
+        selectedCategory: state.selectedCategory,
+        priceRange: state.priceRange,
+        selectedRating: state.selectedRating,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder
       }),
     }
   )
