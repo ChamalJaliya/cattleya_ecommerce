@@ -618,30 +618,69 @@ export default function ProductsPage() {
     updateFilters({ sortBy: sortValue as any });
     setPagination({ currentPage: 1 });
     
-    const [sortBy, sortOrder] = sortValue.includes('-') 
-      ? [sortValue.split('-')[0], sortValue.split('-')[1]]
-      : [sortValue, 'asc'];
-    
-    await fetchProducts({
-      ...filters,
-      sortBy: sortBy === 'price' ? 'basePrice' : 
-              sortBy === 'rating' ? 'averageRating' :
-              sortBy === 'newest' ? 'createdAt' :
-              sortBy === 'popularity' ? 'viewCount' : sortBy,
-      sortOrder: sortOrder === 'desc' ? 'desc' : 'asc',
+    // Map frontend filters to backend API parameters
+    const apiQuery = {
+      search: filters?.searchQuery || undefined,
       page: 1,
-      limit: 12
-    });
+      limit: 12,
+      categoryId: filters?.category || undefined,
+      minPrice: filters?.priceRange?.[0] > 0 ? filters.priceRange[0] : undefined,
+      maxPrice: filters?.priceRange?.[1] < 1000 ? filters.priceRange[1] : undefined,
+      inStock: filters?.inStock || undefined,
+      tags: filters?.tags && filters.tags.length > 0 ? filters.tags : undefined,
+      rating: filters?.rating > 0 ? filters.rating : undefined,
+      sortBy: sortValue === 'name' ? 'name' : 
+              sortValue === 'price-asc' ? 'basePrice' :
+              sortValue === 'price-desc' ? 'basePrice' :
+              sortValue === 'rating' ? 'averageRating' :
+              sortValue === 'newest' ? 'createdAt' : 
+              sortValue === 'popularity' ? 'viewCount' : 'name',
+      sortOrder: sortValue === 'price-desc' ? 'desc' : 
+                 sortValue === 'rating' ? 'desc' :
+                 sortValue === 'popularity' ? 'desc' :
+                 sortValue === 'newest' ? 'desc' : 'asc'
+    };
+
+    // Remove undefined values
+    const cleanQuery = Object.fromEntries(
+      Object.entries(apiQuery).filter(([_, value]) => value !== undefined)
+    );
+
+    await fetchProducts(cleanQuery);
   };
 
   const handlePageChange = async (page: number) => {
     setPagination({ currentPage: page });
     
-    await fetchProducts({
-      ...filters,
+    // Map frontend filters to backend API parameters
+    const apiQuery = {
+      search: filters?.searchQuery || undefined,
       page,
-      limit: 12
-    });
+      limit: 12,
+      categoryId: filters?.category || undefined,
+      minPrice: filters?.priceRange?.[0] > 0 ? filters.priceRange[0] : undefined,
+      maxPrice: filters?.priceRange?.[1] < 1000 ? filters.priceRange[1] : undefined,
+      inStock: filters?.inStock || undefined,
+      tags: filters?.tags && filters.tags.length > 0 ? filters.tags : undefined,
+      rating: filters?.rating > 0 ? filters.rating : undefined,
+      sortBy: filters?.sortBy === 'name' ? 'name' : 
+              filters?.sortBy === 'price-asc' ? 'basePrice' :
+              filters?.sortBy === 'price-desc' ? 'basePrice' :
+              filters?.sortBy === 'rating' ? 'averageRating' :
+              filters?.sortBy === 'newest' ? 'createdAt' : 
+              filters?.sortBy === 'popularity' ? 'viewCount' : 'name',
+      sortOrder: filters?.sortBy === 'price-desc' ? 'desc' : 
+                 filters?.sortBy === 'rating' ? 'desc' :
+                 filters?.sortBy === 'popularity' ? 'desc' :
+                 filters?.sortBy === 'newest' ? 'desc' : 'asc'
+    };
+
+    // Remove undefined values
+    const cleanQuery = Object.fromEntries(
+      Object.entries(apiQuery).filter(([_, value]) => value !== undefined)
+    );
+
+    await fetchProducts(cleanQuery);
   };
 
   const handleClearComparison = () => {
