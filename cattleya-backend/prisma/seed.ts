@@ -1,7 +1,450 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, OrchidSize, ColorPattern } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// Sample orchid data
+const orchidData = [
+  {
+    name: 'Cattleya Purple Majesty',
+    slug: 'cattleya-purple-majesty',
+    sku: 'CATT-PM-001',
+    description: 'A stunning purple Cattleya orchid with large, fragrant blooms. This magnificent specimen produces deep purple flowers with darker veining and a rich, sweet fragrance that fills the room.',
+    shortDescription: 'Beautiful purple Cattleya with fragrant blooms',
+    basePrice: 149.99,
+    salePrice: 129.99,
+    isOnSale: true,
+    stockQuantity: 15,
+    defaultSize: 'YOUNG_PLANT',
+    availableSizes: ['YOUNG_PLANT', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#8B5CF6', '#6B46C1'],
+    colorPattern: 'BICOLOR',
+    category: 'cattleya',
+    tags: ['purple', 'fragrant', 'large-flowers'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Phalaenopsis White Elegance',
+    slug: 'phalaenopsis-white-elegance',
+    sku: 'PHAL-WE-002',
+    description: 'Classic white Phalaenopsis orchid with pristine white petals and a yellow center. Perfect for beginners, this orchid blooms for months and is easy to care for.',
+    shortDescription: 'Classic white Phalaenopsis, perfect for beginners',
+    basePrice: 89.99,
+    stockQuantity: 25,
+    defaultSize: 'MATURE',
+    availableSizes: ['SAPLING', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#FFFFFF', '#FEF3C7'],
+    colorPattern: 'BICOLOR',
+    category: 'phalaenopsis',
+    tags: ['white', 'beginner-friendly', 'long-blooming'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Dendrobium Golden Sunshine',
+    slug: 'dendrobium-golden-sunshine',
+    sku: 'DEND-GS-003',
+    description: 'Vibrant yellow Dendrobium orchid that brings sunshine to any space. These compact orchids produce clusters of bright yellow flowers with excellent longevity.',
+    shortDescription: 'Bright yellow Dendrobium with clustered blooms',
+    basePrice: 124.99,
+    stockQuantity: 18,
+    defaultSize: 'MATURE',
+    availableSizes: ['YOUNG_PLANT', 'MATURE', 'SPECIMEN'],
+    primaryColors: ['#FCD34D', '#F59E0B'],
+    colorPattern: 'SOLID',
+    category: 'dendrobium',
+    tags: ['yellow', 'compact', 'bright'],
+    images: [
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Oncidium Dancing Lady',
+    slug: 'oncidium-dancing-lady',
+    sku: 'ONCI-DL-004',
+    description: 'Cheerful yellow and brown Oncidium orchid known as the "Dancing Lady" for its distinctive flower shape that resembles a dancing figure in a flowing dress.',
+    shortDescription: 'Yellow and brown "Dancing Lady" orchid',
+    basePrice: 94.99,
+    stockQuantity: 22,
+    defaultSize: 'MATURE',
+    availableSizes: ['SAPLING', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#FCD34D', '#92400E'],
+    colorPattern: 'MULTICOLOR',
+    category: 'oncidium',
+    tags: ['yellow', 'brown', 'unique-shape'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Cattleya Pink Perfection',
+    slug: 'cattleya-pink-perfection',
+    sku: 'CATT-PP-005',
+    description: 'Exquisite pink Cattleya with ruffled petals and a delicate fragrance. This variety produces large, showy flowers perfect for special occasions.',
+    shortDescription: 'Pink Cattleya with ruffled petals and fragrance',
+    basePrice: 164.99,
+    salePrice: 144.99,
+    isOnSale: true,
+    stockQuantity: 12,
+    defaultSize: 'BLOOMING_SIZE',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#F472B6', '#EC4899'],
+    colorPattern: 'SOLID',
+    category: 'cattleya',
+    tags: ['pink', 'fragrant', 'ruffled', 'large-flowers'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Vanda Blue Magic',
+    slug: 'vanda-blue-magic',
+    sku: 'VAND-BM-006',
+    description: 'Rare blue Vanda orchid with stunning blue-purple flowers. These orchids are prized for their unique coloration and impressive size when mature.',
+    shortDescription: 'Rare blue Vanda with stunning blue-purple flowers',
+    basePrice: 299.99,
+    stockQuantity: 8,
+    defaultSize: 'SPECIMEN',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#3B82F6', '#6366F1'],
+    colorPattern: 'SOLID',
+    category: 'vanda',
+    tags: ['blue', 'rare', 'large', 'premium'],
+    images: [
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Phalaenopsis Spotted Beauty',
+    slug: 'phalaenopsis-spotted-beauty',
+    sku: 'PHAL-SB-007',
+    description: 'Unique spotted Phalaenopsis with white petals adorned with purple spots. This variety adds an exotic touch to any orchid collection.',
+    shortDescription: 'White Phalaenopsis with distinctive purple spots',
+    basePrice: 109.99,
+    stockQuantity: 16,
+    defaultSize: 'MATURE',
+    availableSizes: ['YOUNG_PLANT', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#FFFFFF', '#8B5CF6'],
+    colorPattern: 'VARIEGATED',
+    category: 'phalaenopsis',
+    tags: ['white', 'purple', 'spotted', 'unique'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Cymbidium Green Goddess',
+    slug: 'cymbidium-green-goddess',
+    sku: 'CYMB-GG-008',
+    description: 'Elegant green Cymbidium orchid with long-lasting flowers. These orchids are perfect for cooler climates and produce spectacular flower spikes.',
+    shortDescription: 'Elegant green Cymbidium with long-lasting blooms',
+    basePrice: 179.99,
+    stockQuantity: 14,
+    defaultSize: 'MATURE',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#22C55E', '#16A34A'],
+    colorPattern: 'SOLID',
+    category: 'cymbidium',
+    tags: ['green', 'cool-climate', 'long-lasting', 'spikes'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Miltonia Sunset Flame',
+    slug: 'miltonia-sunset-flame',
+    sku: 'MILT-SF-009',
+    description: 'Vibrant orange and red Miltonia orchid resembling a sunset. Known for their pansy-like faces, these orchids bring warmth and color to any collection.',
+    shortDescription: 'Orange and red Miltonia with pansy-like flowers',
+    basePrice: 134.99,
+    stockQuantity: 19,
+    defaultSize: 'MATURE',
+    availableSizes: ['SAPLING', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#F97316', '#DC2626'],
+    colorPattern: 'BICOLOR',
+    category: 'miltonia',
+    tags: ['orange', 'red', 'pansy-face', 'warm-colors'],
+    images: [
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Paphiopedilum Lady Slipper',
+    slug: 'paphiopedilum-lady-slipper',
+    sku: 'PAPH-LS-010',
+    description: 'Exotic Lady Slipper orchid with unique pouch-shaped flowers. These terrestrial orchids are prized for their unusual form and mottled foliage.',
+    shortDescription: 'Exotic Lady Slipper with unique pouch flowers',
+    basePrice: 189.99,
+    stockQuantity: 10,
+    defaultSize: 'MATURE',
+    availableSizes: ['YOUNG_PLANT', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#92400E', '#FEF3C7'],
+    colorPattern: 'MULTICOLOR',
+    category: 'paphiopedilum',
+    tags: ['exotic', 'terrestrial', 'unique-shape', 'mottled'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Cattleya Chocolate Drop',
+    slug: 'cattleya-chocolate-drop',
+    sku: 'CATT-CD-011',
+    description: 'Rich chocolate-brown Cattleya with a sweet fragrance reminiscent of vanilla and chocolate. This unique variety is a conversation starter.',
+    shortDescription: 'Chocolate-brown Cattleya with sweet vanilla fragrance',
+    basePrice: 174.99,
+    stockQuantity: 11,
+    defaultSize: 'BLOOMING_SIZE',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#92400E', '#451A03'],
+    colorPattern: 'SOLID',
+    category: 'cattleya',
+    tags: ['brown', 'chocolate', 'fragrant', 'unique'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Dendrobium Nobile Spring',
+    slug: 'dendrobium-nobile-spring',
+    sku: 'DEND-NS-012',
+    description: 'Classic Dendrobium nobile with white and pink flowers that bloom along the entire cane. Perfect for spring displays with abundant blooms.',
+    shortDescription: 'Classic white and pink Dendrobium nobile',
+    basePrice: 114.99,
+    stockQuantity: 21,
+    defaultSize: 'MATURE',
+    availableSizes: ['YOUNG_PLANT', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#FFFFFF', '#F472B6'],
+    colorPattern: 'BICOLOR',
+    category: 'dendrobium',
+    tags: ['white', 'pink', 'spring', 'abundant'],
+    images: [
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Brassia Spider Orchid',
+    slug: 'brassia-spider-orchid',
+    sku: 'BRAS-SO-013',
+    description: 'Dramatic spider orchid with long, thin petals that create a spider-like appearance. These unusual orchids are sure to capture attention.',
+    shortDescription: 'Dramatic spider orchid with long, thin petals',
+    basePrice: 144.99,
+    stockQuantity: 13,
+    defaultSize: 'MATURE',
+    availableSizes: ['SAPLING', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#FCD34D', '#92400E'],
+    colorPattern: 'MULTICOLOR',
+    category: 'brassia',
+    tags: ['spider', 'dramatic', 'unusual', 'long-petals'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Phalaenopsis Mini Mark',
+    slug: 'phalaenopsis-mini-mark',
+    sku: 'PHAL-MM-014',
+    description: 'Compact yellow Phalaenopsis with red markings. Perfect for small spaces, this miniature orchid packs a lot of personality into a small package.',
+    shortDescription: 'Compact yellow Phalaenopsis with red markings',
+    basePrice: 69.99,
+    salePrice: 59.99,
+    isOnSale: true,
+    stockQuantity: 28,
+    defaultSize: 'MATURE',
+    availableSizes: ['SAPLING', 'MATURE'],
+    primaryColors: ['#FCD34D', '#DC2626'],
+    colorPattern: 'MULTICOLOR',
+    category: 'phalaenopsis',
+    tags: ['yellow', 'red', 'compact', 'miniature'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Cattleya Lavender Mist',
+    slug: 'cattleya-lavender-mist',
+    sku: 'CATT-LM-015',
+    description: 'Soft lavender Cattleya with a gentle fragrance and ruffled edges. This delicate beauty brings a touch of elegance to any orchid collection.',
+    shortDescription: 'Soft lavender Cattleya with gentle fragrance',
+    basePrice: 154.99,
+    stockQuantity: 17,
+    defaultSize: 'BLOOMING_SIZE',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#C084FC', '#A855F7'],
+    colorPattern: 'SOLID',
+    category: 'cattleya',
+    tags: ['lavender', 'fragrant', 'ruffled', 'elegant'],
+    images: [
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Oncidium Sharry Baby',
+    slug: 'oncidium-sharry-baby',
+    sku: 'ONCI-SB-016',
+    description: 'Famous chocolate-scented Oncidium with burgundy and white flowers. This orchid literally smells like chocolate and is beloved by collectors.',
+    shortDescription: 'Chocolate-scented Oncidium with burgundy flowers',
+    basePrice: 124.99,
+    stockQuantity: 15,
+    defaultSize: 'MATURE',
+    availableSizes: ['YOUNG_PLANT', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#7C2D12', '#FFFFFF'],
+    colorPattern: 'BICOLOR',
+    category: 'oncidium',
+    tags: ['chocolate-scent', 'burgundy', 'white', 'famous'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: true
+  },
+  {
+    name: 'Dendrobium King',
+    slug: 'dendrobium-king',
+    sku: 'DEND-KG-017',
+    description: 'Majestic purple Dendrobium with large, showy flowers. This variety produces impressive blooms that can last for several months.',
+    shortDescription: 'Majestic purple Dendrobium with large blooms',
+    basePrice: 159.99,
+    stockQuantity: 12,
+    defaultSize: 'SPECIMEN',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#8B5CF6', '#6B46C1'],
+    colorPattern: 'SOLID',
+    category: 'dendrobium',
+    tags: ['purple', 'majestic', 'large', 'long-lasting'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Zygopetalum Rhein Moonlight',
+    slug: 'zygopetalum-rhein-moonlight',
+    sku: 'ZYGO-RM-018',
+    description: 'Fragrant Zygopetalum with green sepals and a white lip decorated with purple markings. Known for their strong, sweet fragrance.',
+    shortDescription: 'Fragrant Zygopetalum with green and purple flowers',
+    basePrice: 169.99,
+    stockQuantity: 9,
+    defaultSize: 'MATURE',
+    availableSizes: ['MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#22C55E', '#8B5CF6'],
+    colorPattern: 'MULTICOLOR',
+    category: 'zygopetalum',
+    tags: ['fragrant', 'green', 'purple', 'sweet-scent'],
+    images: [
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Phalaenopsis Coral Sunset',
+    slug: 'phalaenopsis-coral-sunset',
+    sku: 'PHAL-CS-019',
+    description: 'Stunning coral-colored Phalaenopsis that captures the beauty of a tropical sunset. This warm-toned orchid brings joy to any space.',
+    shortDescription: 'Coral-colored Phalaenopsis with sunset hues',
+    basePrice: 99.99,
+    stockQuantity: 20,
+    defaultSize: 'MATURE',
+    availableSizes: ['SAPLING', 'MATURE', 'BLOOMING_SIZE'],
+    primaryColors: ['#FB7185', '#F97316'],
+    colorPattern: 'BICOLOR',
+    category: 'phalaenopsis',
+    tags: ['coral', 'sunset', 'warm', 'tropical'],
+    images: [
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+    ],
+    isFeatured: false
+  },
+  {
+    name: 'Cattleya Golden Emperor',
+    slug: 'cattleya-golden-emperor',
+    sku: 'CATT-GE-020',
+    description: 'Magnificent golden-yellow Cattleya with large, ruffled flowers and intense fragrance. This premium orchid is the crown jewel of any collection.',
+    shortDescription: 'Golden-yellow Cattleya with ruffled flowers',
+    basePrice: 249.99,
+    salePrice: 199.99,
+    isOnSale: true,
+    stockQuantity: 6,
+    defaultSize: 'SPECIMEN',
+    availableSizes: ['BLOOMING_SIZE', 'SPECIMEN'],
+    primaryColors: ['#FCD34D', '#F59E0B'],
+    colorPattern: 'SOLID',
+    category: 'cattleya',
+    tags: ['golden', 'yellow', 'ruffled', 'premium', 'fragrant'],
+    images: [
+      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
+      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+    ],
+    isFeatured: true
+  }
+];
+
+// Sample review data
+const reviewTexts = [
+  {
+    titles: ['Absolutely stunning!', 'Beautiful orchid', 'Exceeded expectations', 'Perfect condition'],
+    comments: [
+      'This orchid arrived in perfect condition and has been blooming beautifully for months. The colors are even more vibrant than in the photos!',
+      'I\'ve been growing orchids for 10 years and this is one of the healthiest specimens I\'ve received. Highly recommend!',
+      'The fragrance is incredible and fills my entire living room. Worth every penny!',
+      'Perfect packaging and the plant was exactly as described. Will definitely order again.'
+    ]
+  },
+  {
+    titles: ['Great for beginners', 'Easy to care for', 'Blooms regularly', 'Healthy plant'],
+    comments: [
+      'As a beginner, I was worried about caring for orchids, but this one has been very forgiving and rewarding.',
+      'The care instructions were clear and the plant has been thriving in my home office.',
+      'It\'s been blooming consistently and the flowers last for weeks. Very happy with this purchase.',
+      'Arrived quickly and in excellent condition. The root system was very healthy.'
+    ]
+  },
+  {
+    titles: ['Unique and beautiful', 'Love the colors', 'Conversation starter', 'Premium quality'],
+    comments: [
+      'The unique coloration makes this orchid a real standout in my collection. Guests always comment on it.',
+      'The color combination is even more beautiful in person. Photos don\'t do it justice.',
+      'This has become the centerpiece of my orchid display. Absolutely gorgeous!',
+      'You can tell this is a premium quality plant. The attention to detail in packaging was impressive.'
+    ]
+  }
+];
 
 async function main() {
   console.log('🌺 Starting to seed Cattleya E-commerce database...');
@@ -33,19 +476,46 @@ async function main() {
     }
   });
 
+  // Create additional demo customers for reviews
+  const customers: any[] = [];
+  for (let i = 1; i <= 10; i++) {
+    const customer = await prisma.user.upsert({
+      where: { email: `customer${i}@example.com` },
+      update: {},
+      create: {
+        email: `customer${i}@example.com`,
+        password: hashedPassword,
+        firstName: `Customer${i}`,
+        lastName: 'User',
+        role: 'CUSTOMER',
+      }
+    });
+    customers.push(customer);
+  }
+
   console.log('✅ Created demo users');
   console.log('   - Admin: admin@cattleya.com / password123');
   console.log('   - Customer: customer@example.com / password123');
+  console.log(`   - Additional customers: customer1-10@example.com / password123`);
 
-  // Clean existing data
-  await prisma.review.deleteMany();
-  await prisma.productVariantAttribute.deleteMany();
-  await prisma.productVariantImage.deleteMany();
-  await prisma.productVariant.deleteMany();
-  await prisma.productAttribute.deleteMany();
-  await prisma.productImage.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.category.deleteMany();
+  // Clean existing data - for MongoDB we can delete all at once
+  try {
+    await prisma.review.deleteMany();
+    await prisma.productVariantAttribute.deleteMany();
+    await prisma.productVariantImage.deleteMany();
+    await prisma.productVariant.deleteMany();
+    await prisma.productAttribute.deleteMany();
+    await prisma.productImage.deleteMany();
+    await prisma.product.deleteMany();
+    
+    // For MongoDB, we can use the raw database connection to drop collections
+    await prisma.$runCommandRaw({
+      delete: 'categories',
+      deletes: [{ q: {}, limit: 0 }]
+    });
+  } catch (error) {
+    console.log('⚠️  Some cleanup operations failed, continuing...');
+  }
 
   console.log('✅ Cleaned existing data');
 
@@ -54,63 +524,275 @@ async function main() {
     data: {
       name: 'Orchids',
       slug: 'orchids',
-      description: 'Beautiful flowering orchids',
+      description: 'Beautiful flowering orchids for your home and garden',
       isActive: true,
       sortOrder: 1,
     }
   });
 
-  const cattleyaCategory = await prisma.category.create({
-    data: {
-      name: 'Cattleya Orchids',
-      slug: 'cattleya-orchids',
-      description: 'The queen of orchids',
-      parentId: orchidsCategory.id,
-      isActive: true,
-      sortOrder: 1,
-    }
-  });
+  const categories = {
+    cattleya: await prisma.category.create({
+      data: {
+        name: 'Cattleya Orchids',
+        slug: 'cattleya-orchids',
+        description: 'The queen of orchids - large, fragrant, and spectacular',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 1,
+      }
+    }),
+    phalaenopsis: await prisma.category.create({
+      data: {
+        name: 'Phalaenopsis Orchids',
+        slug: 'phalaenopsis-orchids',
+        description: 'Moth orchids - perfect for beginners with long-lasting blooms',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 2,
+      }
+    }),
+    dendrobium: await prisma.category.create({
+      data: {
+        name: 'Dendrobium Orchids',
+        slug: 'dendrobium-orchids',
+        description: 'Tree orchids with diverse forms and abundant flowers',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 3,
+      }
+    }),
+    oncidium: await prisma.category.create({
+      data: {
+        name: 'Oncidium Orchids',
+        slug: 'oncidium-orchids',
+        description: 'Dancing lady orchids with cheerful yellow flowers',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 4,
+      }
+    }),
+    vanda: await prisma.category.create({
+      data: {
+        name: 'Vanda Orchids',
+        slug: 'vanda-orchids',
+        description: 'Stunning blue orchids with impressive size and beauty',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 5,
+      }
+    }),
+    cymbidium: await prisma.category.create({
+      data: {
+        name: 'Cymbidium Orchids',
+        slug: 'cymbidium-orchids',
+        description: 'Cool-climate orchids with long-lasting flower spikes',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 6,
+      }
+    }),
+    miltonia: await prisma.category.create({
+      data: {
+        name: 'Miltonia Orchids',
+        slug: 'miltonia-orchids',
+        description: 'Pansy orchids with flat, colorful faces',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 7,
+      }
+    }),
+    paphiopedilum: await prisma.category.create({
+      data: {
+        name: 'Paphiopedilum Orchids',
+        slug: 'paphiopedilum-orchids',
+        description: 'Lady slipper orchids with unique pouch-shaped flowers',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 8,
+      }
+    }),
+    brassia: await prisma.category.create({
+      data: {
+        name: 'Brassia Orchids',
+        slug: 'brassia-orchids',
+        description: 'Spider orchids with long, dramatic petals',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 9,
+      }
+    }),
+    zygopetalum: await prisma.category.create({
+      data: {
+        name: 'Zygopetalum Orchids',
+        slug: 'zygopetalum-orchids',
+        description: 'Fragrant orchids with distinctive markings',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 10,
+      }
+    })
+  };
 
   console.log('✅ Created categories');
 
-  // Create a simple product
-  const product1 = await prisma.product.create({
-    data: {
-      name: 'Cattleya Purple Majesty',
-      slug: 'cattleya-purple-majesty',
-      sku: 'CATT-PM-001',
-      description: 'Beautiful purple Cattleya orchid',
-      basePrice: 149.99,
-      stockQuantity: 15,
-      defaultSize: 'YOUNG_PLANT',
-      availableSizes: ['YOUNG_PLANT', 'MATURE'],
-      primaryColors: ['#8B5CF6'],
-      colorPattern: 'SOLID',
-      categoryId: cattleyaCategory.id,
-      tags: ['purple', 'fragrant'],
-      isActive: true,
-      isFeatured: true,
-      publishedAt: new Date()
+  // Create products
+  const products: any[] = [];
+  for (const orchid of orchidData) {
+    const product = await prisma.product.create({
+      data: {
+        name: orchid.name,
+        slug: orchid.slug,
+        sku: orchid.sku,
+        description: orchid.description,
+        shortDescription: orchid.shortDescription,
+        basePrice: orchid.basePrice,
+        salePrice: orchid.salePrice,
+        isOnSale: orchid.isOnSale || false,
+        stockQuantity: orchid.stockQuantity,
+                 defaultSize: orchid.defaultSize as OrchidSize,
+         availableSizes: orchid.availableSizes as OrchidSize[],
+         primaryColors: orchid.primaryColors,
+         colorPattern: orchid.colorPattern as ColorPattern,
+        categoryId: categories[orchid.category].id,
+        tags: orchid.tags,
+        isActive: true,
+        isFeatured: orchid.isFeatured,
+        publishedAt: new Date(),
+        // We'll calculate these after adding reviews
+        averageRating: 0,
+        totalReviews: 0,
+      }
+    });
+
+    products.push(product);
+
+    // Create product images
+    for (let i = 0; i < orchid.images.length; i++) {
+      await prisma.productImage.create({
+        data: {
+          productId: product.id,
+          url: orchid.images[i],
+          altText: `${orchid.name} - Image ${i + 1}`,
+          isMain: i === 0,
+          sortOrder: i + 1
+        }
+      });
     }
-  });
 
-  console.log('✅ Created product');
+    // Create product attributes
+    await prisma.productAttribute.create({
+      data: {
+        productId: product.id,
+        name: 'Light Requirements',
+        value: 'Bright, indirect light',
+        type: 'TEXT'
+      }
+    });
 
-  // Create product image
-  await prisma.productImage.create({
-    data: {
-      productId: product1.id,
-      url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      altText: 'Purple Cattleya',
-      isMain: true,
-      sortOrder: 1
+    await prisma.productAttribute.create({
+      data: {
+        productId: product.id,
+        name: 'Watering',
+        value: 'Water when potting medium is nearly dry',
+        type: 'TEXT'
+      }
+    });
+
+    await prisma.productAttribute.create({
+      data: {
+        productId: product.id,
+        name: 'Humidity',
+        value: '50-70%',
+        type: 'TEXT'
+      }
+    });
+
+    await prisma.productAttribute.create({
+      data: {
+        productId: product.id,
+        name: 'Temperature',
+        value: '65-80°F (18-27°C)',
+        type: 'TEXT'
+      }
+    });
+  }
+
+  console.log(`✅ Created ${products.length} products with images and attributes`);
+
+  // Create reviews for each product
+  for (const product of products) {
+    const numReviews = Math.floor(Math.random() * 8) + 3; // 3-10 reviews per product
+    let totalRating = 0;
+
+    for (let i = 0; i < numReviews; i++) {
+      const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
+      const rating = Math.floor(Math.random() * 2) + 4; // 4-5 stars (mostly positive)
+      const reviewType = Math.floor(Math.random() * reviewTexts.length);
+      const titleIndex = Math.floor(Math.random() * reviewTexts[reviewType].titles.length);
+      const commentIndex = Math.floor(Math.random() * reviewTexts[reviewType].comments.length);
+
+      // Check if this customer already reviewed this product
+      const existingReview = await prisma.review.findUnique({
+        where: {
+          userId_productId: {
+            userId: randomCustomer.id,
+            productId: product.id
+          }
+        }
+      });
+
+      if (!existingReview) {
+        await prisma.review.create({
+          data: {
+            userId: randomCustomer.id,
+            productId: product.id,
+            rating: rating,
+            title: reviewTexts[reviewType].titles[titleIndex],
+            comment: reviewTexts[reviewType].comments[commentIndex],
+            isVerifiedPurchase: Math.random() > 0.3, // 70% verified purchases
+            isApproved: true,
+            isVisible: true,
+            helpfulVotes: Math.floor(Math.random() * 15), // 0-14 helpful votes
+            createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000) // Random date within last 90 days
+          }
+        });
+
+        totalRating += rating;
+      }
     }
-  });
 
-  console.log('✅ Created product image');
+    // Update product with average rating and review count
+    const actualReviewCount = await prisma.review.count({
+      where: { productId: product.id }
+    });
+
+    if (actualReviewCount > 0) {
+      const avgRating = totalRating / actualReviewCount;
+      await prisma.product.update({
+        where: { id: product.id },
+        data: {
+          averageRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal place
+          totalReviews: actualReviewCount
+        }
+      });
+    }
+  }
+
+  console.log('✅ Created reviews for all products');
 
   const totalProducts = await prisma.product.count();
-  console.log(`🎉 Database seeded successfully with ${totalProducts} products!`);
+  const totalReviews = await prisma.review.count();
+  const totalCategories = await prisma.category.count();
+
+  console.log(`🎉 Database seeded successfully!`);
+  console.log(`   📦 ${totalProducts} products`);
+  console.log(`   📂 ${totalCategories} categories`);
+  console.log(`   ⭐ ${totalReviews} reviews`);
+  console.log(`   👥 ${customers.length + 2} users`);
+  console.log('');
+  console.log('🔑 Login credentials:');
+  console.log('   Admin: admin@cattleya.com / password123');
+  console.log('   Customer: customer@example.com / password123');
 }
 
 main()
