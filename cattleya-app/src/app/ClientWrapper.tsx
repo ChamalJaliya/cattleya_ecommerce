@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
+import CartSidebar from '@/shared/components/CartSidebar';
 
 export default function ClientWrapper({
   children,
@@ -19,6 +20,7 @@ export default function ClientWrapper({
   return (
     <>
       {children}
+      <CartSidebar />
       <Toaster
         position="top-right"
         toastOptions={{

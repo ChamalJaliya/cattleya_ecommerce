@@ -18,6 +18,7 @@ import { useCartStore } from '@/core/application/stores/useCartStore';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import { useProductStore } from '@/core/application/stores/useProductStore';
 import RecentlyViewed from '@/shared/components/RecentlyViewed';
+import Header from '@/shared/components/Header';
 import toast from 'react-hot-toast';
 
 const features = [
@@ -130,75 +131,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/30 to-pink-50/30">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex-shrink-0"
-              >
-                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent">
-                  Cattleya
-                </h1>
-              </motion.div>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-8">
-                <Link href="/products" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors duration-200">
-                  Collection
-                </Link>
-                <Link href="/about" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors duration-200">
-                  About
-                </Link>
-                <Link href="/contact" className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors duration-200">
-                  Contact
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <>
-                  <button 
-                    onClick={() => useCartStore.getState().toggleCart()}
-                    className="relative text-gray-700 hover:text-purple-600 p-2 transition-colors duration-200"
-                  >
-                    <ShoppingCartIcon className="w-6 h-6" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-                        {cartCount}
-                      </span>
-                    )}
-                  </button>
-                  <Link 
-                    href="/dashboard" 
-                    className="text-gray-700 hover:text-purple-600 px-4 py-2 text-sm font-medium transition-colors duration-200"
-                  >
-                    Dashboard
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link 
-                    href="/auth/login" 
-                    className="text-gray-700 hover:text-purple-600 px-4 py-2 text-sm font-medium transition-colors duration-200"
-                  >
-                    Sign In
-                  </Link>
-                  <Link 
-                    href="/auth/register" 
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2.5 rounded-full text-sm font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 transform hover:-translate-y-0.5"
-                  >
-                    Get Started
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Header Component */}
+      <Header />
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">

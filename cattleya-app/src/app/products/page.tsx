@@ -22,6 +22,7 @@ import { Product } from '@/core/domain/entities/Product';
 import AdvancedSearch from '@/shared/components/AdvancedSearch';
 import Pagination from '@/shared/components/Pagination';
 import ProductComparison from '@/shared/components/ProductComparison';
+import Header from '@/shared/components/Header';
 import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -666,6 +667,12 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Header Component */}
+      <Header 
+        title="Exquisite Orchid Collection"
+        subtitle="Discover our carefully curated selection of premium orchids, each one a masterpiece of nature's artistry"
+      />
+
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-white" />
@@ -717,29 +724,6 @@ export default function ProductsPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <motion.h1 
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            className="text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent mb-4"
-          >
-            Exquisite Orchid Collection
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
-          >
-            Discover our carefully curated selection of premium orchids, each one a masterpiece of nature's artistry
-          </motion.p>
-        </motion.div>
 
         {/* Advanced Search */}
         <motion.div

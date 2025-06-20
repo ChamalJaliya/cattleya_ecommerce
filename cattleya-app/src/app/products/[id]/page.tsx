@@ -29,6 +29,7 @@ import { Product, OrchidSize } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import ProductReviews from '@/shared/components/ProductReviews';
+import Header from '@/shared/components/Header';
 
 interface MediaItem {
   id: string;
@@ -592,18 +593,14 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/30 to-pink-50/30">
-      {/* Navigation Breadcrumb */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center space-x-2 text-sm">
-            <Link href="/" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">Home</Link>
-            <span className="text-gray-400">/</span>
-            <Link href="/products" className="text-gray-500 hover:text-purple-600 transition-colors duration-200">Products</Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-900 font-medium">{product.name}</span>
-          </nav>
-        </div>
-      </div>
+      {/* Header Component with Breadcrumbs */}
+      <Header 
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Collection', href: '/products' },
+          { label: product.name || 'Product', href: `/products/${productId}` }
+        ]}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
