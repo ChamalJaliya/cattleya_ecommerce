@@ -28,6 +28,7 @@ import { useCartStore } from '@/core/application/stores/useCartStore';
 import { Product, OrchidSize } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import ProductReviews from '@/shared/components/ProductReviews';
 
 interface MediaItem {
   id: string;
@@ -59,7 +60,14 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const productId = params.id as string;
   
-  const { products, isInWishlist, addToWishlist, removeFromWishlist } = useProductStore();
+  const { 
+    products, 
+    isInWishlist, 
+    addToWishlist, 
+    removeFromWishlist, 
+    addToRecentlyViewed,
+    getRecommendedProducts 
+  } = useProductStore();
   const { addItem } = useCartStore();
   
   const [product, setProduct] = useState<Product | null>(null);
@@ -92,6 +100,9 @@ export default function ProductDetailPage() {
     if (foundProduct) {
       setProduct(foundProduct);
       setSelectedSize(foundProduct.defaultSize);
+      
+      // Track recently viewed
+      addToRecentlyViewed(productId);
       
       // Create enhanced media items with color variations
       const baseImages = foundProduct.images;
@@ -235,10 +246,7 @@ export default function ProductDetailPage() {
     : 0;
 
   const inWishlist = isInWishlist(product.id);
-  const relatedProducts = products.filter(p => 
-    p.id !== product.id && 
-    p.category.name === product.category.name
-  ).slice(0, 4);
+  const relatedProducts = getRecommendedProducts(productId, 4);
 
   const currentMedia = mediaItems[selectedMediaIndex];
 
@@ -1003,22 +1011,34 @@ export default function ProductDetailPage() {
           </div>
         </motion.div>
 
+        {/* Product Reviews */}
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mt-16"
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-200/50 p-8">
+            <ProductReviews productId={productId} />
+          </div>
+        </motion.div>
+
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.8 }}
             className="mt-16"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">You Might Also Love</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Recommended for You</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct, index) => (
                 <motion.div
                   key={relatedProduct.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
+                  transition={{ delay: 0.9 + index * 0.1 }}
                   whileHover={{ y: -8, scale: 1.02 }}
                   className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hover:shadow-xl transition-all duration-300"
                 >

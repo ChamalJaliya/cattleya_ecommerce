@@ -13,8 +13,11 @@ import {
   CheckIcon,
   ShoppingCartIcon
 } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useCartStore } from '@/core/application/stores/useCartStore';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
+import { useProductStore } from '@/core/application/stores/useProductStore';
+import RecentlyViewed from '@/shared/components/RecentlyViewed';
 import toast from 'react-hot-toast';
 
 const features = [
@@ -90,6 +93,18 @@ export default function HomePage() {
   const { getItemCount, addItem } = useCartStore();
   const { user } = useAuthStore();
   const cartCount = getItemCount();
+  const { 
+    products, 
+    isInWishlist, 
+    addToWishlist, 
+    removeFromWishlist,
+    getPersonalizedRecommendations,
+    getRecentlyViewed
+  } = useProductStore();
+
+  const featuredProducts = products.filter(p => p.isFeatured).slice(0, 6);
+  const personalizedRecommendations = getPersonalizedRecommendations(6);
+  const recentlyViewedProducts = getRecentlyViewed();
 
   const handleAddToCart = (product: any) => {
     addItem({
@@ -105,8 +120,16 @@ export default function HomePage() {
     toast.success(`${product.name} added to cart!`);
   };
 
+  const handleWishlistToggle = (product: any) => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product.id);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/30 to-pink-50/30">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -264,6 +287,118 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Recently Viewed Products */}
+      {recentlyViewedProducts.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <RecentlyViewed limit={6} />
+          </div>
+        </section>
+      )}
+
+      {/* Personalized Recommendations */}
+      {user && personalizedRecommendations.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white/50">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Picked Just for You
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Based on your browsing history and preferences, we've curated these special orchids just for you.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+              {personalizedRecommendations.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  className="group bg-white rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden hover:shadow-xl transition-all duration-300"
+                >
+                  <div className="aspect-square overflow-hidden relative">
+                    <Link href={`/products/${product.id}`}>
+                      <img
+                        src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </Link>
+                    
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col space-y-2">
+                      {product.isFeatured && (
+                        <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          ⭐ Featured
+                        </span>
+                      )}
+                      {product.isOnSale && product.salePrice && (
+                        <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          🔥 Sale
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button
+                        onClick={() => handleWishlistToggle(product)}
+                        className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors duration-200 shadow-sm"
+                      >
+                        {isInWishlist(product.id) ? (
+                          <HeartSolidIcon className="w-4 h-4 text-red-500" />
+                        ) : (
+                          <HeartIcon className="w-4 h-4 text-gray-600" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-4">
+                    <div className="mb-2">
+                      <span className="text-xs text-purple-600 font-medium">
+                        {product.category.name}
+                      </span>
+                    </div>
+                    
+                    <Link href={`/products/${product.id}`}>
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-purple-600 transition-colors duration-200">
+                        {product.name}
+                      </h3>
+                    </Link>
+
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg font-bold text-purple-600">
+                          ${(product.isOnSale && product.salePrice ? product.salePrice : product.basePrice).toFixed(2)}
+                        </span>
+                        {product.isOnSale && product.salePrice && (
+                          <span className="text-sm text-gray-500 line-through">
+                            ${product.basePrice.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      disabled={product.stockQuantity === 0}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      <ShoppingCartIcon className="w-4 h-4 mr-2" />
+                      {product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-24 bg-gray-50">
