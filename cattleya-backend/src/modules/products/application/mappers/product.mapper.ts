@@ -160,16 +160,14 @@ export class ProductMapper {
   toProductListResponseDto(result: any): ProductListResponseDto {
     return {
       success: true,
-      data: result.products.map(product =>
-        this.toProductResponseDto(product)
-      ),
-      meta: {
+      data: {
+        items: result.products.map(product =>
+          this.toProductResponseDto(product)
+        ),
         total: result.total,
         page: result.page,
         limit: result.limit,
-        totalPages: result.totalPages,
-        hasNextPage: result.hasNextPage,
-        hasPreviousPage: result.hasPreviousPage
+        totalPages: result.totalPages || result.pages || Math.ceil(result.total / result.limit)
       }
     };
   }

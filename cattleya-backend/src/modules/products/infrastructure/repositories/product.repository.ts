@@ -35,12 +35,84 @@ export class ProductRepository implements IProductRepository {
   }
 
   async findMany(query: ProductQuery): Promise<ProductQueryResult> {
+    const page = query.page || 1;
+    const limit = query.limit || 12;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      isActive: true
+    };
+
+    // Build where clause based on query filters
+    if (query.filters) {
+      if (query.filters.search) {
+        where.OR = [
+          { name: { contains: query.filters.search, mode: 'insensitive' } },
+          { description: { contains: query.filters.search, mode: 'insensitive' } }
+        ];
+      }
+
+      if (query.filters.categoryId) {
+        where.categoryId = query.filters.categoryId;
+      }
+
+      if (query.filters.minPrice !== undefined || query.filters.maxPrice !== undefined) {
+        where.basePrice = {};
+        if (query.filters.minPrice !== undefined) where.basePrice.gte = query.filters.minPrice;
+        if (query.filters.maxPrice !== undefined) where.basePrice.lte = query.filters.maxPrice;
+      }
+
+      if (query.filters.isOnSale !== undefined) {
+        where.isOnSale = query.filters.isOnSale;
+      }
+
+      if (query.filters.isFeatured !== undefined) {
+        where.isFeatured = query.filters.isFeatured;
+      }
+
+      if (query.filters.tags && query.filters.tags.length > 0) {
+        where.tags = {
+          hasSome: query.filters.tags
+        };
+      }
+
+      if (query.filters.inStock !== undefined) {
+        where.stockQuantity = query.filters.inStock ? { gt: 0 } : undefined;
+      }
+
+      if (query.filters.rating !== undefined && query.filters.rating > 0) {
+        where.averageRating = { gte: query.filters.rating };
+      }
+    }
+
+    // Build orderBy
+    const orderBy: any = {};
+    if (query.sortBy) {
+      orderBy[query.sortBy] = query.sortOrder || 'asc';
+    } else {
+      orderBy.createdAt = 'desc';
+    }
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          images: true
+        },
+        orderBy,
+        skip,
+        take: limit
+      }),
+      this.prisma.product.count({ where })
+    ]);
+
     return {
-      products: [],
-      total: 0,
-      page: query.page || 1,
-      limit: query.limit || 12,
-      pages: 0
+      products: products.map(p => this.mapToEntity(p)),
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
     };
   }
 
@@ -60,14 +132,160 @@ export class ProductRepository implements IProductRepository {
   ): Promise<ProductSearchResult> {
     const page = pagination?.page || 1;
     const limit = pagination?.limit || 12;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      isActive: true
+    };
+
+    // Apply filters
+    if (filters) {
+      if (filters.search) {
+        where.OR = [
+          { name: { contains: filters.search, mode: 'insensitive' } },
+          { description: { contains: filters.search, mode: 'insensitive' } }
+        ];
+      }
+
+      if (filters.categoryId) {
+        where.categoryId = filters.categoryId;
+      }
+
+      if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+        where.basePrice = {};
+        if (filters.minPrice !== undefined) where.basePrice.gte = filters.minPrice;
+        if (filters.maxPrice !== undefined) where.basePrice.lte = filters.maxPrice;
+      }
+
+      if (filters.isOnSale !== undefined) {
+        where.isOnSale = filters.isOnSale;
+      }
+
+      if (filters.isFeatured !== undefined) {
+        where.isFeatured = filters.isFeatured;
+      }
+
+      if (filters.tags && filters.tags.length > 0) {
+        where.tags = {
+          hasSome: filters.tags
+        };
+      }
+
+      if (filters.inStock !== undefined) {
+        where.stockQuantity = filters.inStock ? { gt: 0 } : undefined;
+      }
+
+      if (filters.rating !== undefined && filters.rating > 0) {
+        where.averageRating = { gte: filters.rating };
+      }
+    }
+
+    // Apply sorting
+    const orderBy: any = {};
+    if (sortOptions?.sortBy) {
+      switch (sortOptions.sortBy) {
+        case 'price':
+        case 'basePrice':
+          orderBy.basePrice = sortOptions.sortOrder || 'asc';
+          break;
+        case 'name':
+          orderBy.name = sortOptions.sortOrder || 'asc';
+          break;
+        case 'newest':
+        case 'createdAt':
+          orderBy.createdAt = sortOptions.sortOrder || 'desc';
+          break;
+        case 'rating':
+        case 'averageRating':
+          orderBy.averageRating = sortOptions.sortOrder || 'desc';
+          break;
+        case 'popularity':
+        case 'viewCount':
+          orderBy.viewCount = sortOptions.sortOrder || 'desc';
+          break;
+        case 'sales':
+          orderBy.totalSales = sortOptions.sortOrder || 'desc';
+          break;
+        default:
+          // Default to createdAt if invalid sortBy is provided
+          orderBy.createdAt = 'desc';
+      }
+    } else {
+      orderBy.createdAt = 'desc';
+    }
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          images: true
+        },
+        orderBy,
+        skip,
+        take: limit
+      }),
+      this.prisma.product.count({ where })
+    ]);
     
     return {
-      products: [],
-      total: 0,
+      products: products.map(p => this.mapToEntity(p)),
+      total,
       page,
       limit,
-      totalPages: 0
+      totalPages: Math.ceil(total / limit)
     };
+  }
+
+  private mapToEntity(prismaProduct: any): Product {
+    return new Product(
+      prismaProduct.id,
+      prismaProduct.name,
+      prismaProduct.slug,
+      prismaProduct.description,
+      prismaProduct.shortDescription,
+      prismaProduct.basePrice,
+      prismaProduct.salePrice,
+      prismaProduct.isOnSale,
+      prismaProduct.sku,
+      prismaProduct.stockQuantity,
+      prismaProduct.lowStockThreshold,
+      prismaProduct.trackQuantity ?? true,
+      prismaProduct.weight,
+      prismaProduct.dimensions,
+      prismaProduct.defaultSize as OrchidSize,
+      prismaProduct.availableSizes as OrchidSize[],
+      prismaProduct.primaryColors,
+      prismaProduct.colorPattern as ColorPattern,
+      prismaProduct.categoryId,
+      prismaProduct.images?.map((img: any) => ({
+        id: img.id,
+        productId: img.productId,
+        url: img.url,
+        altText: img.altText,
+        isMain: img.isMain,
+        sortOrder: img.sortOrder,
+        createdAt: img.createdAt,
+        color: img.color,
+        size: img.size as OrchidSize
+      })) || [],
+      [], // variants
+      [], // attributes
+      prismaProduct.tags,
+      prismaProduct.metaTitle,
+      prismaProduct.metaDescription,
+      prismaProduct.metaKeywords,
+      prismaProduct.isActive,
+      prismaProduct.isFeatured,
+      prismaProduct.isDigital,
+      prismaProduct.averageRating,
+      prismaProduct.totalReviews,
+      prismaProduct.totalSales,
+      prismaProduct.viewCount,
+      prismaProduct.publishedAt,
+      prismaProduct.createdAt,
+      prismaProduct.updatedAt
+    );
   }
 
   async search(searchTerm: string, limit?: number): Promise<Product[]> {
@@ -79,7 +297,19 @@ export class ProductRepository implements IProductRepository {
   }
 
   async findFeatured(limit?: number): Promise<Product[]> {
-    return [];
+    const products = await this.prisma.product.findMany({
+      where: {
+        isFeatured: true,
+        isActive: true
+      },
+      include: {
+        category: true,
+        images: true
+      },
+      take: limit || 8
+    });
+
+    return products.map(p => this.mapToEntity(p));
   }
 
   async findBestSellers(limit?: number): Promise<Product[]> {

@@ -1,228 +1,292 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, UserRole } from '@/core/domain/entities/User';
+import { User } from '@/core/domain/entities/User';
+import { 
+  usersApi, 
+  LoginRequest, 
+  RegisterRequest, 
+  UpdateProfileRequest, 
+  ChangePasswordRequest 
+} from '@/core/infrastructure/api/users.api';
+import { ApiError } from '@/core/infrastructure/api/base-api.service';
 
 interface AuthState {
+  // Authentication state
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-}
-
-interface AuthActions {
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, userData: Partial<User>) => Promise<void>;
-  logout: () => void;
-  clearError: () => void;
-  updateUser: (userData: Partial<User>) => void;
+  
+  // Actions
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  
+  // API actions
+  login: (credentials: LoginRequest) => Promise<boolean>;
+  register: (userData: RegisterRequest) => Promise<boolean>;
+  logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  getProfile: () => Promise<void>;
+  updateProfile: (data: UpdateProfileRequest) => Promise<boolean>;
+  changePassword: (data: ChangePasswordRequest) => Promise<boolean>;
+  uploadAvatar: (file: File) => Promise<string | null>;
+  
+  // Helper methods
+  isAdmin: () => boolean;
+  isStaff: () => boolean;
+  getInitials: () => string;
+  getFullName: () => string;
 }
 
-type AuthStore = AuthState & AuthActions;
-
-// Mock users for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'admin@cattleya.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    phone: '+1234567890',
-    role: UserRole.ADMIN,
-    status: 'ACTIVE' as any,
-    avatar: undefined,
-    profileCompletion: 100,
-    preferences: {
-      newsletter: true,
-      smsNotifications: true,
-      emailNotifications: true,
-      language: 'en',
-      currency: 'USD',
-      timezone: 'UTC'
-    },
-    addresses: [],
-    emailVerified: true,
-    phoneVerified: true,
-    twoFactorEnabled: false,
-    permissions: ['manage_users', 'manage_products', 'manage_orders', 'view_analytics'],
-    department: 'Administration',
-    employeeId: 'ADM001',
-    isBlocked: false,
-    createdAt: new Date('2023-01-01'),
-    updatedAt: new Date(),
-    lastLoginAt: new Date(),
-    loyaltyPoints: 0,
-    totalOrders: 0,
-    totalSpent: 0
-  },
-  {
-    id: '2',
-    email: 'customer@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    phone: '+1234567891',
-    role: UserRole.CUSTOMER,
-    status: 'ACTIVE' as any,
-    avatar: undefined,
-    profileCompletion: 85,
-    preferences: {
-      newsletter: true,
-      smsNotifications: false,
-      emailNotifications: true,
-      language: 'en',
-      currency: 'USD',
-      timezone: 'UTC'
-    },
-    addresses: [],
-    emailVerified: true,
-    phoneVerified: false,
-    twoFactorEnabled: false,
-    isBlocked: false,
-    createdAt: new Date('2023-06-15'),
-    updatedAt: new Date(),
-    lastLoginAt: new Date(),
-    loyaltyPoints: 1250,
-    totalOrders: 8,
-    totalSpent: 567.89,
-    customerSince: new Date('2023-06-15')
-  }
-];
-
-export const useAuthStore = create<AuthStore>()(
+export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      // Initial state
       user: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      login: async (email: string, password: string) => {
+      // Actions
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setLoading: (isLoading) => set({ isLoading }),
+      setError: (error) => set({ error }),
+
+      // API actions
+      login: async (credentials) => {
         set({ isLoading: true, error: null });
-        
         try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          const response = await usersApi.login(credentials);
           
-          // Find user by email
-          const user = mockUsers.find(u => u.email === email);
-          
-          if (!user) {
-            throw new Error('Invalid email or password');
+          if (response.authenticated) {
+            set({ 
+              user: response.user, 
+              isAuthenticated: true, 
+              isLoading: false 
+            });
+            return true;
+          } else {
+            set({ error: 'Login failed', isLoading: false });
+            return false;
           }
-          
-          // Update last login
-          user.lastLoginAt = new Date();
-          
-          set({ 
-            user, 
-            isAuthenticated: true, 
-            isLoading: false,
-            error: null 
-          });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Login failed',
-            isLoading: false 
-          });
-          throw error;
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'An unexpected error occurred';
+          set({ error: errorMessage, isLoading: false });
+          return false;
         }
       },
 
-      register: async (email: string, password: string, userData: Partial<User>) => {
+      register: async (userData) => {
         set({ isLoading: true, error: null });
-        
         try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          const response = await usersApi.register(userData);
           
-          // Check if user already exists
-          const existingUser = mockUsers.find(u => u.email === email);
-          if (existingUser) {
-            throw new Error('User with this email already exists');
+          if (response.authenticated) {
+            set({ 
+              user: response.user, 
+              isAuthenticated: true, 
+              isLoading: false 
+            });
+            return true;
+          } else {
+            set({ error: 'Registration failed', isLoading: false });
+            return false;
           }
-          
-          // Create new user
-          const newUser: User = {
-            id: Date.now().toString(),
-            email,
-            firstName: userData.firstName || '',
-            lastName: userData.lastName || '',
-            phone: userData.phone,
-            role: UserRole.CUSTOMER,
-            status: 'ACTIVE' as any,
-            profileCompletion: 60,
-            preferences: {
-              newsletter: true,
-              smsNotifications: false,
-              emailNotifications: true,
-              language: 'en',
-              currency: 'USD',
-              timezone: 'UTC'
-            },
-            addresses: [],
-            emailVerified: false,
-            phoneVerified: false,
-            twoFactorEnabled: false,
-            isBlocked: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            lastLoginAt: new Date(),
-            loyaltyPoints: 0,
-            totalOrders: 0,
-            totalSpent: 0,
-            customerSince: new Date()
-          };
-          
-          mockUsers.push(newUser);
-          
-          set({ 
-            user: newUser, 
-            isAuthenticated: true, 
-            isLoading: false,
-            error: null 
-          });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Registration failed',
-            isLoading: false 
-          });
-          throw error;
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'An unexpected error occurred';
+          set({ error: errorMessage, isLoading: false });
+          return false;
         }
       },
 
-      logout: () => {
-        set({ 
-          user: null, 
-          isAuthenticated: false, 
-          error: null 
-        });
-      },
-
-      clearError: () => {
-        set({ error: null });
-      },
-
-      updateUser: (userData: Partial<User>) => {
-        const { user } = get();
-        if (user) {
-          const updatedUser = { ...user, ...userData, updatedAt: new Date() };
-          set({ user: updatedUser });
+      logout: async () => {
+        set({ isLoading: true });
+        try {
+          await usersApi.logout();
+          set({ 
+            user: null, 
+            isAuthenticated: false, 
+            isLoading: false,
+            error: null
+          });
+        } catch (error) {
+          // Even if logout fails on server, clear local state
+          set({ 
+            user: null, 
+            isAuthenticated: false, 
+            isLoading: false,
+            error: null
+          });
         }
       },
 
       checkAuth: async () => {
-        const { user } = get();
-        if (user) {
-          set({ isAuthenticated: true });
+        set({ isLoading: true, error: null });
+        try {
+          const authStatus = await usersApi.checkAuth();
+          
+          if (authStatus.authenticated) {
+            // Get full profile if authenticated
+            const profileResponse = await usersApi.getProfile();
+            set({ 
+              user: profileResponse.data, 
+              isAuthenticated: true, 
+              isLoading: false 
+            });
+          } else {
+            set({ 
+              user: null, 
+              isAuthenticated: false, 
+              isLoading: false 
+            });
+          }
+        } catch (error) {
+          // If auth check fails, user is not authenticated
+          set({ 
+            user: null, 
+            isAuthenticated: false, 
+            isLoading: false,
+            error: null
+          });
         }
-      }
+      },
+
+      getProfile: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await usersApi.getProfile();
+          
+          if (response.success) {
+            set({ 
+              user: response.data, 
+              isAuthenticated: true, 
+              isLoading: false 
+            });
+          } else {
+            set({ error: 'Failed to fetch profile', isLoading: false });
+          }
+        } catch (error) {
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'An unexpected error occurred';
+          set({ error: errorMessage, isLoading: false });
+          
+          // If unauthorized, clear auth state
+          if (error instanceof ApiError && error.status === 401) {
+            set({ user: null, isAuthenticated: false });
+          }
+        }
+      },
+
+      updateProfile: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await usersApi.updateProfile(data);
+          
+          if (response.success) {
+            set({ 
+              user: response.data, 
+              isLoading: false 
+            });
+            return true;
+          } else {
+            set({ error: 'Failed to update profile', isLoading: false });
+            return false;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'An unexpected error occurred';
+          set({ error: errorMessage, isLoading: false });
+          return false;
+        }
+      },
+
+      changePassword: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await usersApi.changePassword(data);
+          
+          if (response.success) {
+            set({ isLoading: false });
+            return true;
+          } else {
+            set({ error: 'Failed to change password', isLoading: false });
+            return false;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'An unexpected error occurred';
+          set({ error: errorMessage, isLoading: false });
+          return false;
+        }
+      },
+
+      uploadAvatar: async (file) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await usersApi.uploadAvatar(file);
+          
+          if (response.success) {
+            // Update user avatar in state
+            const { user } = get();
+            if (user) {
+              const updatedUser = { ...user, avatar: response.url };
+              set({ user: updatedUser, isLoading: false });
+            }
+            return response.url;
+          } else {
+            set({ error: 'Failed to upload avatar', isLoading: false });
+            return null;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'An unexpected error occurred';
+          set({ error: errorMessage, isLoading: false });
+          return null;
+        }
+      },
+
+      // Helper methods
+      isAdmin: () => {
+        const { user } = get();
+        return user?.role === 'ADMIN';
+      },
+
+      isStaff: () => {
+        const { user } = get();
+        return user?.role === 'ADMIN' || user?.role === 'STAFF';
+      },
+
+      getInitials: () => {
+        const { user } = get();
+        if (!user) return '';
+        
+        const firstInitial = user.firstName?.charAt(0).toUpperCase() || '';
+        const lastInitial = user.lastName?.charAt(0).toUpperCase() || '';
+        return `${firstInitial}${lastInitial}`;
+      },
+
+      getFullName: () => {
+        const { user } = get();
+        if (!user) return '';
+        
+        return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      },
     }),
     {
-      name: 'auth-storage',
-      partialize: (state) => ({ 
-        user: state.user, 
-        isAuthenticated: state.isAuthenticated 
-      }),
+      name: 'auth-store',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated
+      })
     }
   )
 ); 

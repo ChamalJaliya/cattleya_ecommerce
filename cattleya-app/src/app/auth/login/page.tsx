@@ -55,21 +55,25 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password);
+      const success = await login({ email: data.email, password: data.password });
       
-      // Get user from store to determine role
-      const user = useAuthStore.getState().user;
-      
-      if (user?.role === UserRole.ADMIN) {
-        toast.success('Welcome back, Admin! Redirecting to admin dashboard...');
-        setTimeout(() => {
-          router.push('/admin/dashboard');
-        }, 1500);
+      if (success) {
+        // Get user from store to determine role
+        const user = useAuthStore.getState().user;
+        
+        if (user?.role === UserRole.ADMIN) {
+          toast.success('Welcome back, Admin! Redirecting to admin dashboard...');
+          setTimeout(() => {
+            router.push('/admin/dashboard');
+          }, 1500);
+        } else {
+          toast.success('Welcome back! Redirecting to dashboard...');
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 1500);
+        }
       } else {
-        toast.success('Welcome back! Redirecting to dashboard...');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
+        toast.error('Invalid credentials. Please try again.');
       }
     } catch (error) {
       toast.error('Invalid credentials. Please try again.');

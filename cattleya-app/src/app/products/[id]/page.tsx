@@ -95,24 +95,34 @@ export default function ProductDetailPage() {
   const [availableColors, setAvailableColors] = useState<ProductColor[]>([]);
 
   useEffect(() => {
+    // Ensure products are loaded first
+    if (products.length === 0) {
+      // If no products are loaded, try to fetch them
+      const productStore = useProductStore.getState();
+      productStore.fetchProducts().catch(console.error);
+      return;
+    }
+
     // Find product by ID
     const foundProduct = products.find(p => p.id === productId);
     if (foundProduct) {
       setProduct(foundProduct);
       setSelectedSize(foundProduct.defaultSize);
       
-      // Track recently viewed
-      addToRecentlyViewed(productId);
+      // Track recently viewed - add null check
+      if (foundProduct.id) {
+        addToRecentlyViewed(foundProduct.id);
+      }
       
       // Create enhanced media items with color variations
-      const baseImages = foundProduct.images;
+      const baseImages = foundProduct.images || [];
       
       // Use actual product colors or create variations
       const colorVariations = foundProduct.primaryColors && foundProduct.primaryColors.length > 0 
         ? foundProduct.primaryColors.map((color, index) => ({
-            name: getColorName(color),
+            name: getColorName(color) || 'Custom',
             value: color,
-            suffix: index === 0 ? '' : `-${getColorName(color).toLowerCase()}`
+            suffix: index === 0 ? '' : `-${(getColorName(color) || 'custom').toLowerCase()}`
           }))
         : [
             { name: 'Purple', value: '#8B5CF6', suffix: '' },
@@ -125,43 +135,48 @@ export default function ProductDetailPage() {
 
       // Add base images with color associations
       baseImages.forEach((img, index) => {
-        colorVariations.forEach((color, colorIndex) => {
-          const mediaIndex = productMedia.length;
-          productMedia.push({
-            id: `img-${img.id}-${color.name.toLowerCase()}`,
-            type: 'image' as const,
-            url: img.url, // In real app, would have different URLs for different colors
-            altText: `${img.altText} - ${color.name}`,
-            isMain: img.isMain && colorIndex === 0,
-            color: color.value
-          });
-
-          // Add color to available colors (only once per color)
-          if (index === 0) {
-            productColors.push({
-              name: color.name,
-              value: color.value,
-              imageIndex: mediaIndex
+        if (img && img.id && img.url) {
+          colorVariations.forEach((color, colorIndex) => {
+            const mediaIndex = productMedia.length;
+            const colorName = color.name || 'Unknown';
+            productMedia.push({
+              id: `img-${img.id}-${colorName.toLowerCase()}`,
+              type: 'image' as const,
+              url: img.url,
+              altText: `${img.altText || foundProduct.name} - ${colorName}`,
+              isMain: img.isMain && colorIndex === 0,
+              color: color.value
             });
-          }
-        });
+
+            // Add color to available colors (only once per color)
+            if (index === 0) {
+              productColors.push({
+                name: colorName,
+                value: color.value,
+                imageIndex: mediaIndex
+              });
+            }
+          });
+        }
       });
       
-      // Add video and 360 content
-      productMedia.push({
-        id: 'video-1',
-        type: 'video' as const,
-        url: 'https://sample-videos.com/zip/10/mp4/480/SampleVideo_1280x720_1mb.mp4',
-        thumbnail: baseImages[0]?.url || '',
-        altText: 'Product Care Video'
-      });
+      // Add video and 360 content only if we have base images
+      if (baseImages.length > 0) {
+        productMedia.push({
+          id: 'video-1',
+          type: 'video' as const,
+          url: 'https://sample-videos.com/zip/10/mp4/480/SampleVideo_1280x720_1mb.mp4',
+          thumbnail: baseImages[0]?.url || '',
+          altText: 'Product Care Video'
+        });
 
-      productMedia.push({
-        id: '360-1',
-        type: '360' as const,
-        url: baseImages[0]?.url || '',
-        altText: '360° Product View'
-      });
+        productMedia.push({
+          id: '360-1',
+          type: '360' as const,
+          url: baseImages[0]?.url || '',
+          altText: '360° Product View'
+        });
+      }
       
       setMediaItems(productMedia);
       setAvailableColors(productColors);
@@ -170,7 +185,7 @@ export default function ProductDetailPage() {
     } else {
       setLoading(false);
     }
-  }, [productId, products]);
+  }, [productId, products, addToRecentlyViewed]);
 
   const getColorName = (hex: string): string => {
     const colorMap: { [key: string]: string } = {
@@ -245,26 +260,35 @@ export default function ProductDetailPage() {
     ? Math.round(((product.basePrice - product.salePrice!) / product.basePrice) * 100)
     : 0;
 
-  const inWishlist = isInWishlist(product.id);
-  const relatedProducts = getRecommendedProducts(productId, 4);
+  const inWishlist = product?.id ? isInWishlist(product.id) : false;
+  
+  // Add safety check for getRecommendedProducts
+  let relatedProducts: Product[] = [];
+  try {
+    relatedProducts = product?.id ? getRecommendedProducts(product.id, 4) : [];
+  } catch (error) {
+    console.error('Error getting recommended products:', error);
+    relatedProducts = [];
+  }
 
   const currentMedia = mediaItems[selectedMediaIndex];
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    if (!product || !selectedSize) {
       toast.error('Please select a size');
       return;
     }
 
     const priceAdjustment = getSizePriceAdjustment(selectedSize);
     const adjustedPrice = getCurrentPrice();
+    const sizeLabel = orchidSizeLabels[selectedSize]?.label || selectedSize.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     
     addItem({
       productId: product.id,
-      name: `${product.name} - ${orchidSizeLabels[selectedSize].label}`,
+      name: `${product.name} - ${sizeLabel}`,
       price: adjustedPrice,
       originalPrice: hasDiscount ? product.basePrice * (1 + priceAdjustment) : undefined,
-      image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg',
+      image: product.images?.find(img => img.isMain)?.url || product.images?.[0]?.url || '/placeholder-product.jpg',
       variant: {
         size: selectedSize,
         color: selectedColor || undefined
@@ -275,7 +299,7 @@ export default function ProductDetailPage() {
     });
     
     toast.success(
-      `Added ${quantity} ${orchidSizeLabels[selectedSize].label} ${product.name} to cart`,
+      `Added ${quantity} ${sizeLabel} ${product.name} to cart`,
       { duration: 3000 }
     );
   };
@@ -706,7 +730,7 @@ export default function ProductDetailPage() {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-purple-600 mb-2">{product.category.name}</p>
+                  <p className="text-sm font-medium text-purple-600 mb-2">{product.category?.name || 'Uncategorized'}</p>
                   <h1 className="text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
                 </div>
                 <button
@@ -806,6 +830,8 @@ export default function ProductDetailPage() {
                       const sizeInfo = orchidSizeLabels[size];
                       const priceAdjustment = getSizePriceAdjustment(size);
                       const adjustedPrice = (product.isOnSale && product.salePrice ? product.salePrice : product.basePrice) * (1 + priceAdjustment);
+                      const sizeLabel = sizeInfo?.label || size.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                      const sizeDescription = sizeInfo?.description || 'Size information not available';
                       
                       return (
                         <label key={size} className="cursor-pointer">
@@ -824,8 +850,8 @@ export default function ProductDetailPage() {
                           }`}>
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-semibold text-gray-900">{sizeInfo.label}</div>
-                                <div className="text-sm text-gray-500">{sizeInfo.description}</div>
+                                <div className="font-semibold text-gray-900">{sizeLabel}</div>
+                                <div className="text-sm text-gray-500">{sizeDescription}</div>
                               </div>
                               <div className="text-right">
                                 <div className="font-bold text-lg text-purple-600">
@@ -919,8 +945,8 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {product.attributes.map((attr, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                      <span className="font-medium text-gray-700">{attr.name}:</span>
-                      <span className="font-bold text-gray-900">{attr.value}</span>
+                      <span className="font-medium text-gray-700">{attr?.name || 'Attribute'}:</span>
+                      <span className="font-bold text-gray-900">{attr?.value || 'N/A'}</span>
                     </div>
                   ))}
                 </div>
@@ -1044,14 +1070,14 @@ export default function ProductDetailPage() {
                 >
                   <div className="aspect-square overflow-hidden">
                     <img
-                      src={relatedProduct.images.find(img => img.isMain)?.url || relatedProduct.images[0]?.url || '/placeholder-product.jpg'}
-                      alt={relatedProduct.name}
+                      src={relatedProduct.images?.find(img => img.isMain)?.url || relatedProduct.images?.[0]?.url || '/placeholder-product.jpg'}
+                      alt={relatedProduct.name || 'Related Product'}
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                     />
                   </div>
                   <div className="p-6">
                     <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 text-lg">
-                      {relatedProduct.name}
+                      {relatedProduct.name || 'Unnamed Product'}
                     </h3>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">

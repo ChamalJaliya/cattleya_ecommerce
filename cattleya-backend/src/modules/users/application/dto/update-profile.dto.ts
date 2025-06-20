@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail, MinLength, MaxLength, IsPhoneNumber } from 'class-validator';
+import { IsString, IsOptional, IsEmail, Length, IsPhoneNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateProfileDto {
@@ -9,8 +9,7 @@ export class UpdateProfileDto {
     maxLength: 50
   })
   @IsString()
-  @MinLength(2)
-  @MaxLength(50)
+  @Length(2, 50)
   firstName: string;
 
   @ApiProperty({
@@ -20,9 +19,16 @@ export class UpdateProfileDto {
     maxLength: 50
   })
   @IsString()
-  @MinLength(2)
-  @MaxLength(50)
+  @Length(2, 50)
   lastName: string;
+
+  @ApiPropertyOptional({
+    description: 'User email address',
+    example: 'john.doe@example.com'
+  })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
   @ApiPropertyOptional({
     description: 'User phone number',
@@ -39,4 +45,32 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   avatar?: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({
+    description: 'Current password',
+    example: 'currentPassword123'
+  })
+  @IsString()
+  @Length(6, 100)
+  currentPassword: string;
+
+  @ApiProperty({
+    description: 'New password',
+    example: 'newPassword123',
+    minLength: 6,
+    maxLength: 100
+  })
+  @IsString()
+  @Length(6, 100)
+  newPassword: string;
+
+  @ApiProperty({
+    description: 'Confirm new password',
+    example: 'newPassword123'
+  })
+  @IsString()
+  @Length(6, 100)
+  confirmPassword: string;
 } 

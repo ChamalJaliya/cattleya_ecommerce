@@ -26,6 +26,8 @@ export class GetProductsUseCase {
         orchidSize: query.orchidSize,
         colorPattern: query.colorPattern,
         tags: query.tags,
+        inStock: query.inStock,
+        rating: query.rating,
       },
       page: query.page || 1,
       limit: query.limit || 10,

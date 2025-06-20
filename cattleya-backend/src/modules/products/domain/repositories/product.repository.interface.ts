@@ -11,6 +11,8 @@ export interface ProductFilters {
   orchidSize?: string;
   colorPattern?: string;
   tags?: string[];
+  inStock?: boolean;
+  rating?: number;
 }
 
 export interface ProductQuery {
@@ -30,7 +32,7 @@ export interface ProductQueryResult {
 }
 
 export interface ProductSortOptions {
-  sortBy?: 'name' | 'price' | 'rating' | 'newest' | 'popularity' | 'sales';
+  sortBy?: 'name' | 'price' | 'basePrice' | 'rating' | 'averageRating' | 'newest' | 'createdAt' | 'popularity' | 'viewCount' | 'sales';
   sortOrder?: 'asc' | 'desc';
 }
 

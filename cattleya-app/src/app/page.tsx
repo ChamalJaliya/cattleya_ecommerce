@@ -473,13 +473,20 @@ export default function HomePage() {
               >
                 <div className="relative aspect-square bg-gradient-to-br from-purple-100 via-pink-100 to-white overflow-hidden">
                   <div className="absolute top-4 left-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      product.badge === 'Bestseller' ? 'bg-green-100 text-green-700' :
-                      product.badge === 'New' ? 'bg-blue-100 text-blue-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>
-                      {product.badge}
-                    </span>
+                    {product.tags && product.tags.length > 0 && (
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        product.tags.includes('featured') ? 'bg-purple-100 text-purple-700' :
+                        product.tags.includes('bestseller') ? 'bg-green-100 text-green-700' :
+                        product.tags.includes('new-arrival') ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {product.tags.includes('featured') ? 'Featured' :
+                         product.tags.includes('bestseller') ? 'Bestseller' :
+                         product.tags.includes('new-arrival') ? 'New' :
+                         product.tags[0].split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                        }
+                      </span>
+                    )}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-6xl group-hover:scale-110 transition-transform duration-500">🌸</div>
@@ -497,24 +504,24 @@ export default function HomePage() {
                         <StarIcon
                           key={i}
                           className={`w-4 h-4 ${
-                            i < Math.floor(product.rating) ? 'fill-current' : 'text-gray-300'
+                            i < Math.floor(product.averageRating) ? 'fill-current' : 'text-gray-300'
                           }`}
                         />
                       ))}
                     </div>
                     <span className="text-sm text-gray-600">
-                      {product.rating} ({product.reviews} reviews)
+                      {product.averageRating} ({product.totalReviews || 0} reviews)
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
                       <span className="text-2xl font-bold text-gray-900">
-                        ${product.price}
+                        ${product.salePrice && product.salePrice < product.basePrice ? product.salePrice.toFixed(2) : product.basePrice.toFixed(2)}
                       </span>
-                      {product.originalPrice && (
+                      {product.salePrice && product.salePrice < product.basePrice && (
                         <span className="text-lg text-gray-500 line-through">
-                          ${product.originalPrice}
+                          ${product.basePrice.toFixed(2)}
                         </span>
                       )}
                     </div>

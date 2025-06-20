@@ -1,37 +1,74 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
-import { UpdateProfileDto } from '../dto/update-profile.dto';
-import { UserResponseDto } from '../dto/user-response.dto';
-import { UserMapper } from '../mappers/user.mapper';
-
-export interface UpdateProfileRequest extends UpdateProfileDto {
-  userId: string;
-}
+import { UpdateProfileDto, ChangePasswordDto } from '../dto/update-profile.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UpdateProfileUseCase {
-  constructor(@Inject('IUserRepository') private readonly userRepository: IUserRepository) {}
+  constructor(
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+  ) {}
 
-  async execute(request: UpdateProfileRequest): Promise<UserResponseDto> {
-    const user = await this.userRepository.findById(request.userId);
-    
+  async execute(userId: string, updateProfileDto: UpdateProfileDto): Promise<User> {
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (user.isBlocked) {
-      throw new ForbiddenException('Account is blocked and cannot be updated');
+    // Check if email is being updated and if it's already taken
+    if (updateProfileDto.email && updateProfileDto.email !== user.email) {
+      const existingUser = await this.userRepository.findByEmail(updateProfileDto.email);
+      if (existingUser) {
+        throw new BadRequestException('Email is already taken');
+      }
     }
 
-    // Update user profile
     const updateData = {
-      firstName: request.firstName,
-      lastName: request.lastName,
-      phone: request.phone,
-      avatar: request.avatar,
+      firstName: updateProfileDto.firstName,
+      lastName: updateProfileDto.lastName,
+      phone: updateProfileDto.phone,
     };
 
-    const updatedUser = await this.userRepository.update(request.userId, updateData);
-    return UserMapper.toResponse(updatedUser);
+    if (updateProfileDto.email) {
+      (updateData as any).email = updateProfileDto.email;
+    }
+
+    return await this.userRepository.update(userId, updateData);
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
+    const { currentPassword, newPassword, confirmPassword } = changePasswordDto;
+
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('New password and confirm password do not match');
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    await this.userRepository.update(userId, { password: hashedNewPassword });
+  }
+
+  async updateAvatar(userId: string, avatarUrl: string): Promise<User> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.userRepository.update(userId, { avatar: avatarUrl });
   }
 } 

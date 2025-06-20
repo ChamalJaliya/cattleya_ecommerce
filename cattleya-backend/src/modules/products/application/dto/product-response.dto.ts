@@ -287,17 +287,26 @@ export class ProductListResponseDto {
   @ApiProperty({ description: 'Success status' })
   success: boolean;
 
-  @ApiProperty({ description: 'Products array', type: [ProductResponseDto] })
-  data: ProductResponseDto[];
-
-  @ApiProperty({ description: 'Pagination metadata' })
-  meta: {
+  @ApiProperty({ 
+    description: 'Paginated products data',
+    type: 'object',
+    properties: {
+      items: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/ProductResponseDto' }
+      },
+      total: { type: 'number', description: 'Total number of products' },
+      page: { type: 'number', description: 'Current page number' },
+      limit: { type: 'number', description: 'Items per page' },
+      totalPages: { type: 'number', description: 'Total number of pages' }
+    }
+  })
+  data: {
+    items: ProductResponseDto[];
     total: number;
     page: number;
     limit: number;
     totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
   };
 }
 

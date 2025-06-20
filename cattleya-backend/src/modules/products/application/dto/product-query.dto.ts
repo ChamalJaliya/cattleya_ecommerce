@@ -58,6 +58,12 @@ export class ProductQueryDto {
 
   @ApiPropertyOptional({ example: ['purple', 'fragrant'] })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return value ? [value] : undefined;
+  })
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
@@ -86,4 +92,17 @@ export class ProductQueryDto {
   @IsOptional()
   @IsEnum(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc';
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  inStock?: boolean;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  rating?: number;
 } 

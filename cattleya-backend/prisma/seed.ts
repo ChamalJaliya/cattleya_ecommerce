@@ -6,6 +6,37 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌺 Starting to seed Cattleya E-commerce database...');
 
+  // Create demo users first
+  const hashedPassword = await bcrypt.hash('password123', 10);
+  
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@cattleya.com' },
+    update: {},
+    create: {
+      email: 'admin@cattleya.com',
+      password: hashedPassword,
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'ADMIN',
+    }
+  });
+
+  const customerUser = await prisma.user.upsert({
+    where: { email: 'customer@example.com' },
+    update: {},
+    create: {
+      email: 'customer@example.com',
+      password: hashedPassword,
+      firstName: 'Customer',
+      lastName: 'User',
+      role: 'CUSTOMER',
+    }
+  });
+
+  console.log('✅ Created demo users');
+  console.log('   - Admin: admin@cattleya.com / password123');
+  console.log('   - Customer: customer@example.com / password123');
+
   // Clean existing data
   await prisma.review.deleteMany();
   await prisma.productVariantAttribute.deleteMany();
