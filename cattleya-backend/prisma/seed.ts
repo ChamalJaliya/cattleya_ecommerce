@@ -4,87 +4,82 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌺 Starting Cattleya database seeding...');
+  console.log('🌺 Starting to seed Cattleya E-commerce database...');
 
-  // Check if users already exist
-  const existingUsers = await prisma.user.count();
-  
-  if (existingUsers > 0) {
-    console.log('✅ Database already seeded, skipping...');
-    return;
-  }
+  // Clean existing data
+  await prisma.review.deleteMany();
+  await prisma.productVariantAttribute.deleteMany();
+  await prisma.productVariantImage.deleteMany();
+  await prisma.productVariant.deleteMany();
+  await prisma.productAttribute.deleteMany();
+  await prisma.productImage.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
 
-  // Hash password for demo users
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  console.log('✅ Cleaned existing data');
 
-  // Demo users data
-  const demoUsers = [
-    {
-      email: 'admin@cattleya.com',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'ADMIN' as const,
-    },
-    {
-      email: 'staff@cattleya.com',
-      password: hashedPassword,
-      firstName: 'Staff',
-      lastName: 'User',
-      role: 'STAFF' as const,
-    },
-    {
-      email: 'customer@cattleya.com',
-      password: hashedPassword,
-      firstName: 'Customer',
-      lastName: 'User',
-      role: 'CUSTOMER' as const,
-    },
-  ];
-
-  // Create demo users
-  for (const userData of demoUsers) {
-    await prisma.user.create({
-      data: userData,
-    });
-    console.log(`✅ Created user: ${userData.email}`);
-  }
-
-  // Create some demo categories
-  const categories = [
-    {
+  // Create categories
+  const orchidsCategory = await prisma.category.create({
+    data: {
       name: 'Orchids',
       slug: 'orchids',
-      description: 'Beautiful flowering orchids for your home and garden',
+      description: 'Beautiful flowering orchids',
       isActive: true,
-    },
-    {
-      name: 'Cattleya',
-      slug: 'cattleya',
-      description: 'Premium Cattleya orchids - the queen of orchids',
-      isActive: true,
-    },
-    {
-      name: 'Phalaenopsis',
-      slug: 'phalaenopsis',
-      description: 'Elegant moth orchids perfect for beginners',
-      isActive: true,
-    },
-  ];
+      sortOrder: 1,
+    }
+  });
 
-  for (const categoryData of categories) {
-    await prisma.category.create({
-      data: categoryData,
-    });
-    console.log(`✅ Created category: ${categoryData.name}`);
-  }
+  const cattleyaCategory = await prisma.category.create({
+    data: {
+      name: 'Cattleya Orchids',
+      slug: 'cattleya-orchids',
+      description: 'The queen of orchids',
+      parentId: orchidsCategory.id,
+      isActive: true,
+      sortOrder: 1,
+    }
+  });
 
-  console.log('🌺 Cattleya database seeding completed!');
-  console.log('');
-  console.log('Demo Credentials:');
-  console.log('Admin: admin@cattleya.com / password123');
-  console.log('Staff: staff@cattleya.com / password123');
-  console.log('Customer: customer@cattleya.com / password123');
+  console.log('✅ Created categories');
+
+  // Create a simple product
+  const product1 = await prisma.product.create({
+    data: {
+      name: 'Cattleya Purple Majesty',
+      slug: 'cattleya-purple-majesty',
+      sku: 'CATT-PM-001',
+      description: 'Beautiful purple Cattleya orchid',
+      basePrice: 149.99,
+      stockQuantity: 15,
+      defaultSize: 'YOUNG_PLANT',
+      availableSizes: ['YOUNG_PLANT', 'MATURE'],
+      primaryColors: ['#8B5CF6'],
+      colorPattern: 'SOLID',
+      categoryId: cattleyaCategory.id,
+      tags: ['purple', 'fragrant'],
+      isActive: true,
+      isFeatured: true,
+      publishedAt: new Date()
+    }
+  });
+
+  console.log('✅ Created product');
+
+  // Create product image
+  await prisma.productImage.create({
+    data: {
+      productId: product1.id,
+      url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
+      altText: 'Purple Cattleya',
+      isMain: true,
+      sortOrder: 1
+    }
+  });
+
+  console.log('✅ Created product image');
+
+  const totalProducts = await prisma.product.count();
+  console.log(`🎉 Database seeded successfully with ${totalProducts} products!`);
 }
 
 main()

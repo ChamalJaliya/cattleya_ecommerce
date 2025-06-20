@@ -94,7 +94,8 @@ model Category {
   metaDescription String?
   
   // Status
-  isActive Boolean @default(true)
+  isActive   Boolean @default(true)
+  sortOrder  Int     @default(0)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -110,15 +111,26 @@ model Product {
   shortDescription String?
   
   // Pricing
-  price       Float
-  comparePrice Float?
-  costPrice   Float?
+  basePrice    Float
+  salePrice    Float?
+  isOnSale     Boolean @default(false)
+  costPrice    Float?
   
   // Inventory
-  sku           String  @unique
-  trackQuantity Boolean @default(true)
-  quantity      Int     @default(0)
-  lowStockLevel Int     @default(5)
+  sku              String  @unique
+  stockQuantity    Int     @default(0)
+  lowStockThreshold Int    @default(5)
+  trackQuantity    Boolean @default(true)
+  
+  // Physical properties
+  weight       Float?
+  dimensions   String?
+  
+  // Orchid-specific properties
+  defaultSize      OrchidSize
+  availableSizes   OrchidSize[]
+  primaryColors    String[]     // Array of hex colors
+  colorPattern     ColorPattern @default(SOLID)
   
   // Images
   images ProductImage[]
@@ -133,24 +145,28 @@ model Product {
   // Attributes (care instructions, origin, etc.)
   attributes ProductAttribute[]
   
+  // Tags
+  tags String[]
+  
   // SEO
   metaTitle       String?
   metaDescription String?
+  metaKeywords    String[]
   
   // Status
   isActive      Boolean @default(true)
   isFeatured    Boolean @default(false)
   isDigital     Boolean @default(false)
+  publishedAt   DateTime?
   
-  // Shipping
-  weight       Float?
-  dimensions   String?
-  shippingRequired Boolean @default(true)
+  // Analytics
+  averageRating Float @default(0)
+  totalReviews  Int   @default(0)
+  totalSales    Int   @default(0)
+  viewCount     Int   @default(0)
   
   // Reviews
   reviews Review[]
-  averageRating Float @default(0)
-  reviewCount   Int   @default(0)
   
   // Wishlist and Cart
   wishlistItems WishlistItem[]
@@ -169,8 +185,11 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   
   url       String
-  altText   String?
-  position  Int     @default(0)
+  altText   String
+  isMain    Boolean @default(false)
+  sortOrder Int     @default(0)
+  color     String? // Associated color for the image
+  size      OrchidSize? // Associated size for the image
   
   createdAt DateTime @default(now())
   
@@ -182,11 +201,20 @@ model ProductVariant {
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   
-  name      String
-  value     String
-  price     Float?
-  sku       String? @unique
-  quantity  Int     @default(0)
+  name         String
+  sku          String  @unique
+  price        Float
+  salePrice    Float?
+  stockQuantity Int    @default(0)
+  size         OrchidSize
+  colors       String[] // Array of hex colors for multicolor support
+  isDefault    Boolean @default(false)
+  
+  // Variant-specific images
+  images ProductVariantImage[]
+  
+  // Variant-specific attributes
+  attributes ProductVariantAttribute[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -194,13 +222,40 @@ model ProductVariant {
   @@map("product_variants")
 }
 
+model ProductVariantImage {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  variantId String         @db.ObjectId
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  
+  url       String
+  altText   String
+  sortOrder Int @default(0)
+  
+  createdAt DateTime @default(now())
+  
+  @@map("product_variant_images")
+}
+
+model ProductVariantAttribute {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  variantId String         @db.ObjectId
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  
+  name  String
+  value String
+  type  AttributeType @default(TEXT)
+  
+  @@map("product_variant_attributes")
+}
+
 model ProductAttribute {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   
-  name      String
-  value     String
+  name  String
+  value String
+  type  AttributeType @default(TEXT)
   
   @@map("product_attributes")
 }
@@ -214,6 +269,7 @@ model CartItem {
   
   quantity  Int
   variantId String? @db.ObjectId
+  selectedAttributes Json? // Store selected attributes as JSON
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -314,6 +370,10 @@ model Review {
   comment   String?
   images    String[]
   
+  // Verification
+  isVerifiedPurchase Boolean @default(false)
+  helpfulVotes       Int     @default(0)
+  
   // Moderation
   isApproved Boolean @default(false)
   isVisible  Boolean @default(true)
@@ -355,4 +415,28 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   PARTIALLY_REFUNDED
+}
+
+enum OrchidSize {
+  SEEDLING
+  SAPLING
+  YOUNG_PLANT
+  MATURE
+  BLOOMING_SIZE
+  SPECIMEN
+}
+
+enum ColorPattern {
+  SOLID
+  BICOLOR
+  MULTICOLOR
+  VARIEGATED
+}
+
+enum AttributeType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  COLOR
+  SIZE
 } 
