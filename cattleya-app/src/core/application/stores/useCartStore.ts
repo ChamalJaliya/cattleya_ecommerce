@@ -197,7 +197,11 @@ export const useCartStore = create<CartStore>()(
 
       calculateTotals: () => {
         const { items, shippingAddress } = get();
-        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const subtotal = items.reduce((sum, item) => {
+          const itemPrice = item.price || 0;
+          const itemQuantity = item.quantity || 0;
+          return sum + (itemPrice * itemQuantity);
+        }, 0);
         
         // Calculate shipping (free over $100, otherwise $10)
         const shipping = subtotal >= 100 ? 0 : 10;

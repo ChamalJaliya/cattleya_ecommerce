@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, Transition } from '@headlessui/react';
 import {
@@ -26,8 +26,14 @@ export default function CartSidebar() {
     subtotal,
     toggleCart,
     removeItem,
-    updateQuantity
+    updateQuantity,
+    calculateTotals
   } = useCartStore();
+
+  // Ensure totals are calculated on mount and when items change
+  useEffect(() => {
+    calculateTotals();
+  }, [items, calculateTotals]);
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -60,9 +66,10 @@ export default function CartSidebar() {
   };
 
   const itemsCount = items.length;
-  const hasDiscount = subtotal > 100;
-  const shippingCost = subtotal > 100 ? 0 : 15;
-  const total = subtotal + shippingCost;
+  const safeSubtotal = subtotal || 0;
+  const hasDiscount = safeSubtotal > 100;
+  const shippingCost = safeSubtotal > 100 ? 0 : 15;
+  const safeTotal = safeSubtotal + shippingCost;
 
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -237,11 +244,11 @@ export default function CartSidebar() {
                                     {/* Price */}
                                     <div className="flex items-center mt-2 space-x-2">
                                       <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                        ${item.price.toFixed(2)}
+                                        ${(item.price || 0).toFixed(2)}
                                       </span>
                                       {item.originalPrice && item.originalPrice > item.price && (
                                         <span className="text-sm text-gray-500 line-through">
-                                          ${item.originalPrice.toFixed(2)}
+                                          ${(item.originalPrice || 0).toFixed(2)}
                                         </span>
                                       )}
                                     </div>
@@ -333,12 +340,12 @@ export default function CartSidebar() {
                                   {hasDiscount ? '🎉 Free Shipping!' : 'Shipping'}
                                 </p>
                                 <p className={`text-sm ${hasDiscount ? 'text-green-600' : 'text-orange-600'}`}>
-                                  {hasDiscount ? 'You saved $15!' : `$${(100 - subtotal).toFixed(2)} more for free shipping`}
+                                  {hasDiscount ? 'You saved $15!' : `$${(100 - safeSubtotal).toFixed(2)} more for free shipping`}
                                 </p>
                               </div>
                             </div>
                             <span className={`font-bold ${hasDiscount ? 'text-green-700' : 'text-orange-700'}`}>
-                              {hasDiscount ? 'FREE' : `$${shippingCost.toFixed(2)}`}
+                              {hasDiscount ? 'FREE' : `$${(shippingCost || 0).toFixed(2)}`}
                             </span>
                           </motion.div>
 
@@ -346,19 +353,19 @@ export default function CartSidebar() {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between text-gray-600">
                               <span>Subtotal ({itemsCount} items)</span>
-                              <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                              <span className="font-semibold">${safeSubtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center justify-between text-gray-600">
                               <span>Shipping</span>
                               <span className={`font-semibold ${hasDiscount ? 'text-green-600' : ''}`}>
-                                {hasDiscount ? 'FREE' : `$${shippingCost.toFixed(2)}`}
+                                {hasDiscount ? 'FREE' : `$${(shippingCost || 0).toFixed(2)}`}
                               </span>
                             </div>
                             <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
                             <div className="flex items-center justify-between">
                               <span className="text-xl font-bold text-gray-900">Total</span>
                               <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                ${total.toFixed(2)}
+                                ${safeTotal.toFixed(2)}
                               </span>
                             </div>
                           </div>

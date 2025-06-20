@@ -41,7 +41,7 @@ export default function RecentlyViewed({
   const handleAddToCart = (product: Product) => {
     addItem({
       productId: product.id,
-      name: product.name,
+      name: product.name || 'Unnamed Product',
       price: product.isOnSale && product.salePrice ? product.salePrice : product.basePrice,
       originalPrice: product.isOnSale && product.salePrice ? product.basePrice : undefined,
       image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg',
@@ -51,7 +51,7 @@ export default function RecentlyViewed({
       quantity: 1
     });
     
-    toast.success(`Added ${product.name} to cart`);
+    toast.success(`Added ${product.name || 'Product'} to cart`);
   };
 
   const handleWishlistToggle = (product: Product) => {
@@ -103,7 +103,7 @@ export default function RecentlyViewed({
               <Link href={`/products/${product.id}`}>
                 <img
                   src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg'}
-                  alt={product.name}
+                  alt={product.name || 'Unnamed Product'}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </Link>
@@ -159,13 +159,13 @@ export default function RecentlyViewed({
             <div className="p-4">
               <div className="mb-2">
                 <span className="text-xs text-purple-600 font-medium">
-                  {product.category.name}
+                  {product.category?.name || 'Uncategorized'}
                 </span>
               </div>
               
               <Link href={`/products/${product.id}`}>
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-purple-600 transition-colors duration-200">
-                  {product.name}
+                  {product.name || 'Unnamed Product'}
                 </h3>
               </Link>
 

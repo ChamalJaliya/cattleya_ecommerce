@@ -47,7 +47,7 @@ if (!existsSync(uploadsDir)) {
 }
 
 @ApiTags('Users')
-@Controller('api/users')
+@Controller('users')
 export class UsersController {
   constructor(
     private readonly createUserUseCase: CreateUserUseCase,
