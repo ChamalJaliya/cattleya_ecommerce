@@ -172,7 +172,7 @@ export default function CustomerDashboard() {
                   </div>
                   <div className="flex items-center">
                     <SparklesIcon className="w-5 h-5 mr-2" />
-                    <span>Member since {new Date(user?.customerSince || '').getFullYear()}</span>
+                    <span>Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : '2024'}</span>
                   </div>
                 </div>
               </div>

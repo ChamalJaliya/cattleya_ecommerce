@@ -394,9 +394,14 @@ function SidebarContent({
                   <item.icon className={`mr-3 h-5 w-5 transition-colors duration-200 ${
                     isActive ? 'text-purple-600' : 'text-gray-500 group-hover:text-purple-500'
                   }`} />
-                  <span className={isActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-semibold' : ''}>
-                    {item.name}
-                  </span>
+                  <div className="flex-1">
+                    <div className={`font-medium ${isActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-semibold' : ''}`}>
+                      {item.name}
+                    </div>
+                    <div className={`text-xs ${isActive ? 'text-purple-100' : 'text-gray-500'}`}>
+                      {item.description}
+                    </div>
+                  </div>
                   {isActive && (
                     <motion.div
                       initial={{ scale: 0 }}
