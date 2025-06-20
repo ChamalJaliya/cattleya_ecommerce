@@ -22,8 +22,8 @@ const orchidData = [
     category: 'cattleya',
     tags: ['purple', 'fragrant', 'large-flowers'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1623061275416-24596e40449f?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -42,8 +42,8 @@ const orchidData = [
     category: 'phalaenopsis',
     tags: ['white', 'beginner-friendly', 'long-blooming'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://images.unsplash.com/photo-1698434960831-609ca1e10ab8?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1624468575652-6a3c9cbf5f2b?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -62,8 +62,8 @@ const orchidData = [
     category: 'dendrobium',
     tags: ['yellow', 'compact', 'bright'],
     images: [
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+      'https://images.unsplash.com/photo-1549064066-71a6b24f9b52?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1705950003899-e1722dc6e342?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -82,8 +82,8 @@ const orchidData = [
     category: 'oncidium',
     tags: ['yellow', 'brown', 'unique-shape'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1649531372276-1a12ea2bf18a?w=800&h=800&fit=crop&crop=center',
+      'https://plus.unsplash.com/premium_photo-1676253696267-15bb9df65b15?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -104,8 +104,8 @@ const orchidData = [
     category: 'cattleya',
     tags: ['pink', 'fragrant', 'ruffled', 'large-flowers'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://plus.unsplash.com/premium_photo-1673931249523-69dcbace086b?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1586799960848-b58bb43710b3?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -124,8 +124,8 @@ const orchidData = [
     category: 'vanda',
     tags: ['blue', 'rare', 'large', 'premium'],
     images: [
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+      'https://images.unsplash.com/photo-1615917726762-a1fbc43144fa?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1704907632137-493a933d8ad3?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -144,8 +144,8 @@ const orchidData = [
     category: 'phalaenopsis',
     tags: ['white', 'purple', 'spotted', 'unique'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1615703771691-b41948c7785a?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1610397648930-477b8c7f0943?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -164,8 +164,8 @@ const orchidData = [
     category: 'cymbidium',
     tags: ['green', 'cool-climate', 'long-lasting', 'spikes'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://images.unsplash.com/photo-1582862058398-c157c8424b54?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1612528907124-f8a51ef08ed5?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -184,8 +184,8 @@ const orchidData = [
     category: 'miltonia',
     tags: ['orange', 'red', 'pansy-face', 'warm-colors'],
     images: [
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+      'https://images.unsplash.com/photo-1624819107184-0c4fe02da00c?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1623061275416-24596e40449f?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -204,8 +204,8 @@ const orchidData = [
     category: 'paphiopedilum',
     tags: ['exotic', 'terrestrial', 'unique-shape', 'mottled'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1618080606404-4ae39d25067b?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -224,8 +224,8 @@ const orchidData = [
     category: 'cattleya',
     tags: ['brown', 'chocolate', 'fragrant', 'unique'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://images.unsplash.com/photo-1698434960831-609ca1e10ab8?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1624468575652-6a3c9cbf5f2b?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -244,8 +244,8 @@ const orchidData = [
     category: 'dendrobium',
     tags: ['white', 'pink', 'spring', 'abundant'],
     images: [
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+      'https://images.unsplash.com/photo-1549064066-71a6b24f9b52?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1705950003899-e1722dc6e342?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -264,8 +264,8 @@ const orchidData = [
     category: 'brassia',
     tags: ['spider', 'dramatic', 'unusual', 'long-petals'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1649531372276-1a12ea2bf18a?w=800&h=800&fit=crop&crop=center',
+      'https://plus.unsplash.com/premium_photo-1676253696267-15bb9df65b15?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -286,8 +286,8 @@ const orchidData = [
     category: 'phalaenopsis',
     tags: ['yellow', 'red', 'compact', 'miniature'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://plus.unsplash.com/premium_photo-1673931249523-69dcbace086b?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1586799960848-b58bb43710b3?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -306,8 +306,8 @@ const orchidData = [
     category: 'cattleya',
     tags: ['lavender', 'fragrant', 'ruffled', 'elegant'],
     images: [
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+      'https://images.unsplash.com/photo-1615917726762-a1fbc43144fa?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1704907632137-493a933d8ad3?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -326,8 +326,8 @@ const orchidData = [
     category: 'oncidium',
     tags: ['chocolate-scent', 'burgundy', 'white', 'famous'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1615703771691-b41948c7785a?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1610397648930-477b8c7f0943?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   },
@@ -346,8 +346,8 @@ const orchidData = [
     category: 'dendrobium',
     tags: ['purple', 'majestic', 'large', 'long-lasting'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://images.unsplash.com/photo-1582862058398-c157c8424b54?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1612528907124-f8a51ef08ed5?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -366,8 +366,8 @@ const orchidData = [
     category: 'zygopetalum',
     tags: ['fragrant', 'green', 'purple', 'sweet-scent'],
     images: [
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800',
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800'
+      'https://images.unsplash.com/photo-1624819107184-0c4fe02da00c?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1623061275416-24596e40449f?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -386,8 +386,8 @@ const orchidData = [
     category: 'phalaenopsis',
     tags: ['coral', 'sunset', 'warm', 'tropical'],
     images: [
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800',
-      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800'
+      'https://images.unsplash.com/photo-1618080606404-4ae39d25067b?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1713684254713-228689f55e0e?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: false
   },
@@ -408,8 +408,8 @@ const orchidData = [
     category: 'cattleya',
     tags: ['golden', 'yellow', 'ruffled', 'premium', 'fragrant'],
     images: [
-      'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800',
-      'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      'https://images.unsplash.com/photo-1698434960831-609ca1e10ab8?w=800&h=800&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1624468575652-6a3c9cbf5f2b?w=800&h=800&fit=crop&crop=center'
     ],
     isFeatured: true
   }
