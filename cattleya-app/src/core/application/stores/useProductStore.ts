@@ -130,7 +130,7 @@ interface ProductState {
   getProduct: (id: string) => Promise<Product | null>;
   addProduct: (product: Product) => void;
   updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  deleteProduct: (id: string) => Promise<void>;
 
   // Computed
   getFilteredProducts: () => Product[];
@@ -636,9 +636,22 @@ export const useProductStore = create<ProductState>()(
         set({ products: updatedProducts });
       },
 
-      deleteProduct: (id) => {
-        const { products } = get();
-        set({ products: products.filter(p => p.id !== id) });
+      deleteProduct: async (id) => {
+        try {
+          const response = await productsApi.deleteProduct(id);
+          
+          if (response.success) {
+            const { products } = get();
+            set({ products: products.filter(p => p.id !== id) });
+          } else {
+            throw new Error('Failed to delete product');
+          }
+        } catch (error) {
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'Failed to delete product';
+          throw new Error(errorMessage);
+        }
       },
     }),
     {
