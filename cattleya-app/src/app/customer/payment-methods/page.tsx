@@ -381,82 +381,69 @@ export default function CustomerPaymentMethodsPage() {
 
   const PaymentMethodCard = ({ method, index }: { method: typeof mockPaymentMethods[0], index: number }) => (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 group"
+      initial={{ opacity: 0, scale: 0.9, y: 50 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1, ease: 'easeOut' }}
+      className="relative group w-full max-w-sm mx-auto h-60"
     >
-      <div className={`bg-gradient-to-br ${getBrandColor(method.brand)} p-6 text-white relative h-56 transform group-hover:scale-105 transition-transform duration-300`}>
+      <div
+        className={`relative w-full h-full rounded-2xl shadow-xl transition-all duration-500 transform-style-3d group-hover:transform-gpu group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/30 overflow-hidden flex flex-col justify-between p-6 bg-gradient-to-br ${getBrandColor(method.brand)} text-white`}
+      >
         {/* Holographic Effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        
+        <div className="absolute inset-0 w-full h-full bg-blend-overlay opacity-0 group-hover:opacity-10 transition-opacity duration-500"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3e%3cdefs%3e%3clinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3e%3cstop offset='0%25' style='stop-color:%23ff00ff;stop-opacity:0.2' /%3e%3cstop offset='100%25' style='stop-color:%2300ffff;stop-opacity:0.2' /%3e%3c/linearGradient%3e%3c/defs%3e%3crect fill='url(%23g)' width='100' height='100'/%3e%3c/svg%3e")` }}>
+        </div>
+
         {/* Card Content */}
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold bg-white/20 backdrop-blur-sm rounded-full uppercase tracking-wider">
-                {method.type}
-              </span>
-              <h3 className="font-bold text-lg mt-2">{method.nickname || `${method.brand} Card`}</h3>
-            </div>
-            <span className="text-3xl font-bold uppercase tracking-wider">{method.brand}</span>
+        <div className="relative z-10 flex justify-between items-start">
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold tracking-wider uppercase opacity-80">{method.nickname}</span>
+            <span className="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{getBrandFromNumber(method.brand)}</span>
           </div>
-
-          <div className="flex-grow flex items-center">
-            <div className="font-mono text-2xl tracking-widest font-bold">
-              •••• •••• •••• {method.last4}
-            </div>
-          </div>
-
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-xs opacity-75 uppercase tracking-wider">Card Holder</p>
-              <p className="font-semibold text-lg">{method.holderName}</p>
-            </div>
-            <div>
-              <p className="text-xs opacity-75 uppercase tracking-wider">Expires</p>
-              <p className="font-semibold text-lg">{method.expiryMonth}/{method.expiryYear}</p>
-            </div>
+          <div className="w-12 h-8 bg-gray-200/50 rounded-md flex items-center justify-center backdrop-blur-sm border border-white/20">
+            <div className="w-8 h-5 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-sm shadow-inner" />
           </div>
         </div>
         
-        {/* Hover Actions Overlay */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-6 z-20">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => handleEdit(method)}
-              className="p-3 bg-white/20 backdrop-blur-sm rounded-full text-white hover:bg-white/30 transition-all duration-200 transform hover:scale-110"
-            >
-              <PencilIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => handleDelete(method.id)}
-              className="p-3 bg-white/20 backdrop-blur-sm rounded-full text-white hover:bg-white/30 transition-all duration-200 transform hover:scale-110"
-            >
-              <TrashIcon className="w-5 h-5" />
-            </button>
-            {!method.isDefault && (
-              <button
-                onClick={() => handleSetDefault(method.id)}
-                className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold hover:bg-white/30 transition-all duration-200 transform hover:scale-110 flex items-center space-x-2"
-              >
-                <StarIcon className="w-4 h-4" />
-                <span>Set as Default</span>
-              </button>
-            )}
+        <div className="relative z-10 text-center">
+          <div className="font-mono text-xl tracking-widest">
+            {'•••• •••• •••• ' + method.last4}
           </div>
         </div>
 
-        {/* Default Badge (always visible) */}
-        {method.isDefault && (
-          <div className="absolute top-4 right-4 z-10">
-            <span className="inline-flex items-center px-3 py-1 text-xs font-bold bg-white/25 backdrop-blur-sm rounded-full border border-white/30 shadow-lg">
-              <StarIcon className="w-3 h-3 mr-1" />
-              Default
-            </span>
+        <div className="relative z-10 flex justify-between items-end">
+          <div>
+            <span className="block text-xs uppercase opacity-70 font-semibold">Card Holder</span>
+            <span className="font-medium tracking-wide">{method.holderName}</span>
           </div>
+          <div>
+            <span className="block text-xs uppercase opacity-70 font-semibold text-right">Expires</span>
+            <span className="font-medium tracking-wide">{method.expiryMonth}/{method.expiryYear.slice(-2)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons overlay */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <button onClick={() => handleEdit(method)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110">
+          <PencilIcon className="w-5 h-5" />
+        </button>
+        <button onClick={() => handleDelete(method.id)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110">
+          <TrashIcon className="w-5 h-5" />
+        </button>
+        {!method.isDefault && (
+          <button onClick={() => handleSetDefault(method.id)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110">
+            <StarIcon className="w-5 h-5" />
+          </button>
         )}
       </div>
+
+      {method.isDefault && (
+        <div className="absolute top-4 right-4 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+          <StarIcon className="w-3 h-3" />
+          Default
+        </div>
+      )}
     </motion.div>
   );
 
@@ -539,5 +526,4 @@ export default function CustomerPaymentMethodsPage() {
       </div>
     </CustomerLayout>
   );
-} 
 } 

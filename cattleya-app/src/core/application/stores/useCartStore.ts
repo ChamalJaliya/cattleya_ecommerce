@@ -8,6 +8,8 @@ export interface CartItem {
   price: number;
   originalPrice?: number;
   image: string;
+  description?: string;
+  sku?: string;
   variant?: {
     size?: string;
     color?: string;
@@ -75,7 +77,7 @@ interface CartStore {
   setShippingAddress: (address: ShippingAddress) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setOrderNotes: (notes: string) => void;
-  calculateTotals: () => void;
+  calculateTotals: (appliedDiscount?: number) => void;
   
   // Order Actions
   placeOrder: () => Promise<{ success: boolean; orderId?: string; error?: string }>;
@@ -195,7 +197,7 @@ export const useCartStore = create<CartStore>()(
         set({ orderNotes: notes });
       },
 
-      calculateTotals: () => {
+      calculateTotals: (appliedDiscount = 0) => {
         const { items, shippingAddress } = get();
         const subtotal = items.reduce((sum, item) => {
           const itemPrice = item.price || 0;
@@ -209,8 +211,8 @@ export const useCartStore = create<CartStore>()(
         // Calculate tax (8% for now, could be based on shipping address)
         const tax = subtotal * 0.08;
         
-        // Discount logic (could be applied here)
-        const discount = 0;
+        // Use the applied discount
+        const discount = appliedDiscount;
         
         const total = subtotal + shipping + tax - discount;
 
