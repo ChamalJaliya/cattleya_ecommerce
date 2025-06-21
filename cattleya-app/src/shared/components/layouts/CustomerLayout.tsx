@@ -250,119 +250,118 @@ function SidebarContent({
             <h1 className="text-2xl font-serif font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-200">
               Cattleya
             </h1>
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full animate-pulse"></div>
           </div>
-          <span className="ml-3 px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded-full shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-105">
-            Customer
-          </span>
-          <SparklesIcon className="w-4 h-4 text-purple-500 ml-2 animate-pulse" />
+          <span className="ml-3 text-xs font-bold text-pink-500 bg-pink-100 px-2 py-1 rounded-full">BETA</span>
         </Link>
         {isMobile && (
           <button
             onClick={onClose}
-            className="group p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-100/50 transition-all duration-200"
+            className="p-2 rounded-xl text-gray-400 hover:text-purple-600 hover:bg-purple-100 transition-all duration-200 group"
           >
             <XMarkIcon className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
           </button>
         )}
       </div>
 
-      {/* Enhanced Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-3 overflow-y-auto relative sidebar-scroll">
-        {navigationItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onClose}
-              className={`group relative overflow-hidden flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
-                isActive
-                  ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 text-white shadow-xl shadow-purple-500/30 scale-105'
-                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-gray-900 hover:scale-105 hover:shadow-lg'
-              }`}
-            >
-              {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-30"></div>
-              )}
-              <div className="relative flex items-center w-full">
-                <div className={`mr-3 p-2 rounded-lg transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-white/20 backdrop-blur-sm' 
-                    : 'group-hover:bg-purple-100 group-hover:scale-110'
-                }`}>
-                  <item.icon
-                    className={`h-5 w-5 transition-all duration-200 ${
-                      isActive ? 'text-white' : 'text-gray-400 group-hover:text-purple-600'
-                    }`}
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className={`font-bold transition-all duration-200 ${
-                    isActive ? 'text-white' : 'group-hover:text-purple-700'
-                  }`}>
-                    {item.name}
-                  </div>
-                  <div className={`text-xs transition-all duration-200 ${
-                    isActive ? 'text-purple-100' : 'text-gray-500 group-hover:text-purple-600'
-                  }`}>
-                    {item.description}
-                  </div>
-                </div>
-                {isActive && (
-                  <div className="flex items-center space-x-1">
-                    <StarIcon className="w-3 h-3 text-yellow-300 animate-pulse" />
-                    <BoltIcon className="w-3 h-3 text-yellow-300" />
-                  </div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
+      {/* User Info Card */}
+      <div className="p-4 relative">
+         <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 rounded-2xl group hover:shadow-lg transition-all duration-300">
+           <div className="relative">
+             <div className="w-12 h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+               <span className="text-white font-bold text-sm">
+                 {user?.firstName?.[0]}{user?.lastName?.[0]}
+               </span>
+             </div>
+             <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center">
+               <StarIcon className="w-2 h-2 text-white" />
+             </div>
+           </div>
+           <div className="flex-1 min-w-0">
+             <p className="text-sm font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent truncate">
+               {user?.firstName} {user?.lastName}
+             </p>
+             <div className="flex items-center space-x-1">
+               <p className="text-xs text-purple-600 font-medium flex items-center">
+                 <SparklesIcon className="w-3 h-3 mr-1" />
+                 {user?.loyaltyPoints || 0} loyalty points
+               </p>
+               <BoltIcon className="w-3 h-3 text-yellow-500" />
+             </div>
+           </div>
+         </div>
+       </div>
 
-      {/* Enhanced User info and logout */}
-      <div className="p-4 border-t border-purple-200/30 relative">
-        <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 rounded-2xl mb-4 group hover:shadow-lg transition-all duration-300">
-          <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-              <span className="text-white font-bold text-sm">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </span>
-            </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center">
-              <StarIcon className="w-2 h-2 text-white" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent truncate">
-              {user?.firstName} {user?.lastName}
-            </p>
-            <div className="flex items-center space-x-1">
-              <p className="text-xs text-purple-600 font-medium flex items-center">
-                <SparklesIcon className="w-3 h-3 mr-1" />
-                {user?.loyaltyPoints || 0} loyalty points
-              </p>
-              <BoltIcon className="w-3 h-3 text-yellow-500" />
-            </div>
-          </div>
+      {/* Navigation */}
+      <div className="flex-1 px-4 overflow-y-auto hide-scrollbar">
+        <nav className="flex-1 space-y-2 py-4">
+          {navigationItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={onClose}
+                className={`group relative overflow-hidden flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 text-white shadow-xl shadow-purple-500/30 scale-105'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-gray-900 hover:scale-105 hover:shadow-lg'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-30"></div>
+                )}
+                <div className="relative flex items-center w-full">
+                  <div className={`mr-3 p-2 rounded-lg transition-all duration-200 ${
+                    isActive 
+                      ? 'bg-white/20 backdrop-blur-sm' 
+                      : 'group-hover:bg-purple-100 group-hover:scale-110'
+                  }`}>
+                    <item.icon
+                      className={`h-5 w-5 transition-all duration-200 ${
+                        isActive ? 'text-white' : 'text-gray-400 group-hover:text-purple-600'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className={`font-bold transition-all duration-200 ${
+                      isActive ? 'text-white' : 'group-hover:text-purple-700'
+                    }`}>
+                      {item.name}
+                    </div>
+                    <div className={`text-xs transition-all duration-200 ${
+                      isActive ? 'text-purple-100' : 'text-gray-500 group-hover:text-purple-600'
+                    }`}>
+                      {item.description}
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div className="flex items-center space-x-1">
+                      <StarIcon className="w-3 h-3 text-yellow-300 animate-pulse" />
+                      <BoltIcon className="w-3 h-3 text-yellow-300" />
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Footer with Logout */}
+      <div className="mt-auto p-4 relative">
+        <div className="mt-4 space-y-2">
+            <Link href="/products" className={`group flex items-center px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 text-gray-500 hover:bg-purple-100 hover:text-purple-700`}>
+                <ShoppingBagIcon className="h-6 w-6 mr-4" />
+                <span>Back to Store</span>
+            </Link>
+            <button
+              onClick={onLogout}
+              className="group w-full flex items-center px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 text-gray-500 hover:bg-red-100 hover:text-red-700"
+            >
+              <ArrowRightOnRectangleIcon className="h-6 w-6 mr-4" />
+              <span>Sign out</span>
+            </button>
         </div>
-        
-        <button
-          onClick={onLogout}
-          className="w-full group relative overflow-hidden flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-600 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-        >
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-          <div className="relative flex items-center w-full">
-            <div className="mr-3 p-2 rounded-lg group-hover:bg-red-100 group-hover:scale-110 transition-all duration-200">
-              <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors duration-200" />
-            </div>
-            <span className="font-bold">Sign Out</span>
-            <div className="ml-auto">
-              <FireIcon className="w-4 h-4 text-red-400 group-hover:text-red-500 group-hover:animate-bounce transition-all duration-200" />
-            </div>
-          </div>
-        </button>
       </div>
     </div>
   );
