@@ -11,7 +11,9 @@ import {
   CalendarDaysIcon,
   ArrowRightIcon,
   ClockIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  PlusIcon,
+  MinusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
@@ -189,275 +191,309 @@ export default function CustomerLoyaltyPage() {
   const renderOverview = () => (
     <div className="space-y-8">
       {/* Current Status */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-8 text-white">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Welcome back, Orchid Enthusiast! 🌺</h2>
-            <p className="text-purple-100">You&apos;re doing amazing in our loyalty program</p>
+      <motion.div 
+        className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white relative overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20"></div>
+        <div className="relative">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Welcome back, Orchid Enthusiast! 🌺</h2>
+              <p className="text-purple-100">You&apos;re doing amazing in our loyalty program</p>
+            </div>
+            <div className="text-6xl">{tiers[currentTierIndex].icon}</div>
           </div>
-          <div className="text-6xl">{tiers[currentTierIndex].icon}</div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <p className="text-purple-100 text-sm mb-1">Current Points</p>
+              <p className="text-2xl font-bold">{loyaltyData.currentPoints.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <p className="text-purple-100 text-sm mb-1">Current Tier</p>
+              <p className="text-2xl font-bold">{loyaltyData.currentTier}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <p className="text-purple-100 text-sm mb-1">Total Spent</p>
+              <p className="text-2xl font-bold">${loyaltyData.totalSpent.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <p className="text-purple-100 text-sm">Current Points</p>
-            <p className="text-3xl font-bold">{loyaltyData.currentPoints.toLocaleString()}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <p className="text-purple-100 text-sm">Current Tier</p>
-            <p className="text-3xl font-bold">{loyaltyData.currentTier}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <p className="text-purple-100 text-sm">Total Spent</p>
-            <p className="text-3xl font-bold">${loyaltyData.totalSpent}</p>
-          </div>
-        </div>
-      </div>
+      </motion.div>
 
       {/* Progress to Next Tier */}
       {nextTierIndex < tiers.length && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Progress to {loyaltyData.nextTier}</h3>
-            <span className="text-sm text-gray-600">
-              {loyaltyData.pointsToNextTier} points to go
-            </span>
+            <span className="text-sm text-gray-600">{loyaltyData.pointsToNextTier} points needed</span>
           </div>
           
-          <div className="relative">
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-gray-600">
-              <span>{tiers[currentTierIndex].minPoints}</span>
-              <span>{tiers[nextTierIndex].minPoints}</span>
-            </div>
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+            <motion.div 
+              className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercentage}%` }}
+              transition={{ delay: 0.2, duration: 1 }}
+            />
           </div>
-        </div>
+          
+          <p className="text-sm text-gray-600">
+            {loyaltyData.currentPoints} / {tiers[nextTierIndex].minPoints} points
+          </p>
+        </motion.div>
       )}
 
-      {/* Tier Benefits */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Current Tier Benefits */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <div className={`w-12 h-12 bg-gradient-to-r ${tiers[currentTierIndex].color} rounded-xl flex items-center justify-center text-white text-xl mr-4`}>
-              {tiers[currentTierIndex].icon}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Your {loyaltyData.currentTier} Benefits</h3>
-              <p className="text-gray-600 text-sm">Active now</p>
-            </div>
-          </div>
-          <ul className="space-y-2">
-            {tiers[currentTierIndex].benefits.map((benefit, index) => (
-              <li key={index} className="flex items-center text-sm text-gray-600">
-                <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                {benefit}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Next Tier Benefits */}
-        {nextTierIndex < tiers.length && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-4">
-              <div className={`w-12 h-12 bg-gradient-to-r ${tiers[nextTierIndex].color} rounded-xl flex items-center justify-center text-white text-xl mr-4`}>
-                {tiers[nextTierIndex].icon}
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Unlock {loyaltyData.nextTier}</h3>
-                <p className="text-gray-600 text-sm">{loyaltyData.pointsToNextTier} points away</p>
-              </div>
-            </div>
-            <ul className="space-y-2">
-              {tiers[nextTierIndex].benefits.map((benefit, index) => (
-                <li key={index} className="flex items-center text-sm text-gray-600">
-                  <StarSolidIcon className="w-4 h-4 text-yellow-400 mr-2 flex-shrink-0" />
-                  {benefit}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* All Tiers Overview */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Loyalty Tiers</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {tiers.map((tier, index) => (
-            <div 
-              key={tier.name} 
-              className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                tier.name === loyaltyData.currentTier 
-                  ? 'border-purple-500 bg-purple-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+      {/* Current Tier Benefits */}
+      <motion.div 
+        className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <TrophyIcon className="w-5 h-5 text-purple-600" />
+          <span>{loyaltyData.currentTier} Tier Benefits</span>
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {tiers[currentTierIndex].benefits.map((benefit, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
+              className="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200"
             >
-              <div className="text-center">
-                <div className="text-3xl mb-2">{tier.icon}</div>
-                <h4 className="font-semibold text-gray-900">{tier.name}</h4>
-                <p className="text-xs text-gray-600 mt-1">
-                  {tier.minPoints}+ points
-                </p>
-                {tier.name === loyaltyData.currentTier && (
-                  <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
-                    Current
-                  </span>
-                )}
-              </div>
-            </div>
+              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <span className="text-gray-700">{benefit}</span>
+            </motion.div>
           ))}
         </div>
+      </motion.div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <StarIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Lifetime Points</p>
+              <p className="text-2xl font-bold text-gray-900">{loyaltyData.lifetimePoints.toLocaleString()}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+              <CalendarDaysIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Member Since</p>
+              <p className="text-2xl font-bold text-gray-900">{new Date(loyaltyData.memberSince).getFullYear()}</p>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <ShoppingBagIcon className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Available Rewards</p>
+              <p className="text-2xl font-bold text-gray-900">{availableRewards.length}</p>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
 
   const renderRewards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {availableRewards.map((reward, index) => (
-        <motion.div
-          key={reward.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-        >
-          <div className="text-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
-              {reward.image}
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-2">{reward.name}</h3>
-            <p className="text-sm text-gray-600 mb-4">{reward.description}</p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Cost:</span>
-              <span className="font-semibold text-purple-600">{reward.pointsCost} points</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Expires:</span>
-              <span className="text-sm text-gray-900">{reward.expiryDays} days</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => handleRedeemReward(reward.id)}
-            disabled={loyaltyData.currentPoints < reward.pointsCost || redeemedRewards.includes(reward.id)}
-            className={`w-full mt-4 py-3 rounded-xl font-semibold transition-all duration-200 ${
-              redeemedRewards.includes(reward.id)
-                ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                : loyaltyData.currentPoints >= reward.pointsCost
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {redeemedRewards.includes(reward.id) 
-              ? 'Redeemed ✓' 
-              : loyaltyData.currentPoints >= reward.pointsCost 
-              ? 'Redeem Now' 
-              : 'Not Enough Points'
-            }
-          </button>
-        </motion.div>
-      ))}
+    <div className="space-y-6">
+      <motion.div 
+        className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <GiftIcon className="w-5 h-5 text-purple-600" />
+          <span>Available Rewards</span>
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {availableRewards.map((reward, index) => (
+            <motion.div
+              key={reward.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white/50 backdrop-blur-sm rounded-xl border border-white/20 p-6 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+            >
+              <div className="text-center mb-4">
+                <div className="text-4xl mb-2">{reward.image}</div>
+                <h4 className="font-semibold text-gray-900 mb-1">{reward.name}</h4>
+                <p className="text-sm text-gray-600 mb-3">{reward.description}</p>
+              </div>
+              
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-600">Expires in {reward.expiryDays} days</span>
+                <span className="text-sm font-medium text-purple-600">{reward.pointsCost} points</span>
+              </div>
+              
+              <button
+                onClick={() => handleRedeemReward(reward.id)}
+                disabled={loyaltyData.currentPoints < reward.pointsCost || redeemedRewards.includes(reward.id)}
+                className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {redeemedRewards.includes(reward.id) ? 'Redeemed' : 'Redeem Reward'}
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 
   const renderHistory = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Points History</h3>
-        <p className="text-gray-600 text-sm">Track your earning and spending activity</p>
-      </div>
-      
-      <div className="divide-y divide-gray-200">
-        {pointsHistory.map((transaction, index) => (
-          <motion.div
-            key={transaction.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="p-6 flex items-center justify-between"
-          >
-            <div className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-                transaction.type === 'earned' ? 'bg-green-100' :
-                transaction.type === 'redeemed' ? 'bg-red-100' : 'bg-purple-100'
-              }`}>
-                {transaction.type === 'earned' ? (
-                  <ShoppingBagIcon className="w-5 h-5 text-green-600" />
-                ) : transaction.type === 'redeemed' ? (
-                  <GiftIcon className="w-5 h-5 text-red-600" />
-                ) : (
-                  <SparklesIcon className="w-5 h-5 text-purple-600" />
-                )}
+    <div className="space-y-6">
+      <motion.div 
+        className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl shadow-purple-500/5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <ClockIcon className="w-5 h-5 text-purple-600" />
+          <span>Points History</span>
+        </h3>
+        
+        <div className="space-y-4">
+          {pointsHistory.map((entry, index) => (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-white/20 hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  entry.type === 'earned' ? 'bg-green-100' : 
+                  entry.type === 'redeemed' ? 'bg-red-100' : 'bg-blue-100'
+                }`}>
+                  {entry.type === 'earned' ? (
+                    <PlusIcon className="w-4 h-4 text-green-600" />
+                  ) : entry.type === 'redeemed' ? (
+                    <MinusIcon className="w-4 h-4 text-red-600" />
+                  ) : (
+                    <StarIcon className="w-4 h-4 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{entry.description}</p>
+                  <p className="text-sm text-gray-600">{new Date(entry.date).toLocaleDateString()}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-gray-900">{transaction.description}</p>
-                <p className="text-sm text-gray-600">{transaction.date}</p>
-              </div>
-            </div>
-            
-            <div className="text-right">
+              
               <span className={`font-semibold ${
-                transaction.points > 0 ? 'text-green-600' : 'text-red-600'
+                entry.points > 0 ? 'text-green-600' : 'text-red-600'
               }`}>
-                {transaction.points > 0 ? '+' : ''}{transaction.points} pts
+                {entry.points > 0 ? '+' : ''}{entry.points}
               </span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 
   return (
     <CustomerLayout>
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Loyalty Program</h1>
-          <p className="text-gray-600 mt-2">Earn points, unlock rewards, and enjoy exclusive benefits</p>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                      activeTab === tab.id
-                        ? 'border-purple-500 text-purple-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 mr-2" />
-                    {tab.name}
-                  </button>
-                );
-              })}
-            </nav>
+        {/* Enhanced Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-8"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 rounded-2xl blur-xl"></div>
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  Loyalty Program
+                </h1>
+                <p className="text-gray-600">Earn points and unlock exclusive rewards</p>
+              </div>
+              <div className="flex items-center space-x-2 text-purple-600">
+                <StarIcon className="w-8 h-8" />
+                <span className="text-2xl font-bold">{loyaltyData.currentPoints}</span>
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
+
+        {/* Tabs */}
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-2 mb-8 shadow-xl shadow-purple-500/5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex space-x-1">
+            {tabs.map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25'
+                      : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                  }`}
+                >
+                  <TabIcon className="w-5 h-5" />
+                  <span>{tab.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
 
         {/* Tab Content */}
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
         >
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'rewards' && renderRewards()}

@@ -11,7 +11,10 @@ import {
   StarIcon,
   TagIcon,
   MagnifyingGlassIcon,
-  FunnelIcon
+  FunnelIcon,
+  SparklesIcon,
+  FireIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
@@ -161,138 +164,142 @@ export default function CustomerWishlistPage() {
   const totalSavings = wishlistItems.reduce((sum, item) => sum + (item.originalPrice - item.price), 0);
   const inStockItems = wishlistItems.filter(item => item.inStock).length;
 
+  const stats = [
+    {
+      name: 'Total Items',
+      value: wishlistItems.length,
+      icon: HeartSolidIcon,
+      gradient: 'from-pink-500 via-red-500 to-rose-500',
+      description: 'Saved items'
+    },
+    {
+      name: 'Total Value',
+      value: `$${totalValue.toFixed(2)}`,
+      icon: TagIcon,
+      gradient: 'from-emerald-500 via-green-500 to-teal-500',
+      description: 'Worth of items'
+    },
+    {
+      name: 'In Stock',
+      value: inStockItems,
+      icon: ShoppingCartIcon,
+      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      description: 'Available now'
+    },
+    {
+      name: 'Total Savings',
+      value: `$${totalSavings.toFixed(2)}`,
+      icon: TagIcon,
+      gradient: 'from-purple-500 via-pink-500 to-rose-500',
+      description: 'From discounts'
+    }
+  ];
+
   return (
     <CustomerLayout>
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
+        {/* Enhanced Header */}
+        <div className="mb-8 relative">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-2xl -z-10"></div>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Wishlist</h1>
-              <p className="text-gray-600 mt-2">Save your favorite orchids and accessories</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent">
+                My Wishlist
+              </h1>
+              <p className="text-gray-600 mt-2 flex items-center">
+                <SparklesIcon className="w-4 h-4 mr-2 text-purple-500" />
+                Save your favorite orchids and accessories
+              </p>
             </div>
-            <button className="flex items-center px-4 py-2 text-purple-600 hover:text-purple-700 font-medium">
-              <ShareIcon className="w-5 h-5 mr-2" />
-              Share Wishlist
+            <button className="group relative overflow-hidden flex items-center px-4 py-2 text-purple-600 hover:text-purple-700 font-semibold rounded-xl hover:bg-purple-50 transition-all duration-200">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative flex items-center">
+                <ShareIcon className="w-5 h-5 mr-2" />
+                Share Wishlist
+              </div>
             </button>
           </div>
         </div>
 
-        {/* Wishlist Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-red-500 rounded-xl flex items-center justify-center">
-                <HeartSolidIcon className="w-6 h-6 text-white" />
+        {/* Enhanced Wishlist Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="group relative cursor-pointer"
+            >
+              <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300`}></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
+                    <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent my-2">
+                      {stat.value}
+                    </p>
+                    <span className="text-xs text-gray-500">{stat.description}</span>
+                  </div>
+                  <div className="relative">
+                    <div className={`w-16 h-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                      <stat.icon className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Items</p>
-                <p className="text-2xl font-bold text-gray-900">{wishlistItems.length}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <TagIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Value</p>
-                <p className="text-2xl font-bold text-gray-900">${totalValue.toFixed(2)}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                <ShoppingCartIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Stock</p>
-                <p className="text-2xl font-bold text-gray-900">{inStockItems}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <TagIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Savings</p>
-                <p className="text-2xl font-bold text-gray-900">${totalSavings.toFixed(2)}</p>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex-1 max-w-lg">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search wishlist..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
+        {/* Enhanced Search and Filters */}
+        <div className="group relative mb-8">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+          <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+              <div className="flex-1 max-w-lg">
+                <div className="relative group">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors duration-200" />
+                  <input
+                    type="text"
+                    placeholder="Search wishlist..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center space-x-4">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>
+                      {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
+                    </option>
+                  ))}
+                </select>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="rating">Highest Rated</option>
-              </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="rating">Highest Rated</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Wishlist Items */}
+        {/* Enhanced Wishlist Items */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item, index) => (
             <motion.div
@@ -300,104 +307,115 @@ export default function CustomerWishlistPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
+              className="group relative"
             >
-              {/* Product Image */}
-              <div className="relative p-6">
-                <div className="aspect-square bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center text-6xl mb-4">
-                  {item.image}
-                </div>
-                
-                {item.onSale && (
-                  <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-semibold">
-                    -{item.discount}%
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                {/* Product Image */}
+                <div className="relative p-6">
+                  <div className="aspect-square bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center text-6xl mb-4 shadow-sm">
+                    {item.image}
                   </div>
-                )}
-                
-                <button
-                  onClick={() => removeFromWishlist(item.id)}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition-colors duration-200"
-                >
-                  <HeartSolidIcon className="w-5 h-5 text-red-500" />
-                </button>
-              </div>
-
-              {/* Product Info */}
-              <div className="p-6 pt-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="inline-flex px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">
-                    {item.category}
-                  </span>
-                  {!item.inStock && (
-                    <span className="text-sm text-red-600 font-medium">Out of Stock</span>
+                  
+                  {item.onSale && (
+                    <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-lg">
+                      -{item.discount}%
+                    </div>
                   )}
+                  
+                  <button
+                    onClick={() => removeFromWishlist(item.id)}
+                    className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-red-50 transition-all duration-200 group-hover:scale-110"
+                  >
+                    <HeartSolidIcon className="w-5 h-5 text-red-500" />
+                  </button>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.name}</h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
-
-                {/* Rating */}
-                <div className="flex items-center mb-3">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <StarIcon
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < Math.floor(item.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600 ml-2">
-                    {item.rating} ({item.reviews} reviews)
-                  </span>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xl font-bold text-gray-900">${item.price}</span>
-                    {item.onSale && (
-                      <span className="text-sm text-gray-500 line-through">${item.originalPrice}</span>
+                {/* Product Info */}
+                <div className="p-6 pt-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="inline-flex px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 rounded-full border border-purple-200">
+                      {item.category}
+                    </span>
+                    {!item.inStock && (
+                      <span className="text-sm text-red-600 font-semibold">Out of Stock</span>
                     )}
                   </div>
-                  {item.inStock && (
-                    <span className="text-sm text-green-600">{item.stockCount} in stock</span>
-                  )}
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => moveToCart(item.id)}
-                    disabled={!item.inStock}
-                    className={`flex-1 flex items-center justify-center px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${
-                      item.inStock
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/25'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <ShoppingCartIcon className="w-4 h-4 mr-2" />
-                    {item.inStock ? 'Add to Cart' : 'Out of Stock'}
-                  </button>
-                  
-                  <button className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                    <EyeIcon className="w-4 h-4 text-gray-600" />
-                  </button>
-                </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.name}</h3>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
 
-                {/* Added Date */}
-                <p className="text-xs text-gray-500 mt-3">Added on {item.addedDate}</p>
+                  {/* Rating */}
+                  <div className="flex items-center mb-3">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <StarIcon
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < Math.floor(item.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600 ml-2">
+                      {item.rating} ({item.reviews} reviews)
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl font-bold text-gray-900">${item.price}</span>
+                      {item.onSale && (
+                        <span className="text-sm text-gray-500 line-through">${item.originalPrice}</span>
+                      )}
+                    </div>
+                    {item.inStock && (
+                      <span className="text-sm text-green-600 font-semibold">{item.stockCount} in stock</span>
+                    )}
+                  </div>
+
+                  {/* Enhanced Actions */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => moveToCart(item.id)}
+                      disabled={!item.inStock}
+                      className={`group/btn relative overflow-hidden flex-1 flex items-center justify-center px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
+                        item.inStock
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300 ${!item.inStock ? 'hidden' : ''}`}></div>
+                      <div className="relative flex items-center">
+                        <ShoppingCartIcon className="w-4 h-4 mr-2" />
+                        {item.inStock ? 'Add to Cart' : 'Out of Stock'}
+                      </div>
+                    </button>
+                    
+                    <button className="group/btn relative overflow-hidden w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>
+                      <div className="relative">
+                        <EyeIcon className="w-4 h-4 text-gray-600 group-hover:text-purple-600 transition-colors duration-200" />
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Added Date */}
+                  <p className="text-xs text-gray-500 mt-3">Added on {item.addedDate}</p>
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Empty State */}
+        {/* Enhanced Empty State */}
         {filteredItems.length === 0 && (
           <div className="text-center py-12">
-            <HeartIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <HeartIcon className="w-8 h-8 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
               {wishlistItems.length === 0 ? 'Your wishlist is empty' : 'No items match your search'}
             </h3>
             <p className="text-gray-500 mb-6">
@@ -406,27 +424,33 @@ export default function CustomerWishlistPage() {
                 : 'Try adjusting your search or filter criteria'
               }
             </p>
-            <button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200">
-              Explore Products
+            <button className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+              <div className="relative">Explore Products</div>
             </button>
           </div>
         )}
 
-        {/* Quick Actions */}
+        {/* Enhanced Quick Actions */}
         {wishlistItems.length > 0 && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-                <p className="text-gray-600">Manage your entire wishlist</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                  Move All to Cart
-                </button>
-                <button className="px-4 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-colors duration-200">
-                  Clear Wishlist
-                </button>
+          <div className="mt-8 group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+            <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+                  <p className="text-gray-600">Manage your entire wishlist</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button className="group/btn relative overflow-hidden px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>
+                    <div className="relative">Move All to Cart</div>
+                  </button>
+                  <button className="group/btn relative overflow-hidden px-4 py-2 bg-gradient-to-r from-red-100 to-pink-100 text-red-700 rounded-xl hover:from-red-200 hover:to-pink-200 transition-all duration-200">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>
+                    <div className="relative">Clear Wishlist</div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

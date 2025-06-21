@@ -198,12 +198,6 @@ export default function CustomerSupportPage() {
   const [activeCategory, setActiveCategory] = useState('orders');
   const [openQuestions, setOpenQuestions] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [contactForm, setContactForm] = useState({
-    subject: '',
-    category: 'general',
-    priority: 'normal',
-    message: ''
-  });
 
   const toggleQuestion = (questionId: string) => {
     setOpenQuestions(prev => 
@@ -216,7 +210,6 @@ export default function CustomerSupportPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Form submitted:', contactForm);
   };
 
   const filteredQuestions = faqCategories
@@ -229,274 +222,255 @@ export default function CustomerSupportPage() {
   return (
     <CustomerLayout>
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Customer Support</h1>
-          <p className="text-gray-600 mt-2">We&apos;re here to help you grow beautiful orchids</p>
-        </div>
+        {/* Enhanced Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-8"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 rounded-2xl blur-xl"></div>
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  Customer Support
+                </h1>
+                <p className="text-gray-600">We're here to help with all your orchid needs</p>
+              </div>
+              <div className="flex items-center space-x-2 text-purple-600">
+                <QuestionMarkCircleIcon className="w-8 h-8" />
+                <span className="text-2xl font-bold">24/7</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Support Channels */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {supportChannels.map((channel, index) => {
-            const Icon = channel.icon;
-            return (
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
+            <ChatBubbleLeftRightIcon className="w-5 h-5 text-purple-600" />
+            <span>Get Help</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {supportChannels.map((channel, index) => {
+              const Icon = channel.icon;
+              return (
+                <motion.div
+                  key={channel.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.1 }}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
+                >
+                  <div className={`w-12 h-12 bg-gradient-to-r ${channel.color} rounded-xl flex items-center justify-center mb-4`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  
+                  <h3 className="font-semibold text-gray-900 mb-2">{channel.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{channel.description}</p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">Availability</span>
+                      <span className="text-gray-900">{channel.availability}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">Response</span>
+                      <span className="text-gray-900">{channel.responseTime}</span>
+                    </div>
+                  </div>
+                  
+                  <button className="w-full mt-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200">
+                    Contact Now
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Help Resources */}
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
+            <BookOpenIcon className="w-5 h-5 text-purple-600" />
+            <span>Help Resources</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {helpResources.map((resource, index) => (
               <motion.div
-                key={channel.id}
+                key={resource.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200"
+                transition={{ delay: 0.2 + index * 0.1 }}
+                className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
               >
-                <div className={`w-12 h-12 bg-gradient-to-r ${channel.color} rounded-xl flex items-center justify-center mb-4`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                
-                <h3 className="font-semibold text-gray-900 mb-2">{channel.name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{channel.description}</p>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <ClockIcon className="w-3 h-3 mr-1" />
-                    {channel.availability}
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <ChatBubbleLeftRightIcon className="w-3 h-3 mr-1" />
-                    {channel.responseTime}
-                  </div>
-                </div>
-
-                {channel.phone && (
-                  <p className="text-sm font-medium text-gray-900 mb-2">{channel.phone}</p>
-                )}
-                {channel.email && (
-                  <p className="text-sm font-medium text-gray-900 mb-2">{channel.email}</p>
-                )}
-
-                <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200">
-                  {channel.id === 'live-chat' && 'Start Chat'}
-                  {channel.id === 'phone' && 'Call Now'}
-                  {channel.id === 'email' && 'Send Email'}
-                  {channel.id === 'video-call' && 'Book Call'}
-                </button>
+                <div className="text-3xl mb-3">{resource.icon}</div>
+                <h3 className="font-semibold text-gray-900 mb-2">{resource.title}</h3>
+                <p className="text-sm text-gray-600 mb-3">{resource.description}</p>
+                <span className="inline-block px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs rounded-full">
+                  {resource.type}
+                </span>
               </motion.div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* FAQ Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Frequently Asked Questions</h2>
-                <QuestionMarkCircleIcon className="w-6 h-6 text-purple-600" />
-              </div>
-
+        {/* FAQ Section */}
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-8 shadow-xl shadow-purple-500/5">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+                <QuestionMarkCircleIcon className="w-5 h-5 text-purple-600" />
+                <span>Frequently Asked Questions</span>
+              </h2>
+              
               {/* Search */}
-              <div className="relative mb-6">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <div className="relative">
+                <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search FAQ..."
+                  placeholder="Search questions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                 />
               </div>
+            </div>
 
-              {/* Categories */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {faqCategories.map((category) => (
+            {/* Category Tabs */}
+            <div className="flex space-x-1 mb-6">
+              {faqCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
+                    activeCategory === category.id
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25'
+                      : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                  }`}
+                >
+                  <span className="text-lg">{category.icon}</span>
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Questions */}
+            <div className="space-y-4">
+              {filteredQuestions.map((question, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                  className="bg-white/50 backdrop-blur-sm rounded-xl border border-white/20 overflow-hidden"
+                >
                   <button
-                    key={category.id}
-                    onClick={() => setActiveCategory(category.id)}
-                    className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                      activeCategory === category.id
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    onClick={() => toggleQuestion(`q${index}`)}
+                    className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
                   >
-                    <span className="mr-2">{category.icon}</span>
-                    {category.name}
+                    <span className="font-medium text-gray-900">{question.question}</span>
+                    {openQuestions.includes(`q${index}`) ? (
+                      <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                    )}
                   </button>
-                ))}
-              </div>
-
-              {/* Questions */}
-              <div className="space-y-4">
-                {filteredQuestions.map((faq, index) => {
-                  const questionId = `${activeCategory}-${index}`;
-                  const isOpen = openQuestions.includes(questionId);
                   
-                  return (
+                  {openQuestions.includes(`q${index}`) && (
                     <motion.div
-                      key={questionId}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="border border-gray-200 rounded-xl overflow-hidden"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-6 pb-4"
                     >
-                      <button
-                        onClick={() => toggleQuestion(questionId)}
-                        className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <span className="font-medium text-gray-900">{faq.question}</span>
-                        {isOpen ? (
-                          <ChevronUpIcon className="w-5 h-5 text-gray-500" />
-                        ) : (
-                          <ChevronDownIcon className="w-5 h-5 text-gray-500" />
-                        )}
-                      </button>
-                      
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: 'auto' }}
-                          exit={{ height: 0 }}
-                          className="px-6 pb-4 text-gray-600"
-                        >
-                          {faq.answer}
-                        </motion.div>
-                      )}
+                      <p className="text-gray-600 leading-relaxed">{question.answer}</p>
                     </motion.div>
-                  );
-                })}
-              </div>
-
-              {filteredQuestions.length === 0 && (
-                <div className="text-center py-8">
-                  <QuestionMarkCircleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No questions found matching your search.</p>
-                </div>
-              )}
+                  )}
+                </motion.div>
+              ))}
             </div>
           </div>
+        </motion.div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Contact Form */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Still Need Help?</h3>
-              
-              <form onSubmit={handleFormSubmit} className="space-y-4">
+        {/* Contact Form */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-8 shadow-xl shadow-purple-500/5">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center space-x-2">
+              <EnvelopeIcon className="w-5 h-5 text-purple-600" />
+              <span>Still Need Help?</span>
+            </h2>
+            
+            <form onSubmit={handleFormSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                   <input
                     type="text"
-                    value={contactForm.subject}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Brief description of your issue"
+                    required
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={contactForm.category}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="general">General Inquiry</option>
-                    <option value="order">Order Issue</option>
-                    <option value="care">Plant Care</option>
-                    <option value="technical">Technical Support</option>
-                    <option value="billing">Billing</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <select
-                    value={contactForm.priority}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="low">Low</option>
-                    <option value="normal">Normal</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                  <textarea
-                    value={contactForm.message}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Please provide as much detail as possible..."
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                   />
                 </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
-                >
-                  Send Message
-                </button>
-              </form>
-            </div>
-
-            {/* Help Resources */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <BookOpenIcon className="w-5 h-5 mr-2" />
-                Help Resources
-              </h3>
+              </div>
               
-              <div className="space-y-3">
-                {helpResources.map((resource) => (
-                  <a
-                    key={resource.id}
-                    href={resource.downloadUrl}
-                    className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                  >
-                    <div className="flex items-start">
-                      <span className="text-2xl mr-3">{resource.icon}</span>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 text-sm">{resource.title}</h4>
-                        <p className="text-xs text-gray-600 mt-1">{resource.description}</p>
-                        <span className="inline-block mt-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
-                          {resource.type}
-                        </span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                <select className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200">
+                  <option>General Inquiry</option>
+                  <option>Order Issue</option>
+                  <option>Product Question</option>
+                  <option>Technical Support</option>
+                </select>
               </div>
-            </div>
-
-            {/* Status */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Website</span>
-                  <div className="flex items-center">
-                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">Operational</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Live Chat</span>
-                  <div className="flex items-center">
-                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600">Online</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Shipping</span>
-                  <div className="flex items-center">
-                    <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500 mr-1" />
-                    <span className="text-sm text-yellow-600">Delayed</span>
-                  </div>
-                </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <textarea
+                  rows={4}
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
+                  placeholder="Tell us how we can help you..."
+                />
               </div>
-            </div>
+              
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
+              >
+                Send Message
+              </button>
+            </form>
           </div>
-        </div>
+        </motion.div>
       </div>
     </CustomerLayout>
   );
