@@ -12,10 +12,12 @@ import {
   ArrowDownIcon,
   CalendarDaysIcon,
   GlobeAltIcon,
-  DevicePhoneMobileIcon,
-  ComputerDesktopIcon
+  SparklesIcon,
+  UserGroupIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
+import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 
 // Mock analytics data
 const salesData = [
@@ -51,6 +53,11 @@ const trafficSources = [
 export default function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 6 Months');
 
+  const breadcrumbItems = [
+    { label: 'Dashboard', href: '/admin/dashboard' },
+    { label: 'Analytics', href: '/admin/analytics' }
+  ];
+
   const totalRevenue = salesData.reduce((sum, month) => sum + month.revenue, 0);
   const totalOrders = salesData.reduce((sum, month) => sum + month.orders, 0);
   const totalCustomers = salesData.reduce((sum, month) => sum + month.customers, 0);
@@ -60,323 +67,291 @@ export default function AnalyticsPage() {
   const previousMonthRevenue = salesData[salesData.length - 2].revenue;
   const revenueGrowth = ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100;
 
+  const ordersGrowth = 8.2;
+  const customersGrowth = 12.5;
+  const aovGrowth = 5.1;
+
+  const statsData = [
+    {
+      name: 'Total Revenue',
+      value: `$${(totalRevenue/1000).toFixed(1)}k`,
+      change: `${Math.abs(revenueGrowth).toFixed(1)}%`,
+      changeType: revenueGrowth > 0 ? 'increase' : 'decrease',
+      icon: CurrencyDollarIcon,
+      gradient: 'from-emerald-500 via-green-500 to-teal-500',
+      description: 'Total sales revenue'
+    },
+    {
+      name: 'Total Orders',
+      value: totalOrders.toLocaleString(),
+      change: `${ordersGrowth.toFixed(1)}%`,
+      changeType: 'increase',
+      icon: ShoppingBagIcon,
+      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      description: 'Total orders placed'
+    },
+    {
+      name: 'New Customers',
+      value: totalCustomers.toString(),
+      change: `${customersGrowth.toFixed(1)}%`,
+      changeType: 'increase',
+      icon: UserGroupIcon,
+      gradient: 'from-purple-500 via-pink-500 to-rose-500',
+      description: 'Joined in period'
+    },
+    {
+      name: 'Avg. Order Value',
+      value: `$${averageOrderValue.toFixed(0)}`,
+      change: `${aovGrowth.toFixed(1)}%`,
+      changeType: 'increase',
+      icon: ChartBarIcon,
+      gradient: 'from-yellow-500 via-orange-500 to-red-500',
+      description: 'Average per order'
+    }
+  ];
+
   return (
     <AdminLayout>
-      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-              <p className="text-gray-600 mt-2">Track your business performance and insights</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30">
+        <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 relative"
+          >
+            <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute top-8 right-8 w-24 h-24 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-2xl -z-10"></div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent mb-2">
+                  Business Analytics
+                </h1>
+                <p className="text-gray-600 text-lg">Track your business performance and insights.</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
+                >
+                    <option>Last 7 Days</option>
+                    <option>Last 30 Days</option>
+                    <option>Last 6 Months</option>
+                    <option>Last Year</option>
+                </select>
+                <button className="group relative overflow-hidden">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
+                    <EyeIcon className="w-5 h-5 mr-2" />
+                    View Report
+                  </div>
+                </button>
+              </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          </motion.div>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {statsData.map((stat, index) => (
+              <motion.div
+                key={stat.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="group relative"
               >
-                <option>Last 7 Days</option>
-                <option>Last 30 Days</option>
-                <option>Last 3 Months</option>
-                <option>Last 6 Months</option>
-                <option>Last Year</option>
-              </select>
-              <button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 flex items-center">
-                <EyeIcon className="w-4 h-4 mr-2" />
-                View Report
-              </button>
-            </div>
+                <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300`}></div>
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
+                      </div>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+                        {stat.value}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <div className={`flex items-center px-2 py-1 rounded-full ${
+                          stat.changeType === 'increase' ? 'bg-green-100' : 'bg-red-100'
+                        }`}>
+                          {stat.changeType === 'increase' ? (
+                            <ArrowUpIcon className="w-3 h-3 mr-1 text-green-600" />
+                          ) : (
+                            <ArrowDownIcon className="w-3 h-3 mr-1 text-red-600" />
+                          )}
+                          <span className={`text-xs font-bold ${
+                            stat.changeType === 'increase' ? 'text-green-700' : 'text-red-700'
+                          }`}>{stat.change}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">vs last month</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                    </div>
+                    <div className="relative">
+                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                        <stat.icon className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Revenue Chart */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="group relative"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Revenue Trend</h3>
+                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <p>{selectedPeriod}</p>
+                    <CalendarDaysIcon className="w-5 h-5"/>
+                  </div>
+                </div>
+                <div className="h-72">
+                  <div className="w-full h-full bg-gray-50 dark:bg-gray-800/10 rounded-lg flex items-center justify-center">
+                    <ChartBarIcon className="w-16 h-16 text-gray-300"/>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Customer Segments */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="group relative"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Customer Segments</h3>
+                  <UsersIcon className="w-5 h-5 text-gray-500" />
+                </div>
+                
+                <div className="space-y-4">
+                  {customerSegments.map((segment, index) => (
+                    <div key={segment.segment} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                      <div className="flex items-center">
+                        <div className={`w-4 h-4 rounded-full mr-3 ${
+                          index === 0 ? 'bg-purple-500' :
+                          index === 1 ? 'bg-blue-500' : 'bg-gray-400'
+                        }`}></div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{segment.segment}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{segment.count} customers</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900 dark:text-white">${segment.revenue.toLocaleString()}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{segment.percentage}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Top Products & Traffic Sources */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Top Products */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="group relative"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-green-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Top Products</h3>
+                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                    View All
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {topProducts.map((product, index) => (
+                    <div key={product.name} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 rounded-xl transition-colors duration-200">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 rounded-lg flex items-center justify-center mr-3 text-lg">
+                          {index === 0 ? '🌺' : index === 1 ? '🧴' : index === 2 ? '🌸' : index === 3 ? '🏺' : '🌿'}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{product.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{product.sales} sales</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900 dark:text-white">${product.revenue.toLocaleString()}</p>
+                        <div className="flex items-center">
+                          {product.growth > 0 ? (
+                            <ArrowUpIcon className="w-3 h-3 text-green-500 mr-1" />
+                          ) : (
+                            <ArrowDownIcon className="w-3 h-3 text-red-500 mr-1" />
+                          )}
+                          <span className={`text-sm ${product.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {Math.abs(product.growth)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Traffic Sources */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="group relative"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Traffic Sources</h3>
+                  <GlobeAltIcon className="w-5 h-5 text-gray-500" />
+                </div>
+                
+                <div className="space-y-4">
+                  {trafficSources.map((source, index) => (
+                    <div key={source.source} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                      <div className="flex items-center">
+                        <div className={`w-4 h-4 rounded-full mr-3 ${
+                          index === 0 ? 'bg-green-500' :
+                          index === 1 ? 'bg-blue-500' :
+                          index === 2 ? 'bg-purple-500' : 'bg-orange-500'
+                        }`}></div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">{source.source}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{source.visitors.toLocaleString()} visitors</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900 dark:text-white">{source.percentage}%</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{source.conversion}% conv.</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total Revenue</p>
-                <p className="text-3xl font-bold text-gray-900">${totalRevenue.toLocaleString()}</p>
-                <div className="flex items-center mt-2">
-                  {revenueGrowth > 0 ? (
-                    <ArrowUpIcon className="w-4 h-4 text-green-500 mr-1" />
-                  ) : (
-                    <ArrowDownIcon className="w-4 h-4 text-red-500 mr-1" />
-                  )}
-                  <span className={`text-sm font-medium ${revenueGrowth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {Math.abs(revenueGrowth).toFixed(1)}%
-                  </span>
-                  <span className="text-sm text-gray-500 ml-1">vs last month</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <CurrencyDollarIcon className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
-                <p className="text-3xl font-bold text-gray-900">{totalOrders.toLocaleString()}</p>
-                <div className="flex items-center mt-2">
-                  <ArrowUpIcon className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-sm font-medium text-green-600">8.2%</span>
-                  <span className="text-sm text-gray-500 ml-1">vs last month</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                <ShoppingBagIcon className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">New Customers</p>
-                <p className="text-3xl font-bold text-gray-900">{totalCustomers}</p>
-                <div className="flex items-center mt-2">
-                  <ArrowUpIcon className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-sm font-medium text-green-600">12.5%</span>
-                  <span className="text-sm text-gray-500 ml-1">vs last month</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Avg. Order Value</p>
-                <p className="text-3xl font-bold text-gray-900">${averageOrderValue.toFixed(0)}</p>
-                <div className="flex items-center mt-2">
-                  <ArrowUpIcon className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-sm font-medium text-green-600">5.1%</span>
-                  <span className="text-sm text-gray-500 ml-1">vs last month</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                <ChartBarIcon className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Revenue Chart */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Revenue Trend</h3>
-              <div className="flex items-center space-x-2">
-                <ArrowUpIcon className="w-5 h-5 text-green-500" />
-                <span className="text-sm text-green-600 font-medium">+12.5%</span>
-              </div>
-            </div>
-            
-            {/* Simple Bar Chart Representation */}
-            <div className="space-y-4">
-              {salesData.map((data, index) => (
-                <div key={data.month} className="flex items-center">
-                  <div className="w-12 text-sm font-medium text-gray-600">{data.month}</div>
-                  <div className="flex-1 mx-4">
-                    <div className="bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${(data.revenue / Math.max(...salesData.map(d => d.revenue))) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div className="w-20 text-sm font-medium text-gray-900 text-right">
-                    ${(data.revenue / 1000).toFixed(0)}k
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Customer Segments */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Customer Segments</h3>
-              <UsersIcon className="w-5 h-5 text-gray-500" />
-            </div>
-            
-            <div className="space-y-4">
-              {customerSegments.map((segment, index) => (
-                <div key={segment.segment} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center">
-                    <div className={`w-4 h-4 rounded-full mr-3 ${
-                      index === 0 ? 'bg-purple-500' :
-                      index === 1 ? 'bg-blue-500' : 'bg-gray-400'
-                    }`}></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{segment.segment}</p>
-                      <p className="text-sm text-gray-500">{segment.count} customers</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">${segment.revenue.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">{segment.percentage}%</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Top Products & Traffic Sources */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Top Products */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Top Products</h3>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
-                View All
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {topProducts.map((product, index) => (
-                <div key={product.name} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors duration-200">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center mr-3 text-lg">
-                      {index === 0 ? '🌺' : index === 1 ? '🧴' : index === 2 ? '🌸' : index === 3 ? '🏺' : '🌿'}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{product.name}</p>
-                      <p className="text-sm text-gray-500">{product.sales} sales</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">${product.revenue.toLocaleString()}</p>
-                    <div className="flex items-center">
-                      {product.growth > 0 ? (
-                        <ArrowUpIcon className="w-3 h-3 text-green-500 mr-1" />
-                      ) : (
-                        <ArrowDownIcon className="w-3 h-3 text-red-500 mr-1" />
-                      )}
-                      <span className={`text-sm ${product.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {Math.abs(product.growth)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Traffic Sources */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Traffic Sources</h3>
-              <GlobeAltIcon className="w-5 h-5 text-gray-500" />
-            </div>
-            
-            <div className="space-y-4">
-              {trafficSources.map((source, index) => (
-                <div key={source.source} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center">
-                    <div className={`w-4 h-4 rounded-full mr-3 ${
-                      index === 0 ? 'bg-green-500' :
-                      index === 1 ? 'bg-blue-500' :
-                      index === 2 ? 'bg-purple-500' : 'bg-orange-500'
-                    }`}></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{source.source}</p>
-                      <p className="text-sm text-gray-500">{source.visitors.toLocaleString()} visitors</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">{source.percentage}%</p>
-                    <p className="text-sm text-gray-500">{source.conversion}% conv.</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Device Analytics */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Device Analytics</h3>
-            <CalendarDaysIcon className="w-5 h-5 text-gray-500" />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
-              <ComputerDesktopIcon className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-gray-900">65%</p>
-              <p className="text-sm text-gray-600">Desktop</p>
-              <p className="text-sm text-blue-600 font-medium mt-1">2,340 sessions</p>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
-              <DevicePhoneMobileIcon className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-gray-900">30%</p>
-              <p className="text-sm text-gray-600">Mobile</p>
-              <p className="text-sm text-purple-600 font-medium mt-1">1,080 sessions</p>
-            </div>
-            
-            <div className="text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
-              <ComputerDesktopIcon className="w-8 h-8 text-green-600 mx-auto mb-3" />
-              <p className="text-2xl font-bold text-gray-900">5%</p>
-              <p className="text-sm text-gray-600">Tablet</p>
-              <p className="text-sm text-green-600 font-medium mt-1">180 sessions</p>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </AdminLayout>
   );
-} 
+}
