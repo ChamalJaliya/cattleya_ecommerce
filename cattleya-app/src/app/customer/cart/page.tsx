@@ -24,36 +24,6 @@ import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-const mockCartItems: Omit<CartItem, 'id'>[] = [
-    {
-      productId: 'prod_001',
-      name: 'Enchanted Orchid',
-      price: 49.99,
-      quantity: 1,
-      image: 'https://plus.unsplash.com/premium_photo-1677692482352-935574581729?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      inStock: true,
-      maxQuantity: 5,
-    },
-    {
-      productId: 'prod_002',
-      name: 'Sun-Kissed Lily',
-      price: 29.99,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1594955358498-c678a3a4115d?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      inStock: true,
-      maxQuantity: 10,
-    },
-    {
-      productId: 'prod_003',
-      name: 'Midnight Rose',
-      price: 35.50,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1560263816-d704d83cce0f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      inStock: true,
-      maxQuantity: 8,
-    },
-  ];
-
 export default function CustomerCartPage() {
   const { user } = useAuthStore();
   const {
@@ -134,13 +104,6 @@ export default function CustomerCartPage() {
       isDefault: false
     }
   ];
-
-  useEffect(() => {
-    // Populate cart with mock data for display if it's empty
-    if (items.length === 0) {
-      mockCartItems.forEach(item => addItem(item));
-    }
-  }, [items.length, addItem]);
 
   useEffect(() => {
     calculateTotals();

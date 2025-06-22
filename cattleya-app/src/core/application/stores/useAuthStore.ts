@@ -9,6 +9,7 @@ import {
   ChangePasswordRequest 
 } from '@/core/infrastructure/api/users.api';
 import { ApiError } from '@/core/infrastructure/api/base-api.service';
+import toast from 'react-hot-toast';
 
 interface AuthState {
   // Authentication state
@@ -193,9 +194,12 @@ export const useAuthStore = create<AuthState>()(
               user: response.data, 
               isLoading: false 
             });
+            toast.success('Profile updated successfully!');
             return true;
           } else {
-            set({ error: 'Failed to update profile', isLoading: false });
+            const errorMessage = response.message || 'Failed to update profile';
+            set({ error: errorMessage, isLoading: false });
+            toast.error(errorMessage);
             return false;
           }
         } catch (error) {
@@ -203,6 +207,7 @@ export const useAuthStore = create<AuthState>()(
             ? error.message 
             : 'An unexpected error occurred';
           set({ error: errorMessage, isLoading: false });
+          toast.error(errorMessage);
           return false;
         }
       },
@@ -214,9 +219,12 @@ export const useAuthStore = create<AuthState>()(
           
           if (response.success) {
             set({ isLoading: false });
+            toast.success('Password changed successfully!');
             return true;
           } else {
-            set({ error: 'Failed to change password', isLoading: false });
+            const errorMessage = response.message || 'Failed to change password';
+            set({ error: errorMessage, isLoading: false });
+            toast.error(errorMessage);
             return false;
           }
         } catch (error) {
@@ -224,6 +232,7 @@ export const useAuthStore = create<AuthState>()(
             ? error.message 
             : 'An unexpected error occurred';
           set({ error: errorMessage, isLoading: false });
+          toast.error(errorMessage);
           return false;
         }
       },
@@ -240,9 +249,12 @@ export const useAuthStore = create<AuthState>()(
               const updatedUser = { ...user, avatar: response.url };
               set({ user: updatedUser, isLoading: false });
             }
+            toast.success('Avatar uploaded successfully!');
             return response.url;
           } else {
-            set({ error: 'Failed to upload avatar', isLoading: false });
+            const errorMessage = 'Failed to upload avatar';
+            set({ error: errorMessage, isLoading: false });
+            toast.error(errorMessage);
             return null;
           }
         } catch (error) {
@@ -250,6 +262,7 @@ export const useAuthStore = create<AuthState>()(
             ? error.message 
             : 'An unexpected error occurred';
           set({ error: errorMessage, isLoading: false });
+          toast.error(errorMessage);
           return null;
         }
       },

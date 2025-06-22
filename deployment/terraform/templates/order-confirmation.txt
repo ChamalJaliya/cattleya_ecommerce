@@ -1,0 +1,43 @@
+Order Confirmation - Cattleya
+=============================
+
+Dear {{customer_name}},
+
+Thank you for your order with Cattleya. We're excited to bring you the finest orchids!
+
+ORDER DETAILS
+=============
+Order Number: {{order_number}}
+Order Date: {{order_date}}
+Status: {{order_status}}
+
+ITEMS ORDERED:
+{{#each items}}
+- {{name}} (Size: {{size}}, Color: {{color}})
+  ${{price}} x {{quantity}}
+{{/each}}
+
+PRICING:
+Subtotal: ${{subtotal}}
+Shipping: ${{shipping_cost}}
+Tax: ${{tax_amount}}
+TOTAL: ${{total_amount}}
+
+SHIPPING ADDRESS:
+{{shipping_address}}
+
+BILLING ADDRESS:
+{{billing_address}}
+
+We'll send you tracking information once your order ships. You can also check your order status anytime in your account at: {{order_tracking_url}}
+
+If you have any questions about your order, please don't hesitate to contact our customer support team.
+
+Best regards,
+The Cattleya Team
+
+---
+Cattleya - Premium Orchids
+Email: support@cattleya.com
+Phone: 1-800-CATTLEYA
+This email was sent to {{customer_email}} 

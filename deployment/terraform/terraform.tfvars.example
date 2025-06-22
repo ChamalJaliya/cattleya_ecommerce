@@ -1,0 +1,51 @@
+# Cattleya E-commerce Terraform Variables
+# Copy this file to terraform.tfvars and fill in your values
+
+# Environment
+environment = "production"
+
+# Domain Configuration
+domain_name = "cattleya.com"
+admin_email = "admin@cattleya.com"
+
+# Stripe Configuration
+stripe_secret_key = "sk_test_your_stripe_secret_key_here"
+
+# Optional: Override default region
+# aws_region = "us-east-1"
+
+# Optional: Override default VPC CIDR
+# vpc_cidr = "10.0.0.0/16"
+
+# Optional: Database Configuration
+# db_instance_class = "db.t3.medium"
+# db_instance_count = 2
+
+# Optional: ECS Configuration
+# ecs_cpu = 512
+# ecs_memory = 1024
+# ecs_desired_count = 2
+# ecs_max_count = 10
+
+# Optional: Auto Scaling Configuration
+# cpu_target_value = 70.0
+# memory_target_value = 80.0
+
+# Optional: CloudWatch Configuration
+# log_retention_days = 30
+
+# Optional: S3 Configuration
+# s3_versioning = true
+# s3_lifecycle_enabled = true
+
+# Optional: CloudFront Configuration
+# cloudfront_price_class = "PriceClass_100"
+# cloudfront_compression = true
+
+# Optional: WAF Configuration
+# waf_rate_limit = 2000
+# waf_enable_managed_rules = true
+
+# Optional: Monitoring Configuration
+# enable_detailed_monitoring = true
+# enable_container_insights = true 

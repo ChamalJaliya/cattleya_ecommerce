@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl"]
 }
 
@@ -12,170 +12,168 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  password  String
   firstName String
   lastName  String
-  password  String
-  role      UserRole @default(CUSTOMER)
   phone     String?
+  role      UserRole  @default(CUSTOMER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  isBlocked Boolean   @default(false)
+  blockedAt DateTime?
+  lastLogin DateTime?
   avatar    String?
-  
-  // Account status
-  isBlocked   Boolean @default(false)
-  blockedAt   DateTime?
-  blockedBy   String?  @db.ObjectId
-  blockReason String?
-  
-  // Addresses
   addresses Address[]
-  
+  dateOfBirth DateTime?
+
+  // Account status
+  blockedBy   String? @db.ObjectId
+  blockReason String?
+
   // Orders
   orders Order[]
-  
-  // Wishlist
-  wishlist WishlistItem[]
-  
-  // Cart
-  cartItems CartItem[]
-  
-  // Reviews
-  reviews Review[]
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+
+  // Customer specific
+  loyaltyPoints Int            @default(0)
+  wishlist      Wishlist?
+  cart          Cart?
+  reviews       Review[]
+  CartItem      CartItem[]
+  WishlistItem  WishlistItem[]
+
   @@map("users")
 }
 
 model Address {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String  @db.ObjectId
-  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  type       AddressType @default(SHIPPING)
-  firstName  String
-  lastName   String
-  company    String?
-  street     String
-  city       String
-  state      String
-  postalCode String
-  country    String
-  phone      String?
-  isDefault  Boolean @default(false)
-  
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // "shipping" or "billing"
+  label     String?
+  firstName String
+  lastName  String
+  company   String?
+  street    String
+  apartment String?
+  city      String
+  state     String
+  zipCode   String
+  country   String
+  phone     String?
+  isDefault Boolean @default(false)
+
   // Orders using this address
   shippingOrders Order[] @relation("ShippingAddress")
   billingOrders  Order[] @relation("BillingAddress")
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("addresses")
 }
 
 model Category {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String    @unique
-  slug        String    @unique
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String     @unique
+  slug        String     @unique
   description String?
   image       String?
-  parentId    String?   @db.ObjectId
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentId    String?    @db.ObjectId
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children    Category[] @relation("CategoryHierarchy")
-  
+
   // Products in this category
   products Product[]
-  
+
   // SEO
   metaTitle       String?
   metaDescription String?
-  
+
   // Status
-  isActive   Boolean @default(true)
-  sortOrder  Int     @default(0)
-  
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("categories")
 }
 
 model Product {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String @unique
-  description String
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  slug             String  @unique
+  description      String
   shortDescription String?
-  
+
   // Pricing
-  basePrice    Float
-  salePrice    Float?
-  isOnSale     Boolean @default(false)
-  costPrice    Float?
-  
+  basePrice Float
+  salePrice Float?
+  isOnSale  Boolean @default(false)
+  costPrice Float?
+
   // Inventory
-  sku              String  @unique
-  stockQuantity    Int     @default(0)
-  lowStockThreshold Int    @default(5)
-  trackQuantity    Boolean @default(true)
-  
+  sku               String  @unique
+  stockQuantity     Int     @default(0)
+  lowStockThreshold Int     @default(5)
+  trackQuantity     Boolean @default(true)
+
   // Physical properties
-  weight       Float?
-  dimensions   String?
-  
+  weight     Float?
+  dimensions String?
+
   // Orchid-specific properties
-  defaultSize      OrchidSize
-  availableSizes   OrchidSize[]
-  primaryColors    String[]     // Array of hex colors
-  colorPattern     ColorPattern @default(SOLID)
-  
+  defaultSize    OrchidSize
+  availableSizes OrchidSize[]
+  primaryColors  String[] // Array of hex colors
+  colorPattern   ColorPattern @default(SOLID)
+
   // Images
   images ProductImage[]
-  
+
   // Category
   categoryId String   @db.ObjectId
   category   Category @relation(fields: [categoryId], references: [id])
-  
+
   // Variants (for different sizes, colors, etc.)
   variants ProductVariant[]
-  
+
   // Attributes (care instructions, origin, etc.)
   attributes ProductAttribute[]
-  
+
   // Tags
   tags String[]
-  
+
   // SEO
   metaTitle       String?
   metaDescription String?
   metaKeywords    String[]
-  
+
   // Status
-  isActive      Boolean @default(true)
-  isFeatured    Boolean @default(false)
-  isDigital     Boolean @default(false)
-  publishedAt   DateTime?
-  
+  isActive    Boolean   @default(true)
+  isFeatured  Boolean   @default(false)
+  isDigital   Boolean   @default(false)
+  publishedAt DateTime?
+
   // Analytics
   averageRating Float @default(0)
   totalReviews  Int   @default(0)
   totalSales    Int   @default(0)
   viewCount     Int   @default(0)
-  
+
   // Reviews
   reviews Review[]
-  
+
   // Wishlist and Cart
   wishlistItems WishlistItem[]
   cartItems     CartItem[]
   orderItems    OrderItem[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("products")
 }
 
@@ -183,16 +181,16 @@ model ProductImage {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
   url       String
   altText   String
-  isMain    Boolean @default(false)
-  sortOrder Int     @default(0)
+  isMain    Boolean     @default(false)
+  sortOrder Int         @default(0)
   color     String? // Associated color for the image
   size      OrchidSize? // Associated size for the image
-  
+
   createdAt DateTime @default(now())
-  
+
   @@map("product_images")
 }
 
@@ -200,25 +198,25 @@ model ProductVariant {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  name         String
-  sku          String  @unique
-  price        Float
-  salePrice    Float?
-  stockQuantity Int    @default(0)
-  size         OrchidSize
-  colors       String[] // Array of hex colors for multicolor support
-  isDefault    Boolean @default(false)
-  
+
+  name          String
+  sku           String     @unique
+  price         Float
+  salePrice     Float?
+  stockQuantity Int        @default(0)
+  size          OrchidSize
+  colors        String[] // Array of hex colors for multicolor support
+  isDefault     Boolean    @default(false)
+
   // Variant-specific images
   images ProductVariantImage[]
-  
+
   // Variant-specific attributes
   attributes ProductVariantAttribute[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("product_variants")
 }
 
@@ -226,13 +224,13 @@ model ProductVariantImage {
   id        String         @id @default(auto()) @map("_id") @db.ObjectId
   variantId String         @db.ObjectId
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  
+
   url       String
   altText   String
-  sortOrder Int @default(0)
-  
+  sortOrder Int    @default(0)
+
   createdAt DateTime @default(now())
-  
+
   @@map("product_variant_images")
 }
 
@@ -240,11 +238,11 @@ model ProductVariantAttribute {
   id        String         @id @default(auto()) @map("_id") @db.ObjectId
   variantId String         @db.ObjectId
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  
+
   name  String
   value String
   type  AttributeType @default(TEXT)
-  
+
   @@map("product_variant_attributes")
 }
 
@@ -252,11 +250,11 @@ model ProductAttribute {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
   name  String
   value String
   type  AttributeType @default(TEXT)
-  
+
   @@map("product_attributes")
 }
 
@@ -266,14 +264,16 @@ model CartItem {
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  quantity  Int
-  variantId String? @db.ObjectId
+
+  quantity           Int
+  variantId          String? @db.ObjectId
   selectedAttributes Json? // Store selected attributes as JSON
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+  Cart      Cart?    @relation(fields: [cartId], references: [id])
+  cartId    String?  @db.ObjectId
+
   @@unique([userId, productId, variantId])
   @@map("cart_items")
 }
@@ -284,9 +284,11 @@ model WishlistItem {
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-  
+
+  createdAt  DateTime  @default(now())
+  Wishlist   Wishlist? @relation(fields: [wishlistId], references: [id])
+  wishlistId String?   @db.ObjectId
+
   @@unique([userId, productId])
   @@map("wishlist_items")
 }
@@ -295,50 +297,50 @@ model Order {
   id     String      @id @default(auto()) @map("_id") @db.ObjectId
   number String      @unique
   status OrderStatus @default(PENDING)
-  
+
   // Customer
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
-  
+
   // Contact
   email String
   phone String?
-  
+
   // Addresses
   shippingAddressId String  @db.ObjectId
   shippingAddress   Address @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
   billingAddressId  String  @db.ObjectId
   billingAddress    Address @relation("BillingAddress", fields: [billingAddressId], references: [id])
-  
+
   // Items
   items OrderItem[]
-  
+
   // Pricing
   subtotal    Float
-  taxAmount   Float   @default(0)
-  shippingFee Float   @default(0)
-  discount    Float   @default(0)
+  taxAmount   Float @default(0)
+  shippingFee Float @default(0)
+  discount    Float @default(0)
   total       Float
-  
+
   // Payment
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
   paidAt        DateTime?
-  
+
   // Shipping
   shippingMethod String?
   trackingNumber String?
   shippedAt      DateTime?
   deliveredAt    DateTime?
-  
+
   // Notes
-  notes           String?
-  customerNotes   String?
-  
+  notes         String?
+  customerNotes String?
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("orders")
 }
 
@@ -346,44 +348,66 @@ model OrderItem {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
   orderId String @db.ObjectId
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
+
   productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id])
-  
+
   quantity    Int
   price       Float
   variantId   String? @db.ObjectId
   variantName String?
-  
+
   @@map("order_items")
 }
 
 model Review {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String @db.ObjectId
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId String @db.ObjectId
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  rating    Int
-  title     String?
-  comment   String?
-  images    String[]
-  
+
+  rating  Int
+  title   String?
+  comment String?
+  images  String[]
+
   // Verification
   isVerifiedPurchase Boolean @default(false)
   helpfulVotes       Int     @default(0)
-  
+
   // Moderation
   isApproved Boolean @default(false)
   isVisible  Boolean @default(true)
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@unique([userId, productId])
   @@map("reviews")
+}
+
+model Wishlist {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String         @unique @db.ObjectId
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("wishlists")
+}
+
+model Cart {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @unique @db.ObjectId
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("carts")
 }
 
 // Enums
@@ -391,12 +415,6 @@ enum UserRole {
   CUSTOMER
   ADMIN
   STAFF
-}
-
-enum AddressType {
-  SHIPPING
-  BILLING
-  BOTH
 }
 
 enum OrderStatus {
@@ -439,4 +457,4 @@ enum AttributeType {
   BOOLEAN
   COLOR
   SIZE
-} 
+}
