@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 🌱 Cattleya Backend Deployment (Budget-Friendly)
-# This script deploys the backend to a single EC2 instance
+# This script deploys the NestJS backend to a single EC2 instance
 
 set -e
 
@@ -137,31 +137,64 @@ systemctl enable docker
 curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
 
-# Install Node.js
+# Install Node.js 18
 curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
 yum install -y nodejs
 
 # Install PM2
 npm install -g pm2
 
+# Install PostgreSQL client
+yum install -y postgresql15
+
 # Create application directory
 mkdir -p /opt/cattleya
 cd /opt/cattleya
 
-# Clone repository (you'll need to update this with your repo)
-git clone https://github.com/your-username/Cattleya_E.git .
+# Clone repository (update with your actual repository URL)
+git clone https://github.com/ChamalJaliya/cattleya_ecommerce.git .
 
 # Build and start backend
 cd cattleya-backend
+
+# Install dependencies
 npm install
+
+# Generate Prisma client
+npx prisma generate
+
+# Build the application
 npm run build
+
+# Create environment file
+cat > .env << 'ENV_EOF'
+NODE_ENV=production
+PORT=3001
+DATABASE_URL=postgresql://cattleya_admin:${DB_PASSWORD}@${DB_ENDPOINT}:5432/cattleya
+JWT_SECRET=${JWT_SECRET}
+S3_BUCKET=cattleya-app-uploads
+AWS_REGION=us-east-1
+ENV_EOF
+
+# Start the application with PM2
 pm2 start npm --name "cattleya-backend" -- start:prod
+
+# Save PM2 configuration
+pm2 save
+pm2 startup
 
 # Setup Nginx
 cat > /etc/nginx/conf.d/cattleya.conf << 'NGINX_EOF'
 server {
     listen 80;
     server_name _;
+    
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
     
     location / {
         proxy_pass http://localhost:3001;
@@ -173,7 +206,19 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Increase timeouts for long-running requests
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 }
 NGINX_EOF
 
@@ -181,9 +226,47 @@ NGINX_EOF
 systemctl start nginx
 systemctl enable nginx
 
-# Setup SSL with Let's Encrypt (optional)
-# yum install -y certbot python3-certbot-nginx
-# certbot --nginx -d your-domain.com --non-interactive --agree-tos --email your-email@example.com
+# Setup CloudWatch agent
+yum install -y amazon-cloudwatch-agent
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CW_EOF'
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/opt/cattleya/cattleya-backend/logs/*.log",
+            "log_group_name": "/aws/ec2/cattleya-backend",
+            "log_stream_name": "{instance_id}",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/nginx/access.log",
+            "log_group_name": "/aws/ec2/cattleya-nginx-access",
+            "log_stream_name": "{instance_id}",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/nginx/error.log",
+            "log_group_name": "/aws/ec2/cattleya-nginx-error",
+            "log_stream_name": "{instance_id}",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  }
+}
+CW_EOF
+
+systemctl start amazon-cloudwatch-agent
+systemctl enable amazon-cloudwatch-agent
+
+# Create logs directory
+mkdir -p /opt/cattleya/cattleya-backend/logs
+
+# Set proper permissions
+chown -R ec2-user:ec2-user /opt/cattleya
 
 echo "Cattleya backend setup complete!"
 EOF
@@ -262,7 +345,7 @@ setup_monitoring() {
             "height": 6,
             "properties": {
                 "metrics": [
-                    ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "cattleya-backend"],
+                    ["AWS/EC2", "CPUUtilization", "InstanceId", "INSTANCE_ID_PLACEHOLDER"],
                     [".", "NetworkIn", ".", "."],
                     [".", "NetworkOut", ".", "."]
                 ],
@@ -271,10 +354,28 @@ setup_monitoring() {
                 "region": "us-east-1",
                 "title": "EC2 Metrics"
             }
+        },
+        {
+            "type": "log",
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "query": "SOURCE '/aws/ec2/cattleya-backend'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 100",
+                "region": "us-east-1",
+                "title": "Application Logs"
+            }
         }
     ]
 }
 EOF
+
+    # Replace placeholder with actual instance ID
+    if [ -f instance-details.env ]; then
+        source instance-details.env
+        sed -i "s/INSTANCE_ID_PLACEHOLDER/$INSTANCE_ID/g" dashboard.json
+    fi
 
     # Create dashboard
     aws cloudwatch put-dashboard \
@@ -296,14 +397,17 @@ show_deployment_info() {
         echo "Public IP: $PUBLIC_IP"
         echo "SSH Command: ssh -i $KEY_FILE ec2-user@$PUBLIC_IP"
         echo "Application URL: http://$PUBLIC_IP"
+        echo "Health Check: http://$PUBLIC_IP/health"
         echo
         print_success "Backend deployed successfully!"
         echo
         echo "Next steps:"
-        echo "1. SSH into the instance to check logs"
-        echo "2. Update DNS to point to $PUBLIC_IP"
-        echo "3. Setup SSL certificate with Let's Encrypt"
-        echo "4. Deploy frontend to AWS Amplify"
+        echo "1. SSH into the instance to check logs: ssh -i $KEY_FILE ec2-user@$PUBLIC_IP"
+        echo "2. Update database connection in .env file"
+        echo "3. Run database migrations: npx prisma db push"
+        echo "4. Test the API: curl http://$PUBLIC_IP/health"
+        echo "5. Deploy frontend to AWS Amplify"
+        echo "6. Setup SSL certificate with Let's Encrypt"
     else
         print_error "Instance details not found."
     fi
