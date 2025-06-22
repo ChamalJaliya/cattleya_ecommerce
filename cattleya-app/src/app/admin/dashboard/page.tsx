@@ -22,6 +22,8 @@ import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import { UserRole } from '@/core/domain/entities/User';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 
+// This is a test comment to check if file editing is working.
+
 // Mock data for admin dashboard
 const dashboardStats = [
   {
