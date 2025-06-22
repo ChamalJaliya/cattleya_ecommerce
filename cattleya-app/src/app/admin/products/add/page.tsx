@@ -24,6 +24,7 @@ import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { OrchidSize } from '@/core/domain/entities/Product';
+import AdvancedImageUpload from '@/shared/components/AdvancedImageUpload';
 
 const categories = [
   { id: 'orchids', name: 'Orchids' },
@@ -72,8 +73,7 @@ const commonColors = [
 
 export default function AddProductPage() {
   const router = useRouter();
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreview, setImagePreview] = useState<string[]>([]);
+  const [advancedImages, setAdvancedImages] = useState<any[]>([]);
   const [currentTag, setCurrentTag] = useState('');
   const [attributes, setAttributes] = useState<Array<{ name: string; value: string; type: string }>>([]);
   const [currentAttribute, setCurrentAttribute] = useState({ name: '', value: '', type: 'TEXT' });
@@ -93,28 +93,8 @@ export default function AddProductPage() {
   const watchColorPattern = watch('colorPattern') || 'solid';
   const watchDefaultSize = watch('defaultSize') || OrchidSize.YOUNG_PLANT;
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (images.length + files.length > 5) {
-      toast.error('Maximum 5 images allowed');
-      return;
-    }
-
-    setImages(prev => [...prev, ...files]);
-    
-    // Create preview URLs
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(prev => [...prev, e.target?.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-    setImagePreview(prev => prev.filter((_, i) => i !== index));
+  const handleAdvancedImagesChange = (images: any[]) => {
+    setAdvancedImages(images);
   };
 
   const addTag = () => {
@@ -193,12 +173,12 @@ export default function AddProductPage() {
         attributes,
         primaryColors: selectedColors,
         availableSizes,
-        images: imagePreview.map((url, index) => ({
-          id: (index + 1).toString(),
+        images: advancedImages.map((image, index) => ({
+          id: image.id,
           productId: '', // Will be set by backend
-          url,
+          url: image.croppedPreview || image.preview,
           altText: data.name,
-          isMain: index === 0,
+          isMain: image.isMain,
           sortOrder: index + 1,
           createdAt: new Date(),
           color: selectedColors[0], // Associate with primary color
@@ -639,88 +619,26 @@ export default function AddProductPage() {
             </div>
           </motion.div>
 
-          {/* Refined Images Section */}
-          <motion.div 
+          {/* Advanced Image Upload Section */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="group relative"
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 relative overflow-hidden"
           >
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
-            <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-blue-500/10 transition-all duration-300">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-6 flex items-center">
-                <PhotoIcon className="w-6 h-6 mr-3 text-blue-600" />
-                Product Images
-                <SparklesIcon className="w-5 h-5 ml-3 text-blue-500 animate-pulse" />
-              </h2>
-
-              <div className="space-y-6">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-blue-300 border-dashed rounded-3xl cursor-pointer bg-gradient-to-br from-blue-50/80 to-cyan-50/80 hover:bg-gradient-to-br hover:from-blue-100/80 hover:to-cyan-100/80 transition-all duration-300 group">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <motion.div
-                        animate={{ y: [-3, 3, -3] }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                      >
-                        <CloudArrowUpIcon className="w-12 h-12 mb-4 text-blue-500 group-hover:text-blue-600" />
-                      </motion.div>
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG, WEBP (MAX. 5 images)</p>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                </div>
-
-                {imagePreview.length > 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
-                  >
-                    {imagePreview.map((preview, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="relative group"
-                      >
-                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-300"></div>
-                        <div className="relative aspect-square rounded-2xl overflow-hidden bg-white/90 backdrop-blur-sm border border-white/30">
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors duration-200 shadow-md"
-                          >
-                            <XMarkIcon className="w-4 h-4" />
-                          </motion.button>
-                          {index === 0 && (
-                            <div className="absolute bottom-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                              Main
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 to-violet-500"></div>
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="p-3 bg-gradient-to-r from-purple-100 to-violet-100 rounded-xl">
+                <PhotoIcon className="w-8 h-8 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Product Images</h2>
+                <p className="text-gray-500">Upload high-quality images to showcase your product</p>
               </div>
             </div>
+            <AdvancedImageUpload
+              onImagesChange={handleAdvancedImagesChange}
+            />
           </motion.div>
 
           {/* Refined Tags Section */}
