@@ -4,18 +4,18 @@ Perfect for startups! This deployment strategy focuses on **cost optimization** 
 
 ## 💰 **Budget Breakdown**
 
-### **Monthly Costs: $50-150** (vs $600-1600 for full production)
+### **Monthly Costs: $15-35** (vs $600-1600 for full production)
 
 | Service | Cost | Optimization |
 |---------|------|--------------|
 | **EC2 t3.micro** | $8-12 | Single instance, auto-scaling |
-| **RDS t3.micro** | $15-20 | Single instance, no multi-AZ |
+| **MongoDB Atlas** | $0 | Free tier (512MB storage) |
 | **S3** | $1-5 | Minimal storage, lifecycle policies |
 | **CloudFront** | $5-10 | Free tier eligible |
 | **Route 53** | $1 | Hosted zone only |
 | **SES** | $0-1 | Free tier: 62,000 emails/month |
 | **CloudWatch** | $0-2 | Basic monitoring |
-| **Total** | **$30-50** | Startup-friendly! |
+| **Total** | **$15-35** | Startup-friendly! |
 
 ## 🏗️ **Simplified Architecture**
 
@@ -33,8 +33,8 @@ Perfect for startups! This deployment strategy focuses on **cost optimization** 
          │
          ▼
 ┌─────────────────┐
-│   RDS Instance  │
-│   (Database)    │
+│ MongoDB Atlas   │
+│ (Free Tier)     │
 └─────────────────┘
 ```
 
@@ -47,24 +47,25 @@ npm install -g @aws-amplify/cli
 aws configure
 ```
 
-### 2. **Deploy Backend (EC2)**
+### 2. **Setup MongoDB Atlas (Free)**
+```bash
+# Go to https://www.mongodb.com/atlas
+# Create free account and cluster
+# Get connection string
+```
+
+### 3. **Deploy Backend (EC2)**
 ```bash
 cd deployment/aws-budget-friendly
 ./deploy-backend.sh
 ```
 
-### 3. **Deploy Frontend (Amplify)**
+### 4. **Deploy Frontend (Amplify)**
 ```bash
 cd ../../cattleya-app
 amplify init
 amplify add hosting
 amplify publish
-```
-
-### 4. **Setup Database**
-```bash
-cd ../deployment/aws-budget-friendly
-./setup-database.sh
 ```
 
 ## 📁 **File Structure**
@@ -73,10 +74,11 @@ cd ../deployment/aws-budget-friendly
 deployment/aws-budget-friendly/
 ├── README.md                 # This file
 ├── deploy-backend.sh         # Backend deployment script
-├── setup-database.sh         # Database setup script
+├── deploy-frontend.sh        # Frontend deployment script
+├── deploy-to-existing.sh     # Deploy to existing AWS resources
+├── mongodb-setup.md          # MongoDB setup guide
 ├── cloudformation/
-│   ├── backend-stack.yml     # EC2 + RDS stack
-│   └── s3-stack.yml          # S3 + CloudFront stack
+│   └── backend-stack.yml     # EC2 stack (no RDS)
 ├── scripts/
 │   ├── install-docker.sh     # Docker installation
 │   ├── setup-nginx.sh        # Nginx configuration
@@ -91,14 +93,14 @@ deployment/aws-budget-friendly/
 
 ### **1. Use Free Tier**
 - **EC2**: 750 hours/month (t3.micro)
-- **RDS**: 750 hours/month (t3.micro)
+- **MongoDB Atlas**: 512MB storage, shared clusters
 - **S3**: 5GB storage, 20,000 GET requests
 - **CloudFront**: 1TB data transfer
 - **SES**: 62,000 emails/month
 
 ### **2. Instance Sizing**
 - **EC2**: t3.micro (1 vCPU, 1GB RAM) - $8/month
-- **RDS**: t3.micro (1 vCPU, 1GB RAM) - $15/month
+- **MongoDB Atlas**: Free tier - $0/month
 - **Auto-scaling**: Scale to 0 during off-hours
 
 ### **3. Storage Optimization**
@@ -133,26 +135,18 @@ aws ec2 run-instances \
 echo "✅ Backend deployed successfully!"
 ```
 
-### **Database Setup**
+### **MongoDB Setup**
 ```bash
-#!/bin/bash
-# setup-database.sh
+# Option 1: MongoDB Atlas (Recommended)
+# Go to https://www.mongodb.com/atlas
+# Create free cluster
+# Get connection string
 
-echo "🗄️ Setting up RDS Database"
-
-# Create RDS instance
-aws rds create-db-instance \
-  --db-instance-identifier cattleya-db \
-  --db-instance-class db.t3.micro \
-  --engine postgres \
-  --master-username cattleya_admin \
-  --master-user-password $(openssl rand -base64 32) \
-  --allocated-storage 20 \
-  --storage-type gp2 \
-  --no-multi-az \
-  --no-publicly-accessible
-
-echo "✅ Database setup complete!"
+# Option 2: Local MongoDB on EC2
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+sudo yum install -y mongodb-org
+sudo systemctl start mongod
+sudo systemctl enable mongod
 ```
 
 ## 🔒 **Security (Budget-Friendly)**
@@ -161,7 +155,7 @@ echo "✅ Database setup complete!"
 - **Security Groups**: Minimal required ports (80, 443, 22)
 - **IAM**: Least privilege access
 - **SSL**: Let's Encrypt (free)
-- **Backup**: Daily automated backups
+- **Backup**: MongoDB Atlas handles backups automatically
 
 ### **No-Cost Security Features**
 - **AWS WAF**: Use CloudFlare (free tier)
@@ -172,21 +166,21 @@ echo "✅ Database setup complete!"
 
 ### **Phase 1: MVP (Current)**
 - Single EC2 instance
-- Single RDS instance
+- MongoDB Atlas free tier
 - Basic monitoring
-- **Cost: $30-50/month**
+- **Cost: $15-35/month**
 
 ### **Phase 2: Growth**
 - Add load balancer
-- Multi-AZ RDS
+- MongoDB Atlas paid tier ($9/month)
 - Auto-scaling group
-- **Cost: $100-200/month**
+- **Cost: $50-100/month**
 
 ### **Phase 3: Production**
 - Full ECS deployment
-- DocumentDB cluster
+- MongoDB Atlas dedicated cluster
 - Advanced monitoring
-- **Cost: $300-600/month**
+- **Cost: $200-500/month**
 
 ## 🚨 **Important Notes**
 
@@ -194,54 +188,39 @@ echo "✅ Database setup complete!"
 - **Single Point of Failure**: Single instance deployment
 - **Limited Scalability**: Manual scaling required
 - **Basic Monitoring**: Limited alerting capabilities
-- **No Multi-AZ**: Potential downtime during maintenance
+- **MongoDB Atlas Limits**: 512MB storage, shared clusters
 
 ### **When to Upgrade**
 - **Traffic > 1000 users/day**
-- **Revenue > $1000/month**
-- **Uptime requirements > 99.5%**
-- **Need for auto-scaling**
+- **Database > 512MB storage**
+- **Need dedicated resources**
+- **Require advanced features**
 
-## 🛠️ **Maintenance**
+## 🎯 **MongoDB Atlas Benefits**
 
-### **Daily Tasks**
-- Check CloudWatch metrics
-- Monitor disk space
-- Review error logs
+### **Free Tier Features**
+- ✅ **512MB storage** (enough for startup)
+- ✅ **Shared clusters** (managed infrastructure)
+- ✅ **Automatic backups** (daily)
+- ✅ **Global distribution** (multiple regions)
+- ✅ **Built-in security** (authentication, encryption)
+- ✅ **No server management** required
 
-### **Weekly Tasks**
-- Update security patches
-- Review backup status
-- Check cost usage
+### **Easy Migration Path**
+- **Free → Paid**: Seamless upgrade when needed
+- **Storage**: 512MB → 10GB+ (pay as you grow)
+- **Performance**: Shared → Dedicated clusters
+- **Features**: Basic → Advanced (monitoring, analytics)
 
-### **Monthly Tasks**
-- Review and optimize costs
-- Update SSL certificates
-- Performance analysis
+## 📝 **Next Steps**
 
-## 📞 **Support**
-
-### **Free Resources**
-- **AWS Documentation**: Comprehensive guides
-- **Stack Overflow**: Community support
-- **GitHub Issues**: Open source solutions
-
-### **Paid Support**
-- **AWS Support**: $29/month (Developer)
-- **Third-party**: Various options
-
-## 🎯 **Success Metrics**
-
-### **Technical Metrics**
-- **Uptime**: >95%
-- **Response Time**: <2 seconds
-- **Error Rate**: <1%
-
-### **Business Metrics**
-- **Cost per User**: <$0.10/month
-- **Revenue per User**: >$1/month
-- **ROI**: >1000%
+1. **Set up MongoDB Atlas** (free tier)
+2. **Deploy backend** to EC2
+3. **Deploy frontend** to Amplify
+4. **Configure domain** and SSL
+5. **Set up monitoring** and alerts
+6. **Test thoroughly** before going live
 
 ---
 
-**Remember**: This is a startup-friendly deployment. As you grow, you can easily migrate to the full production setup without changing your application code! 
+**Ready to deploy?** Start with the [Quick Start Guide](QUICK_START.md) or [Deployment Checklist](DEPLOYMENT_CHECKLIST.md)! 🚀 

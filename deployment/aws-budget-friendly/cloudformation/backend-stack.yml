@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Cattleya E-commerce Backend Stack (Budget-Friendly)'
+Description: 'Cattleya E-commerce Backend Stack (Budget-Friendly with MongoDB)'
 
 Parameters:
   KeyName:
@@ -24,6 +24,11 @@ Parameters:
       - staging
       - production
     Description: Environment name
+
+  MongoDBUrl:
+    Type: String
+    Description: MongoDB connection string (Atlas or local)
+    Default: "mongodb+srv://username:password@cluster.mongodb.net/cattleya?retryWrites=true&w=majority"
 
 Resources:
   # Security Group for Backend
@@ -81,14 +86,6 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource: !Sub '${S3Bucket}/*'
-        - PolicyName: SecretsAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: !Sub '${DatabaseSecret}'
 
   # IAM Instance Profile
   EC2InstanceProfile:
@@ -118,24 +115,22 @@ Resources:
         - Key: Name
           Value: !Sub '${Environment}-cattleya-app-bucket'
 
-  # Secrets Manager for Database Credentials
-  DatabaseSecret:
+  # Secrets Manager for Application Secrets
+  AppSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub 'cattleya-db-credentials-${Environment}'
-      Description: Database credentials for Cattleya application
+      Name: !Sub 'cattleya-app-secrets-${Environment}'
+      Description: Application secrets for Cattleya
       SecretString: !Sub |
         {
-          "username": "cattleya_admin",
-          "password": "{{resolve:secretsmanager:${DatabaseSecret}:SecretString:password}}",
-          "engine": "postgres",
-          "host": "{{resolve:secretsmanager:${DatabaseSecret}:SecretString:host}}",
-          "port": 5432,
-          "dbname": "cattleya"
+          "JWT_SECRET": "your_super_secret_jwt_key_here_make_it_long_and_random",
+          "MONGODB_URL": "${MongoDBUrl}",
+          "S3_BUCKET": "${S3Bucket}",
+          "AWS_REGION": "${AWS::Region}"
         }
       Tags:
         - Key: Name
-          Value: !Sub '${Environment}-cattleya-db-secret'
+          Value: !Sub '${Environment}-cattleya-app-secret'
 
   # EC2 Instance
   BackendInstance:
@@ -184,8 +179,8 @@ Resources:
           cat > .env << 'ENV_EOF'
           NODE_ENV=production
           PORT=3001
-          DATABASE_URL=postgresql://cattleya_admin:${DatabasePassword}@${DatabaseEndpoint}:5432/cattleya
-          JWT_SECRET=${JWTSecret}
+          DATABASE_URL=${MongoDBUrl}
+          JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
           S3_BUCKET=${S3Bucket}
           AWS_REGION=${AWS::Region}
           ENV_EOF
@@ -211,127 +206,28 @@ Resources:
               }
           }
           NGINX_EOF
-
-          # Start and enable Nginx
+          
           systemctl start nginx
           systemctl enable nginx
 
-          # Setup CloudWatch agent
-          yum install -y amazon-cloudwatch-agent
-          cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CW_EOF'
-          {
-            "logs": {
-              "logs_collected": {
-                "files": {
-                  "collect_list": [
-                    {
-                      "file_path": "/opt/cattleya/cattleya-backend/logs/*.log",
-                      "log_group_name": "/aws/ec2/cattleya-backend",
-                      "log_stream_name": "{instance_id}",
-                      "timezone": "UTC"
-                    }
-                  ]
-                }
-              }
-            }
-          }
-          CW_EOF
-          
-          systemctl start amazon-cloudwatch-agent
-          systemctl enable amazon-cloudwatch-agent
-
-          echo "Cattleya backend setup complete!"
       Tags:
         - Key: Name
           Value: !Sub '${Environment}-cattleya-backend'
         - Key: Environment
           Value: !Ref Environment
 
-  # CloudWatch Dashboard
-  Dashboard:
-    Type: AWS::CloudWatch::Dashboard
-    Properties:
-      DashboardName: !Sub 'Cattleya-Budget-Dashboard-${Environment}'
-      DashboardBody: !Sub |
-        {
-          "widgets": [
-            {
-              "type": "metric",
-              "x": 0,
-              "y": 0,
-              "width": 12,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  ["AWS/EC2", "CPUUtilization", "InstanceId", "${BackendInstance}"],
-                  [".", "NetworkIn", ".", "."],
-                  [".", "NetworkOut", ".", "."]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "${AWS::Region}",
-                "title": "EC2 Metrics"
-              }
-            },
-            {
-              "type": "log",
-              "x": 0,
-              "y": 6,
-              "width": 12,
-              "height": 6,
-              "properties": {
-                "query": "SOURCE '/aws/ec2/cattleya-backend'\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 100",
-                "region": "${AWS::Region}",
-                "title": "Application Logs"
-              }
-            }
-          ]
-        }
-
-  # CloudWatch Alarms
-  HighCPUAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub '${Environment}-cattleya-high-cpu'
-      AlarmDescription: High CPU utilization on Cattleya backend
-      MetricName: CPUUtilization
-      Namespace: AWS/EC2
-      Statistic: Average
-      Period: 300
-      Threshold: 80
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: 2
-      Dimensions:
-        - Name: InstanceId
-          Value: !Ref BackendInstance
-      AlarmActions:
-        - !Ref SNSTopic
-
-  # SNS Topic for Alerts
-  SNSTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Sub 'cattleya-alerts-${Environment}'
-      DisplayName: !Sub 'Cattleya Alerts - ${Environment}'
-
 Outputs:
   BackendInstanceId:
-    Description: Instance ID of the backend server
+    Description: ID of the backend EC2 instance
     Value: !Ref BackendInstance
     Export:
       Name: !Sub '${AWS::StackName}-BackendInstanceId'
 
   BackendPublicIP:
-    Description: Public IP address of the backend server
+    Description: Public IP address of the backend instance
     Value: !GetAtt BackendInstance.PublicIp
     Export:
       Name: !Sub '${AWS::StackName}-BackendPublicIP'
-
-  BackendSecurityGroupId:
-    Description: Security Group ID of the backend server
-    Value: !Ref BackendSecurityGroup
-    Export:
-      Name: !Sub '${AWS::StackName}-BackendSecurityGroupId'
 
   S3BucketName:
     Description: Name of the S3 bucket for application files
@@ -339,14 +235,8 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-S3BucketName'
 
-  DatabaseSecretArn:
-    Description: ARN of the database credentials secret
-    Value: !Ref DatabaseSecret
+  AppSecretArn:
+    Description: ARN of the application secrets
+    Value: !Ref AppSecret
     Export:
-      Name: !Sub '${AWS::StackName}-DatabaseSecretArn'
-
-  SNSTopicArn:
-    Description: ARN of the SNS topic for alerts
-    Value: !Ref SNSTopic
-    Export:
-      Name: !Sub '${AWS::StackName}-SNSTopicArn' 
+      Name: !Sub '${AWS::StackName}-AppSecretArn' 

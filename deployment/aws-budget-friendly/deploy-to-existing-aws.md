@@ -1,75 +1,92 @@
 # 🚀 Deploy Cattleya to Existing AWS Infrastructure
 
-Since you already have EC2, RDS, S3, and CloudFront set up, let's deploy your application step by step.
+Since you already have EC2, S3, and CloudFront set up, let's deploy your application step by step.
 
-## 📋 Prerequisites Check
+## 📋 **Prerequisites Check**
 
-First, let's verify your AWS setup:
+### **1. Verify Your AWS Resources**
+
+First, let's check what you have:
 
 ```bash
-# Check your AWS configuration
-aws configure list
-
-# Verify your AWS account
-aws sts get-caller-identity
-
-# List your existing resources
+# Check EC2 instances
 aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PublicIpAddress,Tags[?Key==`Name`].Value|[0]]' --output table
 
-aws rds describe-db-instances --query 'DBInstances[*].[DBInstanceIdentifier,Engine,DBInstanceStatus,Endpoint.Address]' --output table
-
+# Check S3 buckets
 aws s3 ls
 
+# Check CloudFront distributions
 aws cloudfront list-distributions --query 'DistributionList.Items[*].[Id,DomainName,Status]' --output table
 ```
 
-## 🗄️ Step 1: Database Setup (MongoDB)
+### **2. Required Resources**
 
-Since your app uses MongoDB, we need to set up MongoDB on your existing RDS or use MongoDB Atlas.
+You need:
+- ✅ **EC2 instance** (running)
+- ✅ **S3 bucket** (for file uploads)
+- ✅ **CloudFront distribution** (optional, for CDN)
+- ✅ **MongoDB Atlas account** (free tier)
 
-### Option A: Use MongoDB Atlas (Recommended)
-```bash
-# 1. Go to https://www.mongodb.com/atlas
-# 2. Create a free cluster
-# 3. Get your connection string
-# 4. Update your environment variables
+## 🗄️ **Step 1: MongoDB Atlas Setup**
+
+Since your app uses MongoDB, we need to set up MongoDB Atlas (free tier):
+
+### **Create MongoDB Atlas Account**
+1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Click "Try Free"
+3. Create account with your email
+
+### **Create Free Cluster**
+1. Choose "FREE" tier (M0)
+2. Select cloud provider: AWS
+3. Select region: us-east-1 (same as your EC2)
+4. Click "Create"
+
+### **Configure Database Access**
+1. Go to "Database Access"
+2. Click "Add New Database User"
+3. Username: `cattleya_admin`
+4. Password: `your_secure_password`
+5. Role: "Atlas admin"
+6. Click "Add User"
+
+### **Configure Network Access**
+1. Go to "Network Access"
+2. Click "Add IP Address"
+3. Click "Allow Access from Anywhere" (0.0.0.0/0)
+4. Click "Confirm"
+
+### **Get Connection String**
+1. Go to "Database"
+2. Click "Connect"
+3. Choose "Connect your application"
+4. Copy the connection string
+
+**Your connection string will look like:**
+```
+mongodb+srv://cattleya_admin:your_password@cluster.mongodb.net/cattleya?retryWrites=true&w=majority
 ```
 
-### Option B: Install MongoDB on EC2
+## 🖥️ **Step 2: Backend Deployment**
+
+### **SSH into Your EC2 Instance**
+
 ```bash
-# SSH into your EC2 instance
+# Replace with your actual EC2 IP and key file
 ssh -i your-key.pem ec2-user@YOUR_EC2_IP
-
-# Install MongoDB
-sudo yum update -y
-sudo yum install -y mongodb-org
-
-# Start MongoDB
-sudo systemctl start mongod
-sudo systemctl enable mongod
-
-# Create database and user
-mongosh
-use cattleya
-db.createUser({
-  user: "cattleya_admin",
-  pwd: "your_secure_password",
-  roles: ["readWrite", "dbAdmin"]
-})
-exit
 ```
 
-## 🖥️ Step 2: Backend Deployment on EC2
+### **Install Dependencies**
 
-### 2.1 SSH into your EC2 instance
-```bash
-ssh -i your-key.pem ec2-user@YOUR_EC2_IP
-```
-
-### 2.2 Install required software
 ```bash
 # Update system
 sudo yum update -y
+
+# Install Docker
+sudo yum install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -a -G docker ec2-user
 
 # Install Node.js 18
 curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
@@ -78,23 +95,22 @@ sudo yum install -y nodejs
 # Install PM2
 sudo npm install -g pm2
 
-# Install Git
-sudo yum install -y git
-
 # Install Nginx
 sudo yum install -y nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
 ```
 
-### 2.3 Clone and setup your application
+### **Deploy Application**
+
 ```bash
 # Create application directory
-mkdir -p /opt/cattleya
+sudo mkdir -p /opt/cattleya
+sudo chown ec2-user:ec2-user /opt/cattleya
 cd /opt/cattleya
 
-# Clone your repository
-git clone https://github.com/ChamalJaliya/cattleya_ecommerce.git .
+# Clone repository (replace with your repo URL)
+git clone https://github.com/your-username/Cattleya_E.git .
 
 # Navigate to backend
 cd cattleya-backend
@@ -102,74 +118,57 @@ cd cattleya-backend
 # Install dependencies
 npm install
 
+# Build application
+npm run build
+
 # Generate Prisma client
 npx prisma generate
+
+# Push schema to MongoDB
+npx prisma db push
 ```
 
-### 2.4 Configure environment variables
+### **Configure Environment Variables**
+
 ```bash
-# Create environment file
+# Create .env file
 cat > .env << 'EOF'
 NODE_ENV=production
 PORT=3001
-
-# MongoDB Connection (update with your actual connection string)
-DATABASE_URL="mongodb://cattleya_admin:your_password@localhost:27017/cattleya?authSource=cattleya"
-
-# JWT Configuration
-JWT_SECRET="your_super_secret_jwt_key_here_make_it_long_and_random"
-
-# AWS Configuration
-AWS_REGION=us-east-1
+DATABASE_URL=mongodb+srv://cattleya_admin:your_password@cluster.mongodb.net/cattleya?retryWrites=true&w=majority
+JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
 S3_BUCKET=your-s3-bucket-name
-S3_ACCESS_KEY_ID=your_access_key_id
-S3_SECRET_ACCESS_KEY=your_secret_access_key
-
-# CloudFront Configuration
-CLOUDFRONT_DOMAIN=your-cloudfront-domain.cloudfront.net
-
-# Email Configuration (if using SES)
-SES_REGION=us-east-1
-SES_FROM_EMAIL=noreply@yourdomain.com
-
-# Stripe Configuration (if using)
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-
-# Security
-CORS_ORIGIN=https://yourdomain.com,https://www.yourdomain.com
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
+AWS_REGION=us-east-1
+CORS_ORIGIN=https://yourdomain.com
 EOF
 ```
 
-### 2.5 Build and start the application
-```bash
-# Build the application
-npm run build
+**Important:** Replace the placeholders:
+- `your_password` with your MongoDB password
+- `your-s3-bucket-name` with your S3 bucket name
+- `yourdomain.com` with your domain (or leave as is for development)
 
+### **Start Application**
+
+```bash
 # Start with PM2
 pm2 start npm --name "cattleya-backend" -- start:prod
 
 # Save PM2 configuration
 pm2 save
+
+# Setup PM2 startup
 pm2 startup
 ```
 
-### 2.6 Configure Nginx
+### **Configure Nginx**
+
 ```bash
 # Create Nginx configuration
 sudo tee /etc/nginx/conf.d/cattleya.conf > /dev/null << 'EOF'
 server {
     listen 80;
     server_name _;
-    
-    # Health check endpoint
-    location /health {
-        access_log off;
-        return 200 "healthy\n";
-        add_header Content-Type text/plain;
-    }
     
     location / {
         proxy_pass http://localhost:3001;
@@ -181,355 +180,294 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        
-        # Increase timeouts
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
     }
-    
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 }
 EOF
 
-# Test Nginx configuration
+# Test and reload Nginx
 sudo nginx -t
-
-# Reload Nginx
 sudo systemctl reload nginx
 ```
 
-## 🌐 Step 3: Frontend Deployment
+## 🌐 **Step 3: Frontend Deployment**
 
-### 3.1 Deploy to AWS Amplify
+### **Install Amplify CLI**
+
 ```bash
-# Navigate to frontend directory
-cd /opt/cattleya/cattleya-app
-
-# Install dependencies
-npm install
-
-# Build the application
-npm run build
-```
-
-### 3.2 Configure Amplify (if not already done)
-```bash
-# Install Amplify CLI locally
+# Install globally
 npm install -g @aws-amplify/cli
 
+# Configure Amplify
+amplify configure
+```
+
+### **Deploy to Amplify**
+
+```bash
+# Navigate to frontend directory
+cd ../../cattleya-app
+
 # Initialize Amplify
-amplify init
+amplify init --yes
 
 # Add hosting
-amplify add hosting
+amplify add hosting --yes
 
-# Publish
-amplify publish
-```
-
-### 3.3 Update frontend environment variables
-```bash
-# Create production environment file
-cat > .env.production << 'EOF'
-NEXT_PUBLIC_API_URL=http://YOUR_EC2_IP
-NEXT_PUBLIC_AWS_REGION=us-east-1
+# Create environment file
+cat > .env.local << EOF
+NEXT_PUBLIC_API_URL=http://YOUR_EC2_IP:3001
 NEXT_PUBLIC_S3_BUCKET=your-s3-bucket-name
-NEXT_PUBLIC_CLOUDFRONT_DOMAIN=your-cloudfront-domain.cloudfront.net
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_key
+NEXT_PUBLIC_AWS_REGION=us-east-1
 EOF
+
+# Build and publish
+amplify publish --yes
 ```
 
-## ☁️ Step 4: S3 and CloudFront Configuration
+## 🔒 **Step 4: SSL Certificate Setup**
 
-### 4.1 Configure S3 bucket for file uploads
+### **Install Certbot**
+
 ```bash
-# Create S3 bucket policy for file uploads
-aws s3api put-bucket-policy --bucket your-s3-bucket-name --policy '{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "PublicReadGetObject",
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::your-s3-bucket-name/*"
-    }
-  ]
-}'
+# SSH into your EC2 instance
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
 
-# Enable CORS for S3
-aws s3api put-bucket-cors --bucket your-s3-bucket-name --cors-configuration '{
-  "CORSRules": [
-    {
-      "AllowedHeaders": ["*"],
-      "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
-      "AllowedOrigins": ["*"],
-      "ExposeHeaders": []
-    }
-  ]
-}'
-```
-
-### 4.2 Configure CloudFront distribution
-```bash
-# Update CloudFront distribution to serve S3 content
-# Go to AWS Console > CloudFront > Your Distribution
-# Set origin to your S3 bucket
-# Configure cache behaviors for optimal performance
-```
-
-## 🔒 Step 5: Security Configuration
-
-### 5.1 Configure security groups
-```bash
-# Update EC2 security group to allow necessary ports
-aws ec2 authorize-security-group-ingress \
-    --group-id your-security-group-id \
-    --protocol tcp \
-    --port 80 \
-    --cidr 0.0.0.0/0
-
-aws ec2 authorize-security-group-ingress \
-    --group-id your-security-group-id \
-    --protocol tcp \
-    --port 443 \
-    --cidr 0.0.0.0/0
-
-aws ec2 authorize-security-group-ingress \
-    --group-id your-security-group-id \
-    --protocol tcp \
-    --port 3001 \
-    --cidr 0.0.0.0/0
-```
-
-### 5.2 Set up SSL certificate (optional)
-```bash
 # Install Certbot
 sudo yum install -y certbot python3-certbot-nginx
 
 # Get SSL certificate (replace with your domain)
-sudo certbot --nginx -d yourdomain.com --non-interactive --agree-tos --email admin@yourdomain.com
+sudo certbot --nginx -d yourdomain.com --email admin@yourdomain.com --non-interactive --agree-tos
+
+# Setup auto-renewal
+(crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet") | crontab -
 ```
 
-## 🧪 Step 6: Testing
+## 🧪 **Step 5: Testing**
 
-### 6.1 Test backend
+### **Test Backend**
+
 ```bash
-# Test health endpoint
-curl http://YOUR_EC2_IP/health
+# Health check
+curl http://YOUR_EC2_IP:3001/health
 
-# Test API endpoint
-curl http://YOUR_EC2_IP/api/products
+# Test MongoDB connection
+mongosh "mongodb+srv://cattleya_admin:your_password@cluster.mongodb.net/cattleya?retryWrites=true&w=majority"
 
-# Check application logs
+# Test basic operations
+use cattleya
+db.users.insertOne({email: "test@example.com", firstName: "Test", lastName: "User"})
+db.users.find()
+db.users.deleteOne({email: "test@example.com"})
+```
+
+### **Test Frontend**
+
+```bash
+# Get Amplify URL
+amplify status --json | jq -r '.hosting.amplifyhosting.url'
+
+# Open in browser and test:
+# - User registration
+# - User login
+# - Product browsing
+# - Cart functionality
+```
+
+## 📊 **Step 6: Monitoring**
+
+### **Application Logs**
+
+```bash
+# Check PM2 logs
 pm2 logs cattleya-backend
 
 # Check Nginx logs
 sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+# Check system resources
+htop
+df -h
+free -h
 ```
 
-### 6.2 Test frontend
-- Visit your Amplify URL
-- Test user registration and login
-- Test product browsing
-- Test file uploads to S3
+### **Database Monitoring**
 
-### 6.3 Test database
+MongoDB Atlas provides built-in monitoring:
+1. Go to MongoDB Atlas dashboard
+2. Check "Metrics" tab
+3. Monitor connections, operations, and storage
+
+## 🔧 **Step 7: Configuration**
+
+### **Update DNS Records**
+
+If you have a domain:
+1. Go to your DNS provider
+2. Add A record: `yourdomain.com` → `YOUR_EC2_IP`
+3. Add CNAME record: `www.yourdomain.com` → `yourdomain.com`
+
+### **Update CORS Settings**
+
 ```bash
-# Connect to MongoDB
-mongosh "mongodb://cattleya_admin:your_password@localhost:27017/cattleya?authSource=cattleya"
+# SSH into EC2 and update .env file
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
 
-# Check collections
-show collections
+# Edit .env file
+nano /opt/cattleya/cattleya-backend/.env
 
-# Test queries
-db.users.find().limit(1)
-```
-
-## 📊 Step 7: Monitoring Setup
-
-### 7.1 Set up CloudWatch monitoring
-```bash
-# Install CloudWatch agent
-sudo yum install -y amazon-cloudwatch-agent
-
-# Configure CloudWatch agent
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
-
-# Start CloudWatch agent
-sudo systemctl start amazon-cloudwatch-agent
-sudo systemctl enable amazon-cloudwatch-agent
-```
-
-### 7.2 Create CloudWatch dashboard
-```bash
-# Create dashboard configuration
-cat > dashboard.json << 'EOF'
-{
-    "widgets": [
-        {
-            "type": "metric",
-            "x": 0,
-            "y": 0,
-            "width": 12,
-            "height": 6,
-            "properties": {
-                "metrics": [
-                    ["AWS/EC2", "CPUUtilization"],
-                    [".", "NetworkIn"],
-                    [".", "NetworkOut"]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "us-east-1",
-                "title": "EC2 Metrics"
-            }
-        }
-    ]
-}
-EOF
-
-# Create dashboard
-aws cloudwatch put-dashboard \
-    --dashboard-name "Cattleya-Dashboard" \
-    --dashboard-body file://dashboard.json
-```
-
-## 🔄 Step 8: CI/CD Setup (Optional)
-
-### 8.1 Set up GitHub Actions
-```bash
-# Create .github/workflows/deploy.yml in your repository
-mkdir -p .github/workflows
-```
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to AWS
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  deploy-backend:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          cd /opt/cattleya
-          git pull origin main
-          cd cattleya-backend
-          npm install
-          npm run build
-          pm2 restart cattleya-backend
-```
-
-## 📝 Step 9: Environment Variables Summary
-
-### Backend (.env)
-```env
-NODE_ENV=production
-PORT=3001
-DATABASE_URL=mongodb://cattleya_admin:password@localhost:27017/cattleya?authSource=cattleya
-JWT_SECRET=your_super_secret_jwt_key_here
-AWS_REGION=us-east-1
-S3_BUCKET=your-s3-bucket-name
-S3_ACCESS_KEY_ID=your_access_key_id
-S3_SECRET_ACCESS_KEY=your_secret_access_key
-CLOUDFRONT_DOMAIN=your-cloudfront-domain.cloudfront.net
+# Update CORS_ORIGIN
 CORS_ORIGIN=https://yourdomain.com,https://www.yourdomain.com
+
+# Restart application
+pm2 restart cattleya-backend
 ```
 
-### Frontend (.env.production)
-```env
-NEXT_PUBLIC_API_URL=http://YOUR_EC2_IP
-NEXT_PUBLIC_AWS_REGION=us-east-1
-NEXT_PUBLIC_S3_BUCKET=your-s3-bucket-name
-NEXT_PUBLIC_CLOUDFRONT_DOMAIN=your-cloudfront-domain.cloudfront.net
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_key
-```
+## 💰 **Cost Optimization**
 
-## 🚨 Troubleshooting
+### **Current Costs**
+- **EC2 t3.micro**: $8-12/month
+- **MongoDB Atlas**: $0/month (free tier)
+- **S3**: $1-5/month
+- **CloudFront**: $5-10/month
+- **Total**: $14-27/month
 
-### Common Issues:
+### **Free Tier Usage**
+- ✅ **EC2**: 750 hours/month (t3.micro)
+- ✅ **MongoDB Atlas**: 512MB storage
+- ✅ **S3**: 5GB storage, 20,000 GET requests
+- ✅ **CloudFront**: 1TB data transfer
+- ✅ **Amplify**: 1,000 build minutes/month
 
-1. **MongoDB Connection Issues**
+## 🚨 **Troubleshooting**
+
+### **Common Issues**
+
+1. **Backend not starting**
    ```bash
-   # Check MongoDB status
-   sudo systemctl status mongod
-   
-   # Check MongoDB logs
-   sudo tail -f /var/log/mongodb/mongod.log
-   ```
-
-2. **Application Not Starting**
-   ```bash
-   # Check PM2 status
-   pm2 status
-   
-   # Check application logs
+   # Check logs
    pm2 logs cattleya-backend
    
-   # Check if port is in use
-   sudo netstat -tlnp | grep :3001
+   # Check environment variables
+   cat /opt/cattleya/cattleya-backend/.env
+   
+   # Restart application
+   pm2 restart cattleya-backend
    ```
 
-3. **Nginx Issues**
+2. **Database connection failed**
    ```bash
-   # Check Nginx status
-   sudo systemctl status nginx
+   # Test connection string
+   mongosh "your_connection_string"
    
-   # Check Nginx configuration
-   sudo nginx -t
-   
-   # Check Nginx logs
-   sudo tail -f /var/log/nginx/error.log
+   # Check IP whitelist in MongoDB Atlas
+   # Add EC2 IP to Network Access
    ```
 
-4. **S3 Upload Issues**
+3. **Frontend not loading**
    ```bash
-   # Check S3 bucket permissions
-   aws s3 ls s3://your-s3-bucket-name
+   # Check Amplify build logs
+   amplify console
    
-   # Test S3 upload
-   aws s3 cp test.txt s3://your-s3-bucket-name/
+   # Rebuild application
+   amplify publish
    ```
 
-## ✅ Final Checklist
+4. **SSL certificate issues**
+   ```bash
+   # Check certificate status
+   sudo certbot certificates
+   
+   # Renew certificate
+   sudo certbot renew
+   ```
 
-- [ ] MongoDB is running and accessible
-- [ ] Backend application is running on port 3001
-- [ ] Nginx is configured and serving the backend
-- [ ] Frontend is deployed and accessible
-- [ ] S3 bucket is configured for file uploads
-- [ ] CloudFront is serving content from S3
-- [ ] SSL certificate is installed (if using custom domain)
-- [ ] Environment variables are properly configured
-- [ ] Application is tested and working
-- [ ] Monitoring is set up
-- [ ] Backups are configured
+### **Emergency Procedures**
+
+1. **Backup Database**
+   ```bash
+   # MongoDB Atlas handles backups automatically
+   # Manual backup (if needed)
+   mongodump --uri="your_connection_string" --out=backup/
+   ```
+
+2. **Restart Services**
+   ```bash
+   # SSH into EC2
+   ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+   
+   # Restart all services
+   sudo systemctl restart nginx
+   pm2 restart all
+   ```
+
+3. **Rollback Deployment**
+   ```bash
+   # Revert to previous version
+   cd /opt/cattleya
+   git log --oneline
+   git reset --hard HEAD~1
+   pm2 restart cattleya-backend
+   ```
+
+## 📋 **Deployment Checklist**
+
+- [ ] MongoDB Atlas account created
+- [ ] Free cluster created and configured
+- [ ] Database user created
+- [ ] Network access configured
+- [ ] Connection string obtained
+- [ ] EC2 instance accessible via SSH
+- [ ] Dependencies installed (Docker, Node.js, PM2, Nginx)
+- [ ] Application cloned and built
+- [ ] Environment variables configured
+- [ ] Application started with PM2
+- [ ] Nginx configured and running
+- [ ] Frontend deployed to Amplify
+- [ ] SSL certificate obtained (if using domain)
+- [ ] DNS records updated (if using domain)
+- [ ] All tests passing
+- [ ] Monitoring configured
+- [ ] Backup procedures verified
+
+## 🎯 **Next Steps**
+
+### **Immediate (Week 1)**
+- [ ] Set up monitoring alerts
+- [ ] Configure backup procedures
+- [ ] Test all user flows
+- [ ] Set up error tracking
+
+### **Short Term (Month 1)**
+- [ ] Optimize performance
+- [ ] Add caching layer
+- [ ] Implement CDN
+- [ ] Set up analytics
+
+### **Long Term (3 months)**
+- [ ] Scale to multiple instances
+- [ ] Add load balancer
+- [ ] Implement auto-scaling
+- [ ] Add advanced monitoring
 
 ---
 
-**Your Cattleya e-commerce application is now deployed on your existing AWS infrastructure!** 🎉
+## 📞 **Support**
 
-**Next steps:**
-1. Test all functionality thoroughly
-2. Set up monitoring alerts
-3. Configure automated backups
-4. Set up CI/CD pipeline
-5. Implement security best practices 
+### **Free Resources**
+- **AWS Documentation**: https://docs.aws.amazon.com/
+- **MongoDB Atlas Docs**: https://docs.atlas.mongodb.com/
+- **Amplify Documentation**: https://docs.amplify.aws/
+
+### **Community Support**
+- **Stack Overflow**: Tag with `aws`, `mongodb`, `nextjs`
+- **GitHub Issues**: Report bugs in your repository
+- **Discord/Slack**: Join developer communities
+
+---
+
+**🎉 Congratulations! Your Cattleya e-commerce application is now live on your existing AWS infrastructure with MongoDB Atlas!**
+
+**Total Setup Time**: ~2 hours  
+**Monthly Cost**: $14-27  
+**Next**: Follow the [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) for detailed verification steps. 
