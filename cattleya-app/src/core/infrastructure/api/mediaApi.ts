@@ -40,6 +40,13 @@ export interface MediaStats {
   }>;
 }
 
+export interface MediaStatsResponse {
+  data: MediaStats;
+  statusCode: number;
+  timestamp: string;
+  message: string;
+}
+
 export interface DownloadUrl {
   url: string;
   expiresIn: number;
@@ -95,11 +102,18 @@ class MediaApi {
     folder?: string;
     search?: string;
   }): Promise<MediaFile[]> {
-    const response = await apiClient.get('/products/media', { params });
-    return response.data;
+    try {
+      const response = await apiClient.get('/products/media', { params });
+      // The API wraps the array in a `data` property, so we extract it here.
+      return Array.isArray(response.data.data) ? response.data.data : [];
+    } catch (error) {
+      console.error('Error listing media files:', error);
+      // Return empty array on error to prevent filter issues
+      return [];
+    }
   }
 
-  async getMediaStats(): Promise<MediaStats> {
+  async getMediaStats(): Promise<MediaStatsResponse> {
     const response = await apiClient.get('/products/media/stats');
     return response.data;
   }

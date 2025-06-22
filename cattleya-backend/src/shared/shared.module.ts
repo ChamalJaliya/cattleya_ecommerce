@@ -1,16 +1,10 @@
 import { Global, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './database/prisma/prisma.service';
+import { S3Service } from './s3/s3.service';
 
 @Global()
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-  ],
-  providers: [PrismaService],
-  exports: [PrismaService],
+  providers: [PrismaService, S3Service],
+  exports: [PrismaService, S3Service],
 })
 export class SharedModule {} 

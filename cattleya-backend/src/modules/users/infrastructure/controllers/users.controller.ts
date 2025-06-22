@@ -16,9 +16,10 @@ import {
   Request,
   HttpStatus,
   BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -39,6 +40,7 @@ import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
 import { UserRole } from '../../domain/entities/user.entity';
+import { S3Service } from '../../../../shared/s3/s3.service';
 
 // Ensure uploads directory exists
 const uploadsDir = join(process.cwd(), 'uploads', 'avatars');
@@ -55,6 +57,7 @@ export class UsersController {
     private readonly blockUserUseCase: BlockUserUseCase,
     private readonly getProfileUseCase: GetProfileUseCase,
     private readonly getAllUsersUseCase: GetAllUsersUseCase,
+    private readonly s3Service: S3Service,
   ) {}
 
   @Post()
@@ -172,17 +175,7 @@ export class UsersController {
 
   @Post('avatar')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('avatar', {
-    storage: diskStorage({
-      destination: uploadsDir,
-      filename: (req, file, callback) => {
-        const userId = (req as any).user.id;
-        const fileExtName = extname(file.originalname);
-        const fileName = `${userId}-${Date.now()}${fileExtName}`;
-        callback(null, fileName);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('avatar'))
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ 
@@ -201,11 +194,7 @@ export class UsersController {
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Avatar uploaded successfully',
-    type: FileUploadResponseDto
-  })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded successfully', type: FileUploadResponseDto })
   @ApiResponse({ 
     status: HttpStatus.UNAUTHORIZED, 
     description: 'User not authenticated'
@@ -214,31 +203,17 @@ export class UsersController {
     status: HttpStatus.BAD_REQUEST, 
     description: 'Invalid file format or size'
   })
-  async uploadAvatar(
-    @Request() req,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
-  ): Promise<FileUploadResponseDto> {
+  async uploadAvatar(@Request() req, @UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new HttpException('No file provided', HttpStatus.BAD_REQUEST);
     }
-
-    const avatarUrl = `/uploads/avatars/${file.filename}`;
-    await this.updateProfileUseCase.updateAvatar(req.user.id, avatarUrl);
-
+    const avatarInfo = await this.s3Service.uploadFile(file, `avatars/${req.user.id}`);
+    await this.updateProfileUseCase.updateAvatar(req.user.id, avatarInfo.url);
+    
     return {
-      success: true,
-      url: avatarUrl,
-      filename: file.filename,
-      size: file.size,
-      uploadedAt: new Date(),
+      message: 'Avatar uploaded successfully',
+      url: avatarInfo.url,
+      key: avatarInfo.key,
     };
   }
 
@@ -369,5 +344,37 @@ export class UsersController {
       success: true,
       message: 'User blocked successfully'
     };
+  }
+
+  @Get(':id/avatars')
+  @ApiOperation({ summary: 'List user avatars' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'List of avatar image URLs', schema: {
+    type: 'object',
+    properties: {
+      success: { type: 'boolean' },
+      avatars: { type: 'array', items: { type: 'string' } },
+    }
+  }})
+  async listUserAvatars(@Param('id') id: string) {
+    const avatars = await this.s3Service.listFiles(`avatars/${id}/`);
+    return { success: true, avatars };
+  }
+
+  @Delete(':id/avatars/:key')
+  @ApiOperation({ summary: 'Delete user avatar' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiParam({ name: 'key', description: 'S3 object key (URL-encoded, e.g. avatars%2Fid%2Ffilename.jpg)' })
+  @ApiResponse({ status: 200, description: 'Avatar deleted successfully', schema: {
+    type: 'object',
+    properties: {
+      success: { type: 'boolean' },
+      message: { type: 'string' },
+    }
+  }})
+  async deleteUserAvatar(@Param('id') id: string, @Param('key') key: string) {
+    const decodedKey = decodeURIComponent(key);
+    await this.s3Service.deleteFile(decodedKey);
+    return { success: true, message: 'Avatar deleted successfully' };
   }
 } 

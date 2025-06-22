@@ -8,10 +8,16 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProductsModule } from './modules/products/products.module';
+import databaseConfig from './shared/config/database.config';
+import appConfig from './shared/config/app.config';
+import awsConfig from './shared/config/aws.config';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
+      load: [databaseConfig, appConfig, awsConfig],
     }),
     // Core cross-cutting concerns
     CoreModule,

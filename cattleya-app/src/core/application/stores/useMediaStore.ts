@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { mediaApi, MediaFile, UploadResult, MediaStats } from '../../infrastructure/api/mediaApi';
+import { mediaApi, MediaFile, UploadResult, MediaStatsResponse } from '../../infrastructure/api/mediaApi';
 
 interface MediaState {
   // State
   mediaFiles: MediaFile[];
-  mediaStats: MediaStats | null;
+  mediaStats: MediaStatsResponse | null;
   selectedFiles: string[];
   isLoading: boolean;
   error: string | null;
@@ -18,7 +18,7 @@ interface MediaState {
 
   // Actions
   setMediaFiles: (files: MediaFile[]) => void;
-  setMediaStats: (stats: MediaStats) => void;
+  setMediaStats: (stats: MediaStatsResponse) => void;
   setSelectedFiles: (keys: string[]) => void;
   toggleFileSelection: (key: string) => void;
   clearSelection: () => void;
@@ -85,10 +85,14 @@ export const useMediaStore = create<MediaState>()(
       fetchMediaFiles: async (params = {}) => {
         try {
           set({ isLoading: true, error: null });
-          const files = await mediaApi.listMedia(params);
-          set({ mediaFiles: files });
+          const response = await mediaApi.listMedia(params);
+          // The API client now returns the array directly, so we can use it.
+          set({ mediaFiles: Array.isArray(response) ? response : [] });
         } catch (error) {
-          set({ error: error instanceof Error ? error.message : 'Failed to fetch media files' });
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to fetch media files',
+            mediaFiles: [] // Ensure mediaFiles is always an array even on error
+          });
         } finally {
           set({ isLoading: false });
         }

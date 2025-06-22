@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   PhotoIcon,
@@ -15,82 +15,205 @@ import {
   SparklesIcon,
   Squares2X2Icon,
   TableCellsIcon,
+  XMarkIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
-
-const mockMedia = [
-  { id: '1', name: 'cattleya-premium-1.jpg', type: 'image', size: '2.4 MB', dimensions: '1920x1080', uploadDate: '2024-01-15', url: '/images/orchid1.jpg', thumbnail: '🌺' },
-  { id: '2', name: 'orchid-care-guide.pdf', type: 'document', size: '1.2 MB', uploadDate: '2024-01-14', url: '/docs/care-guide.pdf', thumbnail: '📄' },
-  { id: '3', name: 'rare-collection-showcase.mp4', type: 'video', size: '15.6 MB', dimensions: '1280x720', uploadDate: '2024-01-13', url: '/videos/showcase.mp4', thumbnail: '🎥' },
-  { id: '4', name: 'potting-mix-texture.jpg', type: 'image', size: '1.8 MB', dimensions: '1600x900', uploadDate: '2024-01-12', url: '/images/potting-mix.jpg', thumbnail: '🏺' },
-  { id: '5', name: 'fertilizer-instructions.pdf', type: 'document', size: '0.8 MB', uploadDate: '2024-01-11', url: '/docs/fertilizer.pdf', thumbnail: '📋' },
-  { id: '6', name: 'orchid-bloom-timelapse.mp4', type: 'video', size: '22.3 MB', dimensions: '1920x1080', uploadDate: '2024-01-10', url: '/videos/timelapse.mp4', thumbnail: '🌸' }
-];
+import { useMediaStore } from '@/core/application/stores/useMediaStore';
+import { mediaApi } from '@/core/infrastructure/api/mediaApi';
 
 export default function MediaPage() {
-  const [media, setMedia] = useState(mockMedia);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const {
+    fetchMediaFiles,
+    fetchMediaStats,
+    uploadFile,
+    uploadMultipleFiles,
+    deleteFile,
+    deleteMultipleFiles,
+    toggleFileSelection,
+    clearSelection,
+    setCurrentFolder,
+    setCurrentType,
+    setSearchTerm,
+    setViewMode,
+    setError,
+    mediaFiles,
+    mediaStats,
+    selectedFiles,
+    isLoading,
+    error,
+    currentFolder,
+    currentType,
+    searchTerm,
+    viewMode,
+    setSelectedFiles,
+  } = useMediaStore();
 
-  const filteredMedia = media.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const checkbox = useRef<HTMLInputElement>(null);
 
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'image': return <PhotoIcon className="w-6 h-6" />;
-      case 'video': return <VideoCameraIcon className="w-6 h-6" />;
-      case 'document': return <DocumentIcon className="w-6 h-6" />;
-      default: return <DocumentIcon className="w-6 h-6" />;
+  // Memoize the filtered media files
+  const filteredMedia = useMemo(() => {
+    // Ensure mediaFiles is always an array
+    const files = Array.isArray(mediaFiles) ? mediaFiles : [];
+    
+    return files
+      .filter(file => {
+        const folderMatch = !currentFolder || file.folder === currentFolder || currentFolder === 'media';
+        const typeMatch = !currentType || file.type.startsWith(currentType);
+        const searchTermMatch =
+          !searchTerm || file.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return folderMatch && typeMatch && searchTermMatch;
+      })
+      .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+  }, [mediaFiles, currentFolder, currentType, searchTerm]);
+
+  // Handle indeterminate checkbox state
+  useLayoutEffect(() => {
+    if (checkbox.current) {
+      const isIndeterminate = selectedFiles.length > 0 && selectedFiles.length < filteredMedia.length;
+      checkbox.current.indeterminate = isIndeterminate;
     }
-  };
+  }, [selectedFiles, filteredMedia.length]);
 
-  const totalSize = media.reduce((sum, item) => {
-    const size = parseFloat(item.size.replace(' MB', ''));
-    return sum + size;
-  }, 0);
-  const imageCount = media.filter(m => m.type === 'image').length;
-  const videoCount = media.filter(m => m.type === 'video').length;
-  const documentCount = media.filter(m => m.type === 'document').length;
+  // Load initial data
+  useEffect(() => {
+    fetchMediaFiles();
+    fetchMediaStats();
+  }, [fetchMediaFiles, fetchMediaStats]);
 
-  const statsData = [
-    {
-      name: 'Total Files',
-      value: media.length.toString(),
-      change: '+3',
-      changeType: 'increase',
-      icon: FolderIcon,
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
-      description: 'Files in library'
-    },
-    {
-      name: 'Total Storage',
-      value: `${totalSize.toFixed(1)} MB`,
-      change: ``,
-      changeType: 'increase',
-      icon: SparklesIcon,
-      gradient: 'from-yellow-500 via-orange-500 to-red-500',
-      description: 'Storage used'
-    },
-    {
-      name: 'Images',
-      value: imageCount.toString(),
-      change: '',
-      changeType: 'neutral',
-      icon: PhotoIcon,
-      gradient: 'from-emerald-500 via-green-500 to-teal-500',
-      description: 'JPG, PNG, GIF files'
-    },
-    {
-      name: 'Videos & Docs',
-      value: (videoCount + documentCount).toString(),
-      change: '',
-      changeType: 'neutral',
-      icon: DocumentIcon,
-      gradient: 'from-purple-500 via-pink-500 to-rose-500',
-      description: 'MP4, PDF files'
+  // Handle file upload
+  const handleFileUpload = useCallback(async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    setUploadingFiles(fileArray);
+    setShowUploadModal(false);
+
+    try {
+      if (fileArray.length === 1) {
+        await uploadFile(fileArray[0], currentFolder);
+      } else {
+        await uploadMultipleFiles(fileArray, currentFolder);
+      }
+      setUploadingFiles([]);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadingFiles([]);
     }
+  }, [uploadFile, uploadMultipleFiles, currentFolder]);
+
+  // Handle file selection
+  const handleFileSelect = useCallback((key: string) => {
+    toggleFileSelection(key);
+  }, [toggleFileSelection]);
+
+  // Handle bulk delete
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedFiles.length === 0) return;
+
+    try {
+      await deleteMultipleFiles(selectedFiles);
+      setShowDeleteModal(false);
+      clearSelection();
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  }, [deleteMultipleFiles, selectedFiles, clearSelection]);
+
+  // Handle single file delete
+  const handleDeleteFile = useCallback(async (key: string) => {
+    try {
+      await deleteFile(key);
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  }, [deleteFile]);
+
+  // Handle download
+  const handleDownload = useCallback(async (key: string) => {
+    try {
+      const { url } = await mediaApi.getDownloadUrl(key);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  }, []);
+
+  // Drag and drop handlers
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files);
+    }
+  }, [handleFileUpload]);
+
+  // Filter options
+  const filterOptions = [
+    { value: '', label: 'All Types', icon: FolderIcon },
+    { value: 'image', label: 'Images', icon: PhotoIcon },
+    { value: 'video', label: 'Videos', icon: VideoCameraIcon },
+    { value: 'document', label: 'Documents', icon: DocumentIcon },
+    { value: 'audio', label: 'Audio', icon: VideoCameraIcon },
   ];
+
+  const folderOptions = [
+    { value: 'media', label: 'All Folders' },
+    { value: 'products', label: 'Products' },
+    { value: 'documents', label: 'Documents' },
+    { value: 'sharables', label: 'Sharables' },
+  ];
+
+  const statsData = (mediaStats && mediaStats.data) ? [
+    {
+        name: 'Total Files',
+        value: mediaStats.data.totalFiles?.toString() || '0',
+        icon: FolderIcon,
+        gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+        description: 'Files in library'
+    },
+    {
+        name: 'Total Storage',
+        value: mediaStats.data.totalSizeFormatted || '0 Bytes',
+        icon: SparklesIcon,
+        gradient: 'from-yellow-500 via-orange-500 to-red-500',
+        description: 'Storage used'
+    },
+    {
+        name: 'Images',
+        value: (mediaStats.data.byType?.image?.count || 0).toString(),
+        icon: PhotoIcon,
+        gradient: 'from-emerald-500 via-green-500 to-teal-500',
+        description: 'JPG, PNG, GIF files'
+    },
+    {
+        name: 'Videos & Docs',
+        value: (((mediaStats.data.byType?.video?.count || 0) + (mediaStats.data.byType?.document?.count || 0))).toString(),
+        icon: DocumentIcon,
+        gradient: 'from-purple-500 via-pink-500 to-rose-500',
+        description: 'MP4, PDF files'
+    }
+  ] : [];
 
   return (
     <AdminLayout>
@@ -112,7 +235,22 @@ export default function MediaPage() {
                 <p className="text-gray-600 text-lg">Manage your images, videos, and documents.</p>
               </div>
               <div className="flex items-center space-x-4">
-                <button className="group relative overflow-hidden">
+                {selectedFiles.length > 0 && (
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="group relative overflow-hidden"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-red-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
+                      <TrashIcon className="w-5 h-5 mr-2" />
+                      Delete Selected ({selectedFiles.length})
+                    </div>
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowUploadModal(true)}
+                  className="group relative overflow-hidden"
+                >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                   <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
                     <CloudArrowUpIcon className="w-5 h-5 mr-2" />
@@ -154,6 +292,24 @@ export default function MediaPage() {
             ))}
           </div>
 
+          {/* Error Display */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center"
+            >
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
+              <span className="text-red-700">{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-auto text-red-500 hover:text-red-700"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </motion.div>
+          )}
+
           {/* Search and Filters */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -178,6 +334,32 @@ export default function MediaPage() {
                 </div>
 
                 <div className="flex items-center space-x-4">
+                  {/* Folder Filter */}
+                  <select
+                    value={currentFolder}
+                    onChange={(e) => setCurrentFolder(e.target.value)}
+                    className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
+                  >
+                    {folderOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Type Filter */}
+                  <select
+                    value={currentType || ''}
+                    onChange={(e) => setCurrentType(e.target.value || null)}
+                    className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
+                  >
+                    {filterOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
                   {/* View Mode Toggle */}
                   <div className="flex items-center bg-gray-100 rounded-xl p-1">
                     <button
@@ -203,51 +385,72 @@ export default function MediaPage() {
                       Table
                     </button>
                   </div>
-                  
-                  <button
-                    className="group/btn relative overflow-hidden"
-                  >
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur opacity-20 group-hover/btn:opacity-40 transition duration-300"></div>
-                    <div className="relative flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 group-hover/btn:scale-105">
-                      <FunnelIcon className="w-5 h-5 mr-2" />
-                      Filters
-                    </div>
-                  </button>
                 </div>
               </div>
             </div>
           </motion.div>
           
           {/* Content Area */}
-          {viewMode === 'cards' ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            </div>
+          ) : viewMode === 'cards' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {filteredMedia.map((item, index) => (
                 <motion.div 
-                  key={item.id} 
+                  key={item.key} 
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   transition={{ delay: 0.5 + index * 0.05 }}
                   className="group relative"
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-300"></div>
-                  <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                  <div className={`relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group-hover:scale-105 ${
+                    selectedFiles.includes(item.key) ? 'ring-2 ring-purple-500' : ''
+                  }`}>
+                    <div className="relative">
                       <div className="h-40 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-5xl">
-                          {item.thumbnail}
+                        {item.type === 'image' ? (
+                          <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{mediaApi.getFileIcon(item.type)}</span>
+                        )}
                       </div>
-                      <div className="p-4">
-                          <h3 className="text-sm font-bold text-gray-900 mb-1 truncate group-hover:text-purple-700">{item.name}</h3>
-                          <p className="text-xs text-gray-500 mb-2">{item.size} {item.dimensions && `· ${item.dimensions}`}</p>
-                          <div className="flex items-center justify-between">
-                              <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                                  item.type === 'image' ? 'bg-green-100 text-green-800' : 
-                                  item.type === 'video' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`
-                              }>{item.type}</span>
-                              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button className="text-gray-400 hover:text-blue-600"><EyeIcon className="w-4 h-4"/></button>
-                                  <button className="text-gray-400 hover:text-red-600"><TrashIcon className="w-4 h-4"/></button>
-                              </div>
-                          </div>
+                      {selectedFiles.includes(item.key) && (
+                        <div className="absolute top-2 right-2 bg-purple-600 text-white rounded-full p-1">
+                          <CheckIcon className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-1 truncate group-hover:text-purple-700">{item.name}</h3>
+                      <p className="text-xs text-gray-500 mb-2">{mediaApi.formatFileSize(item.size)}</p>
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                          item.type === 'image' ? 'bg-green-100 text-green-800' : 
+                          item.type === 'video' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`
+                        }>{item.type}</span>
+                        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleDownload(item.key)}
+                            className="text-gray-400 hover:text-blue-600"
+                          >
+                            <EyeIcon className="w-4 h-4"/>
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteFile(item.key)}
+                            className="text-gray-400 hover:text-red-600"
+                          >
+                            <TrashIcon className="w-4 h-4"/>
+                          </button>
+                        </div>
                       </div>
+                    </div>
+                    <button
+                      onClick={() => handleFileSelect(item.key)}
+                      className="absolute inset-0 w-full h-full opacity-0 hover:opacity-100 transition-opacity"
+                    />
                   </div>
                 </motion.div>
               ))}
@@ -263,48 +466,89 @@ export default function MediaPage() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
               <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
                 <div className="overflow-x-auto hide-scrollbar">
-                <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gradient-to-r from-gray-50 to-purple-50">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Preview</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">File Name</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Size</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Upload Date</th>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                              ref={checkbox}
+                              checked={filteredMedia.length > 0 && selectedFiles.length === filteredMedia.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedFiles(filteredMedia.filter(f => f && f.key).map(f => f.key));
+                                } else {
+                                  clearSelection();
+                                }
+                              }}
+                            />
+                          </div>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Preview</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">File Name</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Type</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Size</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Upload Date</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white/50 backdrop-blur-sm divide-y divide-gray-200">
                       {filteredMedia.map((item, index) => (
                         <motion.tr
-                          key={item.id}
+                          key={item.key}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.1 * index }}
                           className="hover:bg-purple-50/50 transition-colors duration-200"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedFiles.includes(item.key)}
+                              onChange={() => handleFileSelect(item.key)}
+                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center text-2xl">
-                              {item.thumbnail}
+                              {item.type === 'image' ? (
+                                <img src={item.url} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                              ) : (
+                                <span>{mediaApi.getFileIcon(item.type)}</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-bold text-gray-900">{item.name}</div>
-                            {item.dimensions && <div className="text-sm text-gray-500">{item.dimensions}</div>}
+                            <div className="text-sm text-gray-500">{item.folder}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap"><span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border ${
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border ${
                               item.type === 'image' ? 'bg-green-100 text-green-800 border-green-200' :
                               item.type === 'video' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                               'bg-blue-100 text-blue-800 border-blue-200'
-                          }`}>{item.type}</span></td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{item.size}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.uploadDate}</td>
+                            }`}>{item.type}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                            {mediaApi.formatFileSize(item.size)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(item.uploadDate).toLocaleDateString()}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center space-x-2">
-                              <button className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                              <button 
+                                onClick={() => handleDownload(item.key)}
+                                className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110"
+                              >
                                 <EyeIcon className="w-5 h-5" />
                               </button>
-                              <button className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                              <button 
+                                onClick={() => handleDeleteFile(item.key)}
+                                className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110"
+                              >
                                 <TrashIcon className="w-5 h-5" />
                               </button>
                             </div>
@@ -316,6 +560,74 @@ export default function MediaPage() {
                 </div>
               </div>
             </motion.div>
+          )}
+
+          {/* Upload Modal */}
+          {showUploadModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+              onMouseDown={() => setShowUploadModal(false)}
+            >
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
+                className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+                <div 
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${dragActive ? 'border-purple-500 bg-purple-50/50' : 'border-gray-300 bg-gray-50/50'}`}
+                >
+                  <CloudArrowUpIcon className="mx-auto h-16 w-16 text-purple-400" />
+                  <h3 className="mt-4 text-2xl font-semibold text-gray-800">Drag & Drop Files</h3>
+                  <p className="mt-2 text-gray-500">or</p>
+                  <label htmlFor="file-upload" className="mt-4 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 cursor-pointer transition-transform hover:scale-105">
+                    Select Files
+                  </label>
+                  <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={(e) => e.target.files && handleFileUpload(e.target.files)} />
+                  <p className="mt-4 text-xs text-gray-500">Maximum file size: 50MB</p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+                <h3 className="text-xl font-bold mb-4">Delete Files</h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete {selectedFiles.length} selected file(s)? This action cannot be undone.
+                </p>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
