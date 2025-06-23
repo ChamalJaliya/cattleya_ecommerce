@@ -19,6 +19,8 @@ import {
   ApiQuery,
   ApiBody
 } from '@nestjs/swagger';
+import { IsOptional, IsString, IsBoolean, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
@@ -27,26 +29,76 @@ import { Category } from '../../domain/entities/category.entity';
 
 // DTOs
 export class CreateCategoryDto {
+  @IsString()
   name: string;
+
+  @IsString()
   slug: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
-  image?: string;
+
+  @IsOptional()
+  @IsString()
+  icon?: string;
+
+  @IsOptional()
+  @IsString()
   parentId?: string;
+
+  @IsOptional()
+  @IsString()
   metaTitle?: string;
+
+  @IsOptional()
+  @IsString()
   metaDescription?: string;
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
   sortOrder?: number;
 }
 
 export class UpdateCategoryDto {
+  @IsOptional()
+  @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
   slug?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
-  image?: string;
+
+  @IsOptional()
+  @IsString()
+  icon?: string;
+
+  @IsOptional()
+  @IsString()
   parentId?: string;
+
+  @IsOptional()
+  @IsString()
   metaTitle?: string;
+
+  @IsOptional()
+  @IsString()
   metaDescription?: string;
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
   sortOrder?: number;
 }
 
@@ -55,7 +107,7 @@ export class CategoryResponseDto {
   name: string;
   slug: string;
   description?: string;
-  image?: string;
+  icon?: string;
   parentId?: string;
   parent?: CategoryResponseDto;
   children?: CategoryResponseDto[];
@@ -75,21 +127,65 @@ export class CategoryTreeResponseDto {
 }
 
 export class CategoryQueryDto {
+  @IsOptional()
+  @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
   parentId?: string;
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   includeTree?: boolean;
 }
 
 @ApiTags('categories')
 @Controller('categories')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class CategoriesController {
   constructor(
     private readonly categoryRepository: CategoryRepository,
   ) {}
 
+  @Get('public')
+  @ApiOperation({ summary: 'Get all categories publicly (no auth required)' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Categories retrieved successfully',
+    type: CategoryTreeResponseDto
+  })
+  @ApiQuery({ name: 'includeTree', required: false, description: 'Include full tree structure' })
+  async findAllPublic(@Query('includeTree') includeTree?: boolean) {
+    try {
+      let categories: Category[];
+
+      if (includeTree) {
+        categories = await this.categoryRepository.findTree();
+      } else {
+        categories = await this.categoryRepository.findAll();
+      }
+
+      const responseData = categories.map(cat => this.mapToResponseDto(cat));
+
+      return {
+        success: true,
+        data: responseData,
+        total: responseData.length
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to retrieve categories', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get all categories with optional filtering' })
   @ApiResponse({ 
     status: 200, 
@@ -131,6 +227,7 @@ export class CategoriesController {
   }
 
   @Get('tree')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get category tree structure' })
   @ApiResponse({ 
     status: 200, 
@@ -156,6 +253,7 @@ export class CategoriesController {
   }
 
   @Get('root')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get root categories only' })
   @ApiResponse({ 
     status: 200, 
@@ -181,6 +279,7 @@ export class CategoriesController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get category by ID' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
@@ -216,6 +315,7 @@ export class CategoriesController {
   }
 
   @Get(':id/children')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get children of a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
@@ -242,6 +342,7 @@ export class CategoriesController {
   }
 
   @Get(':id/ancestors')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Get ancestors of a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
@@ -268,7 +369,8 @@ export class CategoriesController {
   }
 
   @Get(':id/breadcrumb')
-  @ApiOperation({ summary: 'Get breadcrumb for a category' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Get breadcrumb path for a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
     status: 200, 
@@ -294,7 +396,7 @@ export class CategoriesController {
   }
 
   @Post()
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Create a new category' })
   @ApiBody({ type: CreateCategoryDto })
   @ApiResponse({ 
@@ -344,7 +446,7 @@ export class CategoriesController {
   }
 
   @Put(':id')
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Update a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiBody({ type: UpdateCategoryDto })
@@ -403,7 +505,21 @@ export class CategoriesController {
         }
       }
 
-      const updated = await this.categoryRepository.update(id, updateCategoryDto);
+      // Map DTO fields to entity format
+      const updateData: Partial<Category> = {
+        name: updateCategoryDto.name,
+        slug: updateCategoryDto.slug,
+        description: updateCategoryDto.description,
+        icon: updateCategoryDto.icon,
+        parentId: updateCategoryDto.parentId,
+        isActive: updateCategoryDto.isActive,
+        sortOrder: updateCategoryDto.sortOrder,
+        // Map metaTitle/metaDescription to seoTitle/seoDescription
+        seoTitle: updateCategoryDto.metaTitle,
+        seoDescription: updateCategoryDto.metaDescription,
+      };
+
+      const updated = await this.categoryRepository.update(id, updateData);
 
       return {
         success: true,
@@ -422,7 +538,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Delete a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
@@ -442,7 +558,7 @@ export class CategoriesController {
       const canDelete = await this.categoryRepository.canDelete(id);
       if (!canDelete) {
         throw new HttpException(
-          { success: false, message: 'Cannot delete category with children or products' },
+          { success: false, message: 'Cannot delete category with products. Please move products to another category first.' },
           HttpStatus.BAD_REQUEST
         );
       }
@@ -465,7 +581,7 @@ export class CategoriesController {
   }
 
   @Put(':id/activate')
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Activate a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
@@ -490,7 +606,7 @@ export class CategoriesController {
   }
 
   @Put(':id/deactivate')
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Deactivate a category' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ 
@@ -515,7 +631,7 @@ export class CategoriesController {
   }
 
   @Put(':id/sort')
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Update category sort order' })
   @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiBody({ schema: { type: 'object', properties: { sortOrder: { type: 'number' } } } })
@@ -541,25 +657,9 @@ export class CategoriesController {
   }
 
   @Post('reorder')
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOperation({ summary: 'Reorder multiple categories' })
-  @ApiBody({ 
-    schema: { 
-      type: 'object', 
-      properties: { 
-        orders: { 
-          type: 'array', 
-          items: { 
-            type: 'object', 
-            properties: { 
-              id: { type: 'string' }, 
-              sortOrder: { type: 'number' } 
-            } 
-          } 
-        } 
-      } 
-    } 
-  })
+  @ApiBody({ schema: { type: 'object', properties: { orders: { type: 'array' } } } })
   @ApiResponse({ 
     status: 200, 
     description: 'Categories reordered successfully'
@@ -580,11 +680,12 @@ export class CategoriesController {
   }
 
   @Get('search/:term')
-  @ApiOperation({ summary: 'Search categories' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({ summary: 'Search categories by term' })
   @ApiParam({ name: 'term', description: 'Search term' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Search results retrieved successfully',
+    description: 'Search results',
     type: CategoryTreeResponseDto
   })
   async search(@Param('term') term: string) {
@@ -611,10 +712,10 @@ export class CategoriesController {
       name: category.name,
       slug: category.slug,
       description: category.description,
-      image: category.imageUrl,
+      icon: category.icon,
       parentId: category.parentId,
       parent: category.parent ? this.mapToResponseDto(category.parent) : undefined,
-      children: category.children ? category.children.map(child => this.mapToResponseDto(child)) : undefined,
+      children: category.children ? category.children.map(child => this.mapToResponseDto(child)) : [],
       metaTitle: category.seoTitle,
       metaDescription: category.seoDescription,
       isActive: category.isActive,

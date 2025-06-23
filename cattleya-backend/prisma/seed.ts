@@ -446,6 +446,8 @@ const reviewTexts = [
   }
 ];
 
+const CATEGORY_ICON_URL = "https://cattleyaorchids.s3.eu-north-1.amazonaws.com/media/49e7d3a1-bd73-4f14-b173-593e04017f67-cattleya.svg";
+
 async function main() {
   console.log('🌺 Starting to seed Cattleya E-commerce database...');
 
@@ -507,12 +509,7 @@ async function main() {
     await prisma.productAttribute.deleteMany();
     await prisma.productImage.deleteMany();
     await prisma.product.deleteMany();
-    
-    // For MongoDB, we can use the raw database connection to drop collections
-    await prisma.$runCommandRaw({
-      delete: 'categories',
-      deletes: [{ q: {}, limit: 0 }]
-    });
+    await prisma.category.deleteMany();
   } catch (error) {
     console.log('⚠️  Some cleanup operations failed, continuing...');
   }
@@ -520,116 +517,225 @@ async function main() {
   console.log('✅ Cleaned existing data');
 
   // Create categories
-  const orchidsCategory = await prisma.category.create({
-    data: {
+  const orchidsCategory = await prisma.category.upsert({
+    where: { slug: 'orchids' },
+    update: {
+      name: 'Orchids',
+      description: 'Beautiful flowering orchids for your home and garden',
+      isActive: true,
+      sortOrder: 1,
+      icon: CATEGORY_ICON_URL,
+    } as any,
+    create: {
       name: 'Orchids',
       slug: 'orchids',
       description: 'Beautiful flowering orchids for your home and garden',
       isActive: true,
       sortOrder: 1,
-    }
+      icon: CATEGORY_ICON_URL,
+    } as any
   });
 
   const categories = {
-    cattleya: await prisma.category.create({
-      data: {
+    cattleya: await prisma.category.upsert({
+      where: { slug: 'cattleya-orchids' },
+      update: {
+        name: 'Cattleya Orchids',
+        description: 'The queen of orchids - large, fragrant, and spectacular',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 1,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Cattleya Orchids',
         slug: 'cattleya-orchids',
         description: 'The queen of orchids - large, fragrant, and spectacular',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 1,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    phalaenopsis: await prisma.category.create({
-      data: {
+    phalaenopsis: await prisma.category.upsert({
+      where: { slug: 'phalaenopsis-orchids' },
+      update: {
+        name: 'Phalaenopsis Orchids',
+        description: 'Moth orchids - perfect for beginners with long-lasting blooms',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 2,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Phalaenopsis Orchids',
         slug: 'phalaenopsis-orchids',
         description: 'Moth orchids - perfect for beginners with long-lasting blooms',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 2,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    dendrobium: await prisma.category.create({
-      data: {
+    dendrobium: await prisma.category.upsert({
+      where: { slug: 'dendrobium-orchids' },
+      update: {
+        name: 'Dendrobium Orchids',
+        description: 'Tree orchids with diverse forms and abundant flowers',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 3,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Dendrobium Orchids',
         slug: 'dendrobium-orchids',
         description: 'Tree orchids with diverse forms and abundant flowers',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 3,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    oncidium: await prisma.category.create({
-      data: {
+    oncidium: await prisma.category.upsert({
+      where: { slug: 'oncidium-orchids' },
+      update: {
+        name: 'Oncidium Orchids',
+        description: 'Dancing lady orchids with cheerful yellow flowers',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 4,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Oncidium Orchids',
         slug: 'oncidium-orchids',
         description: 'Dancing lady orchids with cheerful yellow flowers',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 4,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    vanda: await prisma.category.create({
-      data: {
+    vanda: await prisma.category.upsert({
+      where: { slug: 'vanda-orchids' },
+      update: {
+        name: 'Vanda Orchids',
+        description: 'Stunning blue orchids with impressive size and beauty',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 5,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Vanda Orchids',
         slug: 'vanda-orchids',
         description: 'Stunning blue orchids with impressive size and beauty',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 5,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    cymbidium: await prisma.category.create({
-      data: {
+    cymbidium: await prisma.category.upsert({
+      where: { slug: 'cymbidium-orchids' },
+      update: {
+        name: 'Cymbidium Orchids',
+        description: 'Cool-climate orchids with long-lasting flower spikes',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 6,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Cymbidium Orchids',
         slug: 'cymbidium-orchids',
         description: 'Cool-climate orchids with long-lasting flower spikes',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 6,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    miltonia: await prisma.category.create({
-      data: {
+    miltonia: await prisma.category.upsert({
+      where: { slug: 'miltonia-orchids' },
+      update: {
+        name: 'Miltonia Orchids',
+        description: 'Pansy orchids with flat, colorful faces',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 7,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Miltonia Orchids',
         slug: 'miltonia-orchids',
         description: 'Pansy orchids with flat, colorful faces',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 7,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    paphiopedilum: await prisma.category.create({
-      data: {
+    paphiopedilum: await prisma.category.upsert({
+      where: { slug: 'paphiopedilum-orchids' },
+      update: {
+        name: 'Paphiopedilum Orchids',
+        description: 'Lady slipper orchids with unique pouch-shaped flowers',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 8,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Paphiopedilum Orchids',
         slug: 'paphiopedilum-orchids',
         description: 'Lady slipper orchids with unique pouch-shaped flowers',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 8,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    brassia: await prisma.category.create({
-      data: {
+    brassia: await prisma.category.upsert({
+      where: { slug: 'brassia-orchids' },
+      update: {
+        name: 'Brassia Orchids',
+        description: 'Spider orchids with long, dramatic petals',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 9,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Brassia Orchids',
         slug: 'brassia-orchids',
         description: 'Spider orchids with long, dramatic petals',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 9,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     }),
-    zygopetalum: await prisma.category.create({
-      data: {
+    zygopetalum: await prisma.category.upsert({
+      where: { slug: 'zygopetalum-orchids' },
+      update: {
+        name: 'Zygopetalum Orchids',
+        description: 'Fragrant orchids with distinctive markings',
+        parentId: orchidsCategory.id,
+        isActive: true,
+        sortOrder: 10,
+        icon: CATEGORY_ICON_URL,
+      } as any,
+      create: {
         name: 'Zygopetalum Orchids',
         slug: 'zygopetalum-orchids',
         description: 'Fragrant orchids with distinctive markings',
         parentId: orchidsCategory.id,
         isActive: true,
         sortOrder: 10,
-      }
+        icon: CATEGORY_ICON_URL,
+      } as any
     })
   };
 

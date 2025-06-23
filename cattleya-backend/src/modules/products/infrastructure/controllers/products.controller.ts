@@ -328,7 +328,9 @@ export class ProductsController {
   }
 
   @Post('media/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  }))
   @ApiOperation({ summary: 'Upload a single media file' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

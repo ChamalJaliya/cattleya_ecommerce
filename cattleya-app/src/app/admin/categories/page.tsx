@@ -17,115 +17,158 @@ import {
   ArrowUpIcon,
   CheckIcon,
   SparklesIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 import CategoryTreeView from '@/shared/components/CategoryTreeView';
 import CategoryForm from '@/shared/components/CategoryForm';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { categoriesApi, Category } from '@/core/infrastructure/api/categories.api';
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  image?: string;
-  parentId?: string;
-  parent?: Category;
-  children?: Category[];
-  metaTitle?: string;
-  metaDescription?: string;
-  isActive: boolean;
-  sortOrder: number;
-  productCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// SVG Icons for categories
+const categoryIcons = {
+  default: (
+    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+    </svg>
+  ),
+  orchid: (
+    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  ),
+  care: (
+    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+    </svg>
+  ),
+  fertilizer: (
+    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+    </svg>
+  ),
+  pot: (
+    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+    </svg>
+  ),
+  decorative: (
+    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  ),
+};
 
-const mockCategories = [
-  { id: '1', name: 'Orchids', description: 'Beautiful flowering orchids', productCount: 45, status: 'active', image: '🌺', createdAt: '2024-01-15' },
-  { id: '2', name: 'Care Accessories', description: 'Tools and supplies for orchid care', productCount: 23, status: 'active', image: '🧴', createdAt: '2024-01-10' },
-  { id: '3', name: 'Fertilizers', description: 'Nutrients for healthy growth', productCount: 12, status: 'active', image: '🌿', createdAt: '2024-01-08' },
-  { id: '4', name: 'Potting Supplies', description: 'Pots, soil, and planting materials', productCount: 18, status: 'active', image: '🏺', createdAt: '2024-01-05' },
-  { id: '5', name: 'Decorative Pots', description: 'Stylish pots to showcase your orchids.', productCount: 32, status: 'draft', image: '🌸', createdAt: '2024-02-01' },
-];
-
-const statusOptions = ['All Status', 'active', 'draft'];
+const statusOptions = ['All Status', 'active', 'inactive'];
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [mockCategoriesData, setMockCategoriesData] = useState(mockCategories);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [viewMode, setViewMode] = useState<'cards' | 'table' | 'tree'>('cards');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Tree view state
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>();
 
-  // Fetch categories from API
+  // Fetch categories from API on initial load and when refresh is triggered
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    const fetchAndRefresh = async () => {
+      await fetchCategories();
+      const refreshParam = searchParams.get('refresh');
+      if (refreshParam === 'true') {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('refresh');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    };
+
+    fetchAndRefresh();
+  }, [searchParams]);
 
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/categories?includeTree=true');
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data.data || []);
-      } else {
-        console.error('Failed to fetch categories');
-        // Fallback to mock data for now
-        setCategories([]);
+      setError(null);
+      const categories = await categoriesApi.getAllCategories(true);
+      setCategories(Array.isArray(categories) ? categories : []);
+      
+      // Auto-expand the first category if it has children
+      if (categories.length > 0 && categories[0].children && categories[0].children.length > 0) {
+        setExpandedCategories(new Set([categories[0].id]));
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setError('Failed to load categories');
-      // Fallback to mock data for now
+      setError('Failed to load categories. Please check if you are logged in and try again.');
       setCategories([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddCategory = () => {
-    router.push('/admin/categories/add');
+  // Add a refresh function that can be called after adding a category
+  const refreshCategories = () => {
+    fetchCategories();
+  };
+
+  // Listen for route changes to refresh categories when returning from add page
+  useEffect(() => {
+    const handleRouteChange = () => {
+      // Refresh categories when the page becomes visible again
+      if (document.visibilityState === 'visible') {
+        fetchCategories();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleRouteChange);
+    return () => document.removeEventListener('visibilitychange', handleRouteChange);
+  }, []);
+
+  const handleAddCategory = (parentId?: string) => {
+    const path = parentId ? `/admin/categories/add?parentId=${parentId}` : '/admin/categories/add';
+    router.push(path);
   };
 
   const handleEditCategory = (category: Category) => {
-    // Navigate to category detail page or show in modal
-    console.log('View category:', category);
+    router.push(`/admin/categories/${category.id}/edit`);
   };
 
   const handleDeleteCategory = async (category: Category) => {
-    if (confirm(`Are you sure you want to delete "${category.name}"?`)) {
-      try {
-        const response = await fetch(`/api/categories/${category.id}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          await fetchCategories(); // Refresh the list
-        } else {
-          const errorData = await response.json();
-          alert(`Failed to delete category: ${errorData.message}`);
-        }
-      } catch (error) {
-        console.error('Error deleting category:', error);
-        alert('Failed to delete category');
+    if (!confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(category.id);
+      const result = await categoriesApi.deleteCategory(category.id);
+      
+      if (result.success) {
+        // Refresh the categories list
+        await fetchCategories();
+      } else {
+        alert('Failed to delete category. Please try again.');
       }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('An error occurred while deleting the category.');
+    } finally {
+      setIsDeleting(null);
     }
   };
 
   const handleViewCategory = (category: Category) => {
     // Navigate to category detail page or show in modal
     console.log('View category:', category);
+    // You can implement a modal or navigate to a detail page
+    alert(`Viewing category: ${category.name}\nProducts: ${category.productCount}\nStatus: ${category.isActive ? 'Active' : 'Inactive'}`);
   };
 
   const handleToggleCategory = (categoryId: string) => {
@@ -144,14 +187,23 @@ export default function CategoriesPage() {
     setSelectedCategory(category);
   };
 
-  const handleDeleteMockCategory = (id: string) => {
-    setMockCategoriesData(mockCategoriesData.filter(c => c.id !== id));
+  // Get icon for category based on name or use default
+  const getCategoryIcon = (category: Category) => {
+    const name = category.name.toLowerCase();
+    if (name.includes('orchid')) return categoryIcons.orchid;
+    if (name.includes('care') || name.includes('accessory')) return categoryIcons.care;
+    if (name.includes('fertilizer') || name.includes('nutrient')) return categoryIcons.fertilizer;
+    if (name.includes('pot') || name.includes('supply')) return categoryIcons.pot;
+    if (name.includes('decorative') || name.includes('style')) return categoryIcons.decorative;
+    return categoryIcons.default;
   };
 
-  const filteredCategories = mockCategoriesData.filter(category => {
+  const filteredCategories = categories.filter(category => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         category.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === 'All Status' || category.status === selectedStatus;
+                         (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = selectedStatus === 'All Status' || 
+                         (selectedStatus === 'active' && category.isActive) ||
+                         (selectedStatus === 'inactive' && !category.isActive);
     return matchesSearch && matchesStatus;
   });
 
@@ -161,10 +213,10 @@ export default function CategoriesPage() {
   ];
 
   const stats = {
-    total: categories.length || mockCategoriesData.length,
-    active: (categories.filter(c => c.isActive).length) || (mockCategoriesData.filter(c => c.status === 'active').length),
-    draft: (categories.filter(c => !c.isActive).length) || (mockCategoriesData.filter(c => c.status === 'draft').length),
-    totalProducts: (categories.reduce((sum, cat) => sum + cat.productCount, 0)) || (mockCategoriesData.reduce((sum, cat) => sum + cat.productCount, 0)),
+    total: categories.length,
+    active: categories.filter(c => c.isActive).length,
+    inactive: categories.filter(c => !c.isActive).length,
+    totalProducts: categories.reduce((sum, cat) => sum + cat.productCount, 0),
   };
 
   const statsData = [
@@ -202,8 +254,8 @@ export default function CategoriesPage() {
       description: 'Across all categories'
     },
     {
-      name: 'Draft Categories',
-      value: stats.draft.toString(),
+      name: 'Archived',
+      value: stats.inactive.toString(),
       change: '-1',
       changeType: 'decrease' as const,
       icon: PencilIcon,
@@ -240,16 +292,31 @@ export default function CategoriesPage() {
                     Category Dashboard Overview
                   </span>
                 </div>
-                <button 
-                  onClick={handleAddCategory}
-                  className="group relative overflow-hidden"
-                >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
-                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
-                    <PlusIcon className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                    Add Category
-                  </div>
-                </button>
+                <div className="flex items-center space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={refreshCategories}
+                    disabled={isLoading}
+                    className="group relative overflow-hidden"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105 disabled:opacity-50">
+                      <ArrowPathIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-300'}`} />
+                      Refresh
+                    </div>
+                  </motion.button>
+                  <button 
+                    onClick={() => handleAddCategory()}
+                    className="group relative overflow-hidden"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
+                      <PlusIcon className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                      Add Category
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -345,17 +412,6 @@ export default function CategoriesPage() {
                       Cards
                     </button>
                     <button
-                      onClick={() => setViewMode('table')}
-                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
-                        viewMode === 'table'
-                          ? 'bg-white shadow-sm text-purple-600'
-                          : 'text-gray-600 hover:text-purple-600'
-                      }`}
-                    >
-                      <TableCellsIcon className="w-4 h-4 mr-1" />
-                      Table
-                    </button>
-                    <button
                       onClick={() => setViewMode('tree')}
                       className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         viewMode === 'tree'
@@ -435,7 +491,6 @@ export default function CategoriesPage() {
                 categories={categories}
                 onAddCategory={handleAddCategory}
                 onEditCategory={handleEditCategory}
-                onDeleteCategory={handleDeleteCategory}
                 onViewCategory={handleViewCategory}
                 onToggleCategory={handleToggleCategory}
                 expandedCategories={expandedCategories}
@@ -444,13 +499,13 @@ export default function CategoriesPage() {
               />
             )}
           </motion.div>
-        ) : viewMode === 'cards' ? (
+        ) : (
           <motion.div
             key="cards"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-8 justify-center w-full px-2"
           >
             {filteredCategories.map((category, index) => (
               <motion.div
@@ -458,106 +513,61 @@ export default function CategoriesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + index * 0.05 }}
-                className="group relative"
+                className="group relative w-full max-w-xl mb-8 mx-auto"
               >
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-300"></div>
-                <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group-hover:scale-105 h-[320px] flex flex-col">
-                  <div className="h-32 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-5xl flex-shrink-0">
-                    {category.image}
+                <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group-hover:scale-105 flex flex-col md:flex-row w-full min-h-[180px] md:min-h-[220px]">
+                  <div className="h-32 md:h-full w-full md:w-48 bg-gradient-to-br from-purple-100 to-pink-100 flex-1 flex items-center justify-center text-5xl flex-shrink-0">
+                    {category.icon ? (
+                      <img
+                        src={category.icon}
+                        alt={category.name + ' icon'}
+                        className="h-24 md:h-32 max-h-full w-auto mx-auto object-contain text-purple-600"
+                      />
+                    ) : (
+                      getCategoryIcon(category)
+                    )}
                   </div>
-                  <div className="p-6 flex-1 flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-700">{category.name}</h3>
-                    <p className="text-sm text-gray-500 mb-4 flex-1">{category.description}</p>
-                    <div className="flex justify-between items-center mb-4">
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-purple-700">{category.name}</h3>
+                      <p className="text-base text-gray-700 mb-4 whitespace-pre-line break-words" style={{ minHeight: '3.5rem' }}>{category.description}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center mb-4">
                       <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">{category.productCount} products</span>
-                      <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full border ${category.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}>
-                        {category.status}
+                      <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full border ${category.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}>
+                        {category.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2 mt-auto">
-                        <button className="group/action relative overflow-hidden flex-1 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-105 flex items-center justify-center">
-                          <EyeIcon className="w-4 h-4 mr-1" /> View
-                        </button>
-                        <button className="group/action relative overflow-hidden flex-1 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-105 flex items-center justify-center">
-                           <PencilIcon className="w-4 h-4 mr-1" /> Edit
-                        </button>
-                        <button onClick={() => handleDeleteMockCategory(category.id)} className="group/action relative overflow-hidden p-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                      <button 
+                        onClick={() => handleViewCategory(category)}
+                        className="group/action relative overflow-hidden flex-1 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-105 flex items-center justify-center"
+                      >
+                        <EyeIcon className="w-4 h-4 mr-1" /> View
+                      </button>
+                      <button 
+                        onClick={() => handleEditCategory(category)}
+                        className="group/action relative overflow-hidden flex-1 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-105 flex items-center justify-center"
+                      >
+                         <PencilIcon className="w-4 h-4 mr-1" /> Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteCategory(category)}
+                        disabled={isDeleting === category.id}
+                        className="group/action relative overflow-hidden p-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                         {isDeleting === category.id ? (
+                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                         ) : (
                            <TrashIcon className="w-4 h-4" />
-                        </button>
+                         )}
+                      </button>
                     </div>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="table"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="group relative mb-8"
-          >
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-            <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="overflow-x-auto hide-scrollbar">
-              <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gradient-to-r from-gray-50 to-purple-50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Category</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Product Count</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white/50 backdrop-blur-sm divide-y divide-gray-200">
-                    {filteredCategories.map((category, index) => (
-                      <motion.tr
-                        key={category.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                        className="hover:bg-purple-50/50 transition-colors duration-200 group/row"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center text-2xl">
-                              {category.image}
-                            </div>
-                            <div className="text-sm font-bold text-gray-900">{category.name}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{category.description}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">
-                            {category.productCount}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border ${category.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}>
-                            {category.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <button className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
-                              <EyeIcon className="w-5 h-5" />
-                            </button>
-                            <button className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
-                              <PencilIcon className="w-5 h-5" />
-                            </button>
-                            <button onClick={() => handleDeleteMockCategory(category.id)} className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
-                              <TrashIcon className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </motion.div>
         )}
         </div>

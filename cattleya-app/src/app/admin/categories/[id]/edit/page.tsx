@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,106 +13,131 @@ import {
   BoltIcon,
   CheckIcon,
   EyeSlashIcon,
-  PlusIcon
+  PencilIcon
 } from '@heroicons/react/24/outline';
 
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import IconUpload from '@/shared/components/IconUpload';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
-import { categoriesApi, CreateCategoryDto, Category } from '@/core/infrastructure/api/categories.api';
+import { categoriesApi, UpdateCategoryDto, Category } from '@/core/infrastructure/api/categories.api';
 
-type CategoryFormData = Omit<CreateCategoryDto, 'icon'> & {
-  icon: File | null;
+type CategoryFormData = Omit<UpdateCategoryDto, 'icon'> & {
+  icon: File | null | string; // Can be a new file, an existing URL string, or null
 };
 
-export default function AddCategoryPage() {
+export default function EditCategoryPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const params = useParams();
+  const categoryId = params.id as string;
+
   const [loading, setLoading] = useState(false);
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
+  const [category, setCategory] = useState<Category | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
-  const parentId = searchParams.get('parentId') || '';
-
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Categories', href: '/admin/categories' },
-    { label: 'Add New Category', href: '/admin/categories/add' },
-  ];
-
   const {
     register,
     handleSubmit,
     watch,
     control,
     setValue,
-    formState: { errors },
-  } = useForm<CategoryFormData>({
-    defaultValues: {
-      name: '',
-      slug: '',
-      description: '',
-      isActive: true,
-      sortOrder: 0,
-      icon: null,
-      parentId: parentId,
-    },
-  });
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<CategoryFormData>();
 
   const watchIsActive = watch('isActive');
 
+  const breadcrumbItems = [
+    { label: 'Dashboard', href: '/admin/dashboard' },
+    { label: 'Categories', href: '/admin/categories' },
+    { label: 'Edit Category', href: `/admin/categories/${categoryId}/edit` },
+  ];
+  
   useEffect(() => {
-    // Fetch all categories to populate the parent dropdown
-    const fetchParentCategories = async () => {
+    if (!categoryId) return;
+
+    const fetchCategoryAndParents = async () => {
       try {
-        const allCategories = await categoriesApi.getAllCategories();
-        setParentCategories(allCategories);
+        setLoading(true);
+        const [fetchedCategory, allCategories] = await Promise.all([
+          categoriesApi.getCategoryById(categoryId),
+          categoriesApi.getAllCategories(),
+        ]);
+
+        if (fetchedCategory.success && fetchedCategory.data) {
+          const categoryData = fetchedCategory.data;
+          setCategory(categoryData);
+          // Set form values
+          reset({
+            name: categoryData.name,
+            slug: categoryData.slug,
+            description: categoryData.description || '',
+            parentId: categoryData.parentId || '',
+            icon: categoryData.icon || null, // This will be the URL string
+            metaTitle: categoryData.metaTitle || '',
+            metaDescription: categoryData.metaDescription || '',
+            isActive: categoryData.isActive,
+            sortOrder: categoryData.sortOrder,
+          });
+          setParentCategories(allCategories.filter((c: Category) => c.id !== categoryId)); // Exclude self
+        } else {
+          toast.error('Could not find the category to edit.');
+          router.push('/admin/categories');
+        }
       } catch (error) {
-        toast.error('Failed to load parent categories.');
+        toast.error('Failed to load category data.');
+      } finally {
+        setLoading(false);
       }
     };
-    fetchParentCategories();
-  }, []);
 
-  // Set the parentId in the form when the component mounts
-  useEffect(() => {
-    setValue('parentId', parentId);
-  }, [parentId, setValue]);
-  
+    fetchCategoryAndParents();
+  }, [categoryId, router, reset]);
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    setValue('name', name);
+    setValue('name', name, { shouldDirty: true });
     const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
-    setValue('slug', slug);
+    setValue('slug', slug, { shouldDirty: true });
   };
 
   const onSubmit = async (data: CategoryFormData) => {
+    if (!isDirty) {
+      toast.success("No changes detected.");
+      router.push('/admin/categories');
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      let iconUrl: string | undefined;
+      let iconUrl: string | undefined = category?.icon;
 
-      if (data.icon) {
+      // If icon is a File, it means a new one was uploaded
+      if (data.icon && data.icon instanceof File) {
         const uploadResponse = await categoriesApi.uploadCategoryIcon(data.icon);
         if (uploadResponse.success && uploadResponse.data?.url) {
           iconUrl = uploadResponse.data.url;
         } else {
-          throw new Error('Icon upload failed. Please check the console for details.');
+          throw new Error('New icon upload failed.');
         }
+      } else if (data.icon === null) {
+        // Icon was cleared
+        iconUrl = undefined;
       }
 
-      const categoryData: CreateCategoryDto = { ...data, icon: iconUrl };
-
-      const response = await categoriesApi.createCategory(categoryData);
+      const categoryData: UpdateCategoryDto = { ...data, icon: iconUrl };
+      
+      const response = await categoriesApi.updateCategory(categoryId, categoryData);
 
       if (response.success) {
-        toast.success('Category created successfully!');
+        toast.success('Category updated successfully!');
         router.push('/admin/categories?refresh=true');
       } else {
-        const errorMsg = response.error?.response?.data?.message || 'Failed to create category.';
+        const errorMsg = response.error?.response?.data?.message || 'Failed to update category.';
         toast.error(errorMsg);
       }
     } catch (error: any) {
@@ -121,6 +146,16 @@ export default function AddCategoryPage() {
       setLoading(false);
     }
   };
+
+  if (loading && !category) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -136,10 +171,10 @@ export default function AddCategoryPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent">
-                Create New Category
+                Edit Category
               </h1>
-              <p className="text-lg text-gray-600 mt-2">
-                Fill in the details below to add a new category to your store.
+              <p className="text-lg text-gray-600 mt-2 truncate">
+                Now editing: <span className="font-semibold text-purple-700">{category?.name}</span>
               </p>
             </div>
             <SparklesIcon className="w-12 h-12 text-purple-300 animate-pulse" />
@@ -157,13 +192,13 @@ export default function AddCategoryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Category Name *</label>
-                    <input {...register('name', { required: 'Category name is required' })} onChange={handleNameChange} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-pink-200/50 rounded-xl focus:ring-2 focus:ring-pink-500" placeholder="e.g., Orchids" />
+                    <input {...register('name', { required: 'Category name is required' })} onChange={handleNameChange} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-pink-200/50 rounded-xl focus:ring-2 focus:ring-pink-500" />
                     {errors.name && (<p className="text-red-500 text-sm mt-2">{errors.name.message}</p>)}
                   </div>
                   
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Slug *</label>
-                    <input {...register('slug', { required: 'Slug is required' })} className="w-full px-6 py-4 bg-gray-50/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="e.g., orchids" readOnly />
+                    <input {...register('slug', { required: 'Slug is required' })} className="w-full px-6 py-4 bg-gray-50/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" readOnly />
                     {errors.slug && (<p className="text-red-500 text-sm mt-2">{errors.slug.message}</p>)}
                   </div>
 
@@ -179,7 +214,7 @@ export default function AddCategoryPage() {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Description</label>
-                    <textarea {...register('description')} rows={4} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-pink-200/50 rounded-xl focus:ring-2 focus:ring-pink-500" placeholder="A brief description for this category." />
+                    <textarea {...register('description')} rows={4} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-pink-200/50 rounded-xl focus:ring-2 focus:ring-pink-500" />
                   </div>
                 </div>
               </div>
@@ -204,22 +239,32 @@ export default function AddCategoryPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-purple-100">
                         <div className="md:col-span-2">
                           <label className="block text-sm font-semibold text-gray-700 mb-3">Category Icon (SVG)</label>
-                          <Controller name="icon" control={control} render={({ field }) => (<IconUpload onIconChange={(file) => field.onChange(file)} className="w-full" />)} />
+                          <Controller 
+                            name="icon" 
+                            control={control} 
+                            render={({ field }) => (
+                              <IconUpload 
+                                onIconChange={(file) => field.onChange(file)} 
+                                existingIconUrl={typeof field.value === 'string' ? field.value : undefined}
+                                className="w-full" 
+                              />
+                            )} 
+                          />
                         </div>
                         
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-3">Meta Title</label>
-                          <input {...register('metaTitle')} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="Title for SEO" />
+                          <input {...register('metaTitle')} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" />
                         </div>
 
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-3">Sort Order</label>
-                          <input {...register('sortOrder', { valueAsNumber: true })} type="number" min="0" className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="0" />
+                          <input {...register('sortOrder', { valueAsNumber: true })} type="number" min="0" className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" />
                         </div>
 
                         <div className="md:col-span-2">
                           <label className="block text-sm font-semibold text-gray-700 mb-3">Meta Description</label>
-                          <textarea {...register('metaDescription')} rows={3} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" placeholder="Description for SEO" />
+                          <textarea {...register('metaDescription')} rows={3} className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500" />
                         </div>
 
                         <div className="md:col-span-2">
@@ -247,14 +292,15 @@ export default function AddCategoryPage() {
             </motion.div>
             
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="flex justify-end pt-4">
-              <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="group relative overflow-hidden px-8 py-4 bg-gradient-to-r from-pink-600 via-purple-600 to-violet-600 text-white rounded-2xl font-medium hover:shadow-xl transition-all duration-300 disabled:opacity-50">
+              <motion.button type="submit" disabled={loading || !isDirty} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="group relative overflow-hidden px-8 py-4 bg-gradient-to-r from-pink-600 via-purple-600 to-violet-600 text-white rounded-2xl font-medium hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
                 <span className="relative flex items-center">
                   {loading ? (
-                    <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>Creating...</>
+                    <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>Saving...</>
                   ) : (
-                    <><PlusIcon className="w-5 h-5 mr-2" />Create Category</>
+                    <><PencilIcon className="w-5 h-5 mr-2" />Save Changes</>
                   )}
                 </span>
+                {!isDirty && <span className="absolute -top-10 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 group-disabled:opacity-0 transition-opacity">No changes to save</span>}
               </motion.button>
             </motion.div>
           </form>

@@ -2,7 +2,7 @@ export interface CreateCategoryProps {
   name: string;
   slug: string;
   description?: string;
-  image?: string;
+  icon?: string;
   parentId?: string;
   metaTitle?: string;
   metaDescription?: string;
@@ -20,7 +20,7 @@ export class Category {
     public readonly name: string,
     public readonly slug: string,
     public readonly description: string | null,
-    public readonly imageUrl: string | null,
+    public readonly icon: string | null,
     public readonly parentId: string | null,
     public isActive: boolean,
     public sortOrder: number,
@@ -41,7 +41,7 @@ export class Category {
       props.name,
       props.slug,
       props.description || null,
-      props.image || null,
+      props.icon || null,
       props.parentId || null,
       props.isActive !== false,
       props.sortOrder || 0,
@@ -218,7 +218,7 @@ export class Category {
       name: this.name,
       slug: this.slug,
       description: this.description,
-      image: this.imageUrl,
+      icon: this.icon,
       parentId: this.parentId,
       parent: this.parent ? {
         id: this.parent.id,

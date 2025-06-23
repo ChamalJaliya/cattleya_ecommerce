@@ -1,31 +1,37 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CloudArrowUpIcon, PhotoIcon, XMarkIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 interface IconUploadProps {
   onIconChange: (file: File | null) => void;
-  initialIconUrl?: string;
   className?: string;
+  existingIconUrl?: string;
 }
 
-export default function IconUpload({ onIconChange, initialIconUrl, className = '' }: IconUploadProps) {
-  const [iconPreview, setIconPreview] = useState<string | null>(initialIconUrl || null);
+export default function IconUpload({ onIconChange, existingIconUrl, className = '' }: IconUploadProps) {
+  const [iconPreview, setIconPreview] = useState<string | null>(existingIconUrl || null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (existingIconUrl) {
+      setIconPreview(existingIconUrl);
+    }
+  }, [existingIconUrl]);
 
   const handleFile = useCallback((file: File) => {
     if (file.type !== 'image/svg+xml') {
       toast.error('Only SVG files are accepted for icons.');
       return;
     }
-    if (file.size > 1024 * 100) { // 100 KB limit
-      toast.error('SVG file size should not exceed 100 KB.');
+    if (file.size > 10 * 1024 * 1024) { // 10 MB limit
+      toast.error('SVG file size should not exceed 10 MB.');
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setIconPreview(reader.result as string);
@@ -96,7 +102,7 @@ export default function IconUpload({ onIconChange, initialIconUrl, className = '
             <div className="text-center">
                 <CloudArrowUpIcon className={`w-8 h-8 mx-auto mb-1 transition-colors ${dragActive ? 'text-purple-600' : 'text-violet-400'}`} />
                 <p className="text-sm font-semibold text-gray-700">Upload SVG</p>
-                <p className="text-xs text-gray-500">Max 100KB</p>
+                <p className="text-xs text-gray-500">Max 10MB</p>
             </div>
             <input
               ref={fileInputRef}

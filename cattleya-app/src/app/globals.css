@@ -213,3 +213,53 @@ html {
 .scrollbar-dark::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, rgba(75, 85, 99, 0.7), rgba(107, 114, 128, 0.7));
 }
+
+/* Dazzling tree view custom animations */
+@layer utilities {
+  .animate-glow {
+    box-shadow: 0 0 16px 4px #a78bfa33, 0 0 32px 8px #f472b633;
+  }
+  .animate-glow-badge {
+    animation: glow-badge 1.5s infinite alternate;
+  }
+  .animate-glow-btn {
+    animation: glow-btn 2s infinite alternate;
+  }
+  .animate-glow-container {
+    animation: glow-container 3s infinite alternate;
+  }
+  .animate-pulse-sparkle {
+    animation: pulse-sparkle 1.5s infinite;
+  }
+  .animate-sparkle {
+    animation: sparkle 2s infinite linear;
+  }
+  .animate-chevron {
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 8px #a78bfa88);
+  }
+}
+
+@keyframes glow-badge {
+  0% { box-shadow: 0 0 0 0 #a5b4fc66; }
+  100% { box-shadow: 0 0 8px 2px #f472b666; }
+}
+@keyframes glow-btn {
+  0% { box-shadow: 0 0 0 0 #a78bfa66; }
+  100% { box-shadow: 0 0 12px 4px #f472b666; }
+}
+@keyframes glow-container {
+  0% { box-shadow: 0 0 0 0 #a5b4fc33; }
+  100% { box-shadow: 0 0 32px 8px #f472b633; }
+}
+@keyframes pulse-sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+@keyframes sparkle {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+  100% { filter: brightness(1); }
+}

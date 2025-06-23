@@ -13,13 +13,13 @@ export class CategoryRepository implements ICategoryRepository {
         name: category.name,
         slug: category.slug,
         description: category.description,
-        image: category.imageUrl,
+        icon: category.icon,
         parentId: category.parentId,
         metaTitle: category.seoTitle,
         metaDescription: category.seoDescription,
         isActive: category.isActive,
         sortOrder: category.sortOrder,
-      },
+      } as any,
       include: {
         parent: true,
         children: true,
@@ -125,13 +125,13 @@ export class CategoryRepository implements ICategoryRepository {
         name: category.name,
         slug: category.slug,
         description: category.description,
-        image: category.imageUrl,
+        icon: category.icon,
         parentId: category.parentId,
         metaTitle: category.seoTitle,
         metaDescription: category.seoDescription,
         isActive: category.isActive,
         sortOrder: category.sortOrder,
-      },
+      } as any,
       include: {
         parent: true,
         children: true,
@@ -145,16 +145,7 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async delete(id: string): Promise<void> {
-    // Check if category has children
-    const children = await this.prisma.category.findMany({
-      where: { parentId: id }
-    });
-
-    if (children.length > 0) {
-      throw new Error('Cannot delete category with children. Please move or delete children first.');
-    }
-
-    // Check if category has products
+    // Check if category has products (we still want to prevent deletion if it has products)
     const productCount = await this.prisma.product.count({
       where: { categoryId: id }
     });
@@ -163,9 +154,28 @@ export class CategoryRepository implements ICategoryRepository {
       throw new Error('Cannot delete category with products. Please move products to another category first.');
     }
 
+    // Recursively delete all children first (cascade delete)
+    await this.deleteChildrenRecursively(id);
+
+    // Now delete the parent category
     await this.prisma.category.delete({
       where: { id }
     });
+  }
+
+  private async deleteChildrenRecursively(parentId: string): Promise<void> {
+    // Find all children of this category
+    const children = await this.prisma.category.findMany({
+      where: { parentId }
+    });
+
+    // Recursively delete each child and their children
+    for (const child of children) {
+      await this.deleteChildrenRecursively(child.id);
+      await this.prisma.category.delete({
+        where: { id: child.id }
+      });
+    }
   }
 
   async findRootCategories(): Promise<Category[]> {
@@ -380,12 +390,11 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async canDelete(id: string): Promise<boolean> {
-    const [hasChildren, hasProducts] = await Promise.all([
-      this.prisma.category.count({ where: { parentId: id } }),
-      this.prisma.product.count({ where: { categoryId: id } })
-    ]);
+    const hasProducts = await this.prisma.product.count({
+      where: { categoryId: id }
+    });
 
-    return hasChildren === 0 && hasProducts === 0;
+    return hasProducts === 0;
   }
 
   async findActive(): Promise<Category[]> {
@@ -484,12 +493,11 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async createMany(categories: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<Category[]> {
-    const created = await this.prisma.category.createMany({
+    const createdCategories = await this.prisma.category.createMany({
       data: categories.map(cat => ({
         name: cat.name,
         slug: cat.slug,
         description: cat.description,
-        image: cat.imageUrl,
         parentId: cat.parentId,
         metaTitle: cat.seoTitle,
         metaDescription: cat.seoDescription,
@@ -521,12 +529,13 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   private mapToEntity(data: any): Category {
-    return new Category(
+    if (!data) return null;
+    const entity = new Category(
       data.id,
       data.name,
       data.slug,
       data.description,
-      data.image,
+      data.icon,
       data.parentId,
       data.isActive,
       data.sortOrder,
@@ -535,5 +544,17 @@ export class CategoryRepository implements ICategoryRepository {
       data.createdAt,
       data.updatedAt
     );
+    
+    // Preserve parent relationship if it exists
+    if (data.parent) {
+      entity.parent = this.mapToEntity(data.parent);
+    }
+    
+    // Preserve children relationships if they exist
+    if (data.children && Array.isArray(data.children)) {
+      entity.children = data.children.map(child => this.mapToEntity(child));
+    }
+    
+    return entity;
   }
 } 
