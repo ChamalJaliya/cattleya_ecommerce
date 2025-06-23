@@ -238,10 +238,16 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     return (
       <AdminLayout>
         <div className="min-h-screen relative overflow-hidden">
-          {/* Subtle Background Effects */}
+          {/* Dazzling Background Effects */}
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-purple-400/15 via-violet-400/10 to-indigo-400/8 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-400/10 via-purple-400/15 to-violet-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-pink-400/20 via-purple-400/15 to-violet-400/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-400/10 via-pink-400/20 to-purple-400/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
+            
+            {/* Subtle floating particles */}
+            <div className="absolute top-20 left-20 w-1.5 h-1.5 bg-pink-400/60 rounded-full animate-bounce opacity-40"></div>
+            <div className="absolute top-40 right-32 w-1 h-1 bg-purple-400/50 rounded-full animate-ping opacity-30"></div>
+            <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-violet-400/50 rounded-full animate-pulse opacity-30"></div>
           </div>
           
           <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8 relative z-10">
@@ -265,10 +271,16 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     return (
       <AdminLayout>
         <div className="min-h-screen relative overflow-hidden">
-          {/* Subtle Background Effects */}
+          {/* Dazzling Background Effects */}
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-purple-400/15 via-violet-400/10 to-indigo-400/8 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-400/10 via-purple-400/15 to-violet-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-pink-400/20 via-purple-400/15 to-violet-400/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-400/10 via-pink-400/20 to-purple-400/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
+            
+            {/* Subtle floating particles */}
+            <div className="absolute top-20 left-20 w-1.5 h-1.5 bg-pink-400/60 rounded-full animate-bounce opacity-40"></div>
+            <div className="absolute top-40 right-32 w-1 h-1 bg-purple-400/50 rounded-full animate-ping opacity-30"></div>
+            <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-violet-400/50 rounded-full animate-pulse opacity-30"></div>
           </div>
           
           <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8 relative z-10">
@@ -311,16 +323,16 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
   return (
     <AdminLayout>
       <div className="min-h-screen relative overflow-hidden">
-        {/* Subtle Background Effects */}
+        {/* Dazzling Background Effects */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-purple-400/15 via-violet-400/10 to-indigo-400/8 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-400/10 via-purple-400/15 to-violet-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-indigo-400/8 to-purple-400/10 rounded-full blur-2xl animate-pulse delay-500"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-l from-pink-400/20 via-purple-400/15 to-violet-400/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-r from-blue-400/10 via-pink-400/20 to-purple-400/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
           
           {/* Subtle floating particles */}
-          <div className="absolute top-20 left-20 w-1.5 h-1.5 bg-purple-400/60 rounded-full animate-bounce opacity-40"></div>
-          <div className="absolute top-40 right-32 w-1 h-1 bg-violet-400/50 rounded-full animate-ping opacity-30"></div>
-          <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-indigo-400/50 rounded-full animate-pulse opacity-30"></div>
+          <div className="absolute top-20 left-20 w-1.5 h-1.5 bg-pink-400/60 rounded-full animate-bounce opacity-40"></div>
+          <div className="absolute top-40 right-32 w-1 h-1 bg-purple-400/50 rounded-full animate-ping opacity-30"></div>
+          <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-violet-400/50 rounded-full animate-pulse opacity-30"></div>
         </div>
 
         <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8 relative z-10">
@@ -335,15 +347,15 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
           >
             <div className="flex items-center justify-between">
               <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600/15 via-violet-600/15 to-indigo-600/15 rounded-3xl blur opacity-40 group-hover:opacity-60 transition duration-300"></div>
-                <div className="relative bg-white/90 backdrop-blur-md rounded-3xl p-8 border border-white/30 shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600/20 to-purple-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+                <div className="relative bg-white/90 backdrop-blur-md rounded-3xl p-8 border border-white/30 shadow-xl hover:shadow-pink-500/10 transition-all duration-300">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
                     Edit Product
                   </h1>
                   <p className="text-gray-600 flex items-center">
-                    <PencilIcon className="w-5 h-5 text-purple-500 mr-2" />
+                    <PencilIcon className="w-5 h-5 text-pink-500 mr-2" />
                     {product.name}
-                    <SparklesIcon className="w-4 h-4 text-violet-400 ml-2 animate-pulse" />
+                    <SparklesIcon className="w-4 h-4 text-purple-400 ml-2 animate-pulse" />
                   </p>
                 </div>
               </div>
@@ -353,7 +365,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleGoBack}
-                  className="group relative overflow-hidden bg-white/90 backdrop-blur-md border border-white/30 text-gray-700 px-6 py-3 rounded-2xl font-medium hover:bg-white/95 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="group relative overflow-hidden bg-white/80 backdrop-blur-md border border-white/30 text-gray-700 px-6 py-3 rounded-xl font-medium hover:bg-white/90 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   <span className="relative flex items-center">
                     <ArrowLeftIcon className="w-5 h-5 mr-2" />
@@ -373,11 +385,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
           >
             {/* Basic Information */}
             <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600/15 via-violet-600/15 to-indigo-600/15 rounded-3xl blur opacity-40 group-hover:opacity-60 transition duration-300"></div>
-              <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-purple-500/10 transition-all duration-300">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600/20 to-purple-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+              <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-pink-500/10 transition-all duration-300">
                 <div className="flex items-center mb-6">
-                  <SparklesIcon className="w-6 h-6 text-purple-500 mr-3" />
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                  <SparklesIcon className="w-6 h-6 text-pink-600 mr-3" />
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
                     Basic Information
                   </h2>
                 </div>
@@ -385,7 +397,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Product Name */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
                       Product Name *
                     </label>
                     <input
@@ -393,19 +405,19 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200 ${
-                        errors.name ? 'border-red-500' : 'border-gray-200'
+                      className={`w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300 ${
+                        errors.name ? 'border-red-500' : 'border-pink-200/50'
                       }`}
                       placeholder="Enter product name"
                     />
                     {errors.name && (
-                      <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                      <p className="text-red-500 text-sm mt-2">{errors.name}</p>
                     )}
                   </div>
 
                   {/* SKU */}
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
                       SKU *
                     </label>
                     <input
@@ -413,13 +425,13 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                       name="sku"
                       value={formData.sku}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200 ${
-                        errors.sku ? 'border-red-500' : 'border-gray-200'
+                      className={`w-full px-6 py-4 bg-white/70 backdrop-blur-sm border-2 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300 ${
+                        errors.sku ? 'border-red-500' : 'border-purple-200/50'
                       }`}
                       placeholder="Enter SKU"
                     />
                     {errors.sku && (
-                      <p className="text-red-500 text-sm mt-1">{errors.sku}</p>
+                      <p className="text-red-500 text-sm mt-2">{errors.sku}</p>
                     )}
                   </div>
 

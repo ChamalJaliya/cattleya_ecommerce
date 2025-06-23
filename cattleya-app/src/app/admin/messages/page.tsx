@@ -35,6 +35,8 @@ import {
   FireIcon,
   SparklesIcon,
   ListBulletIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import RichTextEditor from '@/shared/components/RichTextEditor';
@@ -210,29 +212,45 @@ export default function MessagesPage() {
     {
       name: 'Unread Messages',
       value: unreadCount.toString(),
+      change: '+3',
+      changeType: 'increase' as const,
       icon: ChatBubbleLeftEllipsisIcon,
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      color: 'from-blue-500 via-cyan-500 to-sky-500',
+      iconBg: 'from-blue-400 to-cyan-600',
+      glowColor: 'shadow-blue-500/30',
       description: 'Awaiting attention'
     },
     {
       name: 'Resolved Today',
       value: '12',
+      change: '+2',
+      changeType: 'increase' as const,
       icon: CheckIcon,
-      gradient: 'from-emerald-500 via-green-500 to-teal-500',
+      color: 'from-emerald-500 via-green-500 to-teal-500',
+      iconBg: 'from-emerald-400 to-green-600',
+      glowColor: 'shadow-emerald-500/30',
       description: 'Happy customers'
     },
     {
       name: 'Urgent Alerts',
       value: urgentMessages.toString(),
+      change: '-1',
+      changeType: 'decrease' as const,
       icon: ExclamationTriangleIcon,
-      gradient: 'from-red-500 via-rose-500 to-pink-500',
+      color: 'from-red-500 via-rose-500 to-pink-500',
+      iconBg: 'from-red-400 to-rose-600',
+      glowColor: 'shadow-red-500/30',
       description: 'High priority issues'
     },
     {
       name: 'Avg. Response',
       value: '1.8 hours',
+      change: '-0.2h',
+      changeType: 'decrease' as const,
       icon: ClockIcon,
-      gradient: 'from-yellow-500 via-orange-500 to-red-500',
+      color: 'from-yellow-500 via-orange-500 to-red-500',
+      iconBg: 'from-yellow-400 to-orange-600',
+      glowColor: 'shadow-yellow-500/30',
       description: 'Quick support'
     }
   ];
@@ -298,41 +316,87 @@ export default function MessagesPage() {
   return (
     <AdminLayout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-                <ChatBubbleLeftRightIcon className="w-8 h-8 mr-3 text-purple-600" />
-                Messages
-              </h1>
-              <p className="text-gray-500 mt-1">Manage all your communications in one place.</p>
+        <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 relative"
+          >
+            <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute top-8 right-8 w-24 h-24 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-2xl -z-10"></div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent mb-2">
+                  Messages
+                </h1>
+                <p className="text-gray-600 text-lg">Manage all your communications in one place.</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="hidden md:flex items-center space-x-2">
+                  <SparklesIcon className="w-6 h-6 text-purple-500 animate-pulse" />
+                  <span className="text-sm font-medium text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                    Messages Dashboard Overview
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setShowCompose(true)}
+                  className="group relative overflow-hidden"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
+                    <PlusIcon className="w-5 h-5 mr-2" />
+                    Compose
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Stats Cards */}
+          {/* Enhanced Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {statsData.map((stat, index) => (
               <motion.div
-                key={index}
+                key={stat.name}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300`}></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                 <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent my-2">
+                      <div className="flex items-center mb-2">
+                        <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
+                        <div className="ml-2 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
+                      </div>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
                         {stat.value}
                       </p>
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
+                          {stat.changeType === 'increase' ? (
+                            <div className="flex items-center bg-green-100 px-2 py-1 rounded-full">
+                              <ArrowUpIcon className="w-3 h-3 text-green-600 mr-1" />
+                              <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center bg-red-100 px-2 py-1 rounded-full">
+                              <ArrowDownIcon className="w-3 h-3 text-red-600 mr-1" />
+                              <span className="text-xs font-bold text-red-700">{stat.change}</span>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">vs last month</span>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
                     </div>
                     <div className="relative">
-                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.iconBg} rounded-2xl flex items-center justify-center shadow-lg ${stat.glowColor} group-hover:shadow-xl transition-all duration-300`}>
                         <stat.icon className="w-8 h-8 text-white" />
                       </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
                     </div>
                   </div>
                 </div>

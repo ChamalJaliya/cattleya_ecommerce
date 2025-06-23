@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   PlusIcon,
@@ -16,9 +16,31 @@ import {
   ChevronDownIcon,
   ArrowUpIcon,
   CheckIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
+import CategoryTreeView from '@/shared/components/CategoryTreeView';
+import CategoryForm from '@/shared/components/CategoryForm';
+import { useRouter } from 'next/navigation';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  parentId?: string;
+  parent?: Category;
+  children?: Category[];
+  metaTitle?: string;
+  metaDescription?: string;
+  isActive: boolean;
+  sortOrder: number;
+  productCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const mockCategories = [
   { id: '1', name: 'Orchids', description: 'Beautiful flowering orchids', productCount: 45, status: 'active', image: '🌺', createdAt: '2024-01-15' },
@@ -31,22 +53,107 @@ const mockCategories = [
 const statusOptions = ['All Status', 'active', 'draft'];
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState(mockCategories);
+  const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [mockCategoriesData, setMockCategoriesData] = useState(mockCategories);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table' | 'tree'>('cards');
   const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredCategories = categories.filter(category => {
+  // Tree view state
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>();
+
+  // Fetch categories from API
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/categories?includeTree=true');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.data || []);
+      } else {
+        console.error('Failed to fetch categories');
+        // Fallback to mock data for now
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setError('Failed to load categories');
+      // Fallback to mock data for now
+      setCategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddCategory = () => {
+    router.push('/admin/categories/add');
+  };
+
+  const handleEditCategory = (category: Category) => {
+    // Navigate to category detail page or show in modal
+    console.log('View category:', category);
+  };
+
+  const handleDeleteCategory = async (category: Category) => {
+    if (confirm(`Are you sure you want to delete "${category.name}"?`)) {
+      try {
+        const response = await fetch(`/api/categories/${category.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (response.ok) {
+          await fetchCategories(); // Refresh the list
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to delete category: ${errorData.message}`);
+        }
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        alert('Failed to delete category');
+      }
+    }
+  };
+
+  const handleViewCategory = (category: Category) => {
+    // Navigate to category detail page or show in modal
+    console.log('View category:', category);
+  };
+
+  const handleToggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectCategory = (category: Category) => {
+    setSelectedCategory(category);
+  };
+
+  const handleDeleteMockCategory = (id: string) => {
+    setMockCategoriesData(mockCategoriesData.filter(c => c.id !== id));
+  };
+
+  const filteredCategories = mockCategoriesData.filter(category => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          category.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'All Status' || category.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
-
-  const handleDeleteCategory = (id: string) => {
-    setCategories(categories.filter(c => c.id !== id));
-  };
 
   const breadcrumbItems = [
     { label: 'Dashboard', href: '/admin/dashboard' },
@@ -54,10 +161,10 @@ export default function CategoriesPage() {
   ];
 
   const stats = {
-    total: categories.length,
-    active: categories.filter(c => c.status === 'active').length,
-    draft: categories.filter(c => c.status === 'draft').length,
-    totalProducts: categories.reduce((sum, cat) => sum + cat.productCount, 0),
+    total: categories.length || mockCategoriesData.length,
+    active: (categories.filter(c => c.isActive).length) || (mockCategoriesData.filter(c => c.status === 'active').length),
+    draft: (categories.filter(c => !c.isActive).length) || (mockCategoriesData.filter(c => c.status === 'draft').length),
+    totalProducts: (categories.reduce((sum, cat) => sum + cat.productCount, 0)) || (mockCategoriesData.reduce((sum, cat) => sum + cat.productCount, 0)),
   };
 
   const statsData = [
@@ -65,36 +172,44 @@ export default function CategoriesPage() {
       name: 'Total Categories',
       value: stats.total.toString(),
       change: '+2',
-      changeType: 'increase',
+      changeType: 'increase' as const,
       icon: FolderIcon,
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      color: 'from-blue-500 via-cyan-500 to-sky-500',
+      iconBg: 'from-blue-400 to-cyan-600',
+      glowColor: 'shadow-blue-500/30',
       description: 'Categories created'
     },
     {
       name: 'Active Categories',
       value: stats.active.toString(),
-      change: ``,
-      changeType: 'increase',
+      change: '+1',
+      changeType: 'increase' as const,
       icon: CheckIcon,
-      gradient: 'from-emerald-500 via-green-500 to-teal-500',
+      color: 'from-emerald-500 via-green-500 to-teal-500',
+      iconBg: 'from-emerald-400 to-green-600',
+      glowColor: 'shadow-emerald-500/30',
       description: 'Visible to customers'
     },
     {
       name: 'Total Products',
       value: stats.totalProducts.toString(),
       change: '+125',
-      changeType: 'increase',
+      changeType: 'increase' as const,
       icon: TagIcon,
-      gradient: 'from-yellow-500 via-orange-500 to-red-500',
+      color: 'from-yellow-500 via-orange-500 to-red-500',
+      iconBg: 'from-yellow-400 to-orange-600',
+      glowColor: 'shadow-yellow-500/30',
       description: 'Across all categories'
     },
     {
       name: 'Draft Categories',
       value: stats.draft.toString(),
-      change: '',
-      changeType: 'neutral',
+      change: '-1',
+      changeType: 'decrease' as const,
       icon: PencilIcon,
-      gradient: 'from-gray-500 via-gray-500 to-gray-600',
+      color: 'from-gray-500 via-gray-500 to-gray-600',
+      iconBg: 'from-gray-400 to-gray-600',
+      glowColor: 'shadow-gray-500/30',
       description: 'Not yet published'
     }
   ];
@@ -119,7 +234,16 @@ export default function CategoriesPage() {
                 <p className="text-gray-600 text-lg">Organize and manage your product categories.</p>
               </div>
               <div className="flex items-center space-x-4">
-                <button className="group relative overflow-hidden">
+                <div className="hidden md:flex items-center space-x-2">
+                  <SparklesIcon className="w-6 h-6 text-purple-500 animate-pulse" />
+                  <span className="text-sm font-medium text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                    Category Dashboard Overview
+                  </span>
+                </div>
+                <button 
+                  onClick={handleAddCategory}
+                  className="group relative overflow-hidden"
+                >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                   <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
                     <PlusIcon className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
@@ -130,8 +254,8 @@ export default function CategoriesPage() {
             </div>
           </motion.div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {statsData.map((stat, index) => (
               <motion.div
                 key={stat.name}
@@ -140,32 +264,42 @@ export default function CategoriesPage() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300`}></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                 <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent my-2">
+                      <div className="flex items-center mb-2">
+                        <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
+                        <div className="ml-2 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
+                      </div>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
                         {stat.value}
                       </p>
                       <div className="flex items-center space-x-2">
                         {stat.change && (
-                          <div className={`flex items-center px-2 py-1 rounded-full ${
-                            stat.changeType === 'increase' ? 'bg-green-100' : 'bg-red-100'
-                          }`}>
-                            {stat.changeType === 'increase' && <ArrowUpIcon className="w-3 h-3 mr-1 text-green-600" />}
-                            <span className={`text-xs font-bold ${
-                              stat.changeType === 'increase' ? 'text-green-700' : 'text-red-700'
-                            }`}>{stat.change}</span>
+                          <div className="flex items-center">
+                            {stat.changeType === 'increase' ? (
+                              <div className="flex items-center bg-green-100 px-2 py-1 rounded-full">
+                                <ArrowUpIcon className="w-3 h-3 text-green-600 mr-1" />
+                                <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                              </div>
+                            ) : stat.changeType === 'decrease' ? (
+                              <div className="flex items-center bg-red-100 px-2 py-1 rounded-full">
+                                <ArrowUpIcon className="w-3 h-3 text-red-600 mr-1 rotate-180" />
+                                <span className="text-xs font-bold text-red-700">{stat.change}</span>
+                              </div>
+                            ) : null}
                           </div>
                         )}
-                        <span className="text-xs text-gray-500 mt-1">{stat.description}</span>
+                        <span className="text-xs text-gray-500">vs last month</span>
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
                     </div>
                     <div className="relative">
-                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.iconBg} rounded-2xl flex items-center justify-center shadow-lg ${stat.glowColor} group-hover:shadow-xl transition-all duration-300`}>
                         <stat.icon className="w-8 h-8 text-white" />
                       </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
                     </div>
                   </div>
                 </div>
@@ -221,6 +355,17 @@ export default function CategoriesPage() {
                       <TableCellsIcon className="w-4 h-4 mr-1" />
                       Table
                     </button>
+                    <button
+                      onClick={() => setViewMode('tree')}
+                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
+                        viewMode === 'tree'
+                          ? 'bg-white shadow-sm text-purple-600'
+                          : 'text-gray-600 hover:text-purple-600'
+                      }`}
+                    >
+                      <FolderIcon className="w-4 h-4 mr-1" />
+                      Tree
+                    </button>
                   </div>
                   
                   <button
@@ -264,7 +409,42 @@ export default function CategoriesPage() {
         
         {/* Content Area */}
         <div className="min-h-[600px]">
-        {viewMode === 'cards' ? (
+        {viewMode === 'tree' ? (
+          <motion.div
+            key="tree"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">{error}</p>
+                <button 
+                  onClick={fetchCategories}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <CategoryTreeView
+                categories={categories}
+                onAddCategory={handleAddCategory}
+                onEditCategory={handleEditCategory}
+                onDeleteCategory={handleDeleteCategory}
+                onViewCategory={handleViewCategory}
+                onToggleCategory={handleToggleCategory}
+                expandedCategories={expandedCategories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={handleSelectCategory}
+              />
+            )}
+          </motion.div>
+        ) : viewMode === 'cards' ? (
           <motion.div
             key="cards"
             initial={{ opacity: 0 }}
@@ -301,7 +481,7 @@ export default function CategoriesPage() {
                         <button className="group/action relative overflow-hidden flex-1 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-105 flex items-center justify-center">
                            <PencilIcon className="w-4 h-4 mr-1" /> Edit
                         </button>
-                        <button onClick={() => handleDeleteCategory(category.id)} className="group/action relative overflow-hidden p-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                        <button onClick={() => handleDeleteMockCategory(category.id)} className="group/action relative overflow-hidden p-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                            <TrashIcon className="w-4 h-4" />
                         </button>
                     </div>
@@ -367,7 +547,7 @@ export default function CategoriesPage() {
                             <button className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                               <PencilIcon className="w-5 h-5" />
                             </button>
-                            <button onClick={() => handleDeleteCategory(category.id)} className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                            <button onClick={() => handleDeleteMockCategory(category.id)} className="group/action relative overflow-hidden p-1.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                               <TrashIcon className="w-5 h-5" />
                             </button>
                           </div>

@@ -366,7 +366,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
 
   const CropHandle = ({ position, className }: { position: string; className: string }) => (
     <div
-      className={`absolute w-6 h-6 bg-gradient-to-r from-purple-500 to-violet-500 border-2 border-white rounded-full shadow-lg cursor-pointer hover:scale-125 transition-transform duration-200 ${className}`}
+      className={`absolute w-6 h-6 bg-gradient-to-r from-pink-500 to-purple-500 border-2 border-white rounded-full shadow-lg cursor-pointer hover:scale-125 transition-transform duration-200 ${className}`}
       style={{
         left: position.includes('left') ? cropArea.x - 12 : cropArea.x + cropArea.width - 12,
         top: position.includes('top') ? cropArea.y - 12 : cropArea.y + cropArea.height - 12,
@@ -386,35 +386,8 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
         className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
         onClick={onClose}
       >
-        {/* Enhanced Backdrop with Multiple Layers */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-purple-900/60 to-black/80 backdrop-blur-xl"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-cyan-500/10 animate-pulse"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.1),transparent_50%)]"></div>
-        
-        {/* Floating Particles Effect */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-cyan-400 rounded-full opacity-30"
-              animate={{
-                x: [0, Math.random() * window.innerWidth],
-                y: [0, Math.random() * window.innerHeight],
-                scale: [0, 1, 0],
-                opacity: [0, 0.3, 0]
-              }}
-              transition={{
-                duration: Math.random() * 3 + 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              style={{
-                left: Math.random() * 100 + '%',
-                top: Math.random() * 100 + '%'
-              }}
-            />
-          ))}
-        </div>
+        {/* Simple Blur Overlay Background */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
         <motion.div
           drag
@@ -429,21 +402,15 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
             stiffness: 300,
             duration: 0.6
           }}
-          className="relative bg-gradient-to-br from-white via-gray-50/95 to-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[80vh] overflow-hidden border border-white/30 backdrop-blur-xl"
-          style={{
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-          }}
+          className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl max-w-5xl w-full max-h-[80vh] overflow-hidden border border-white/30"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Enhanced Header with Glassmorphism */}
+          {/* Consistent Pink/Purple Header */}
           <div 
             onPointerDown={(e) => dragControls.start(e)}
-            className="relative bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white p-6 overflow-hidden cursor-grab"
+            className="relative bg-gradient-to-r from-pink-600 via-purple-600 to-violet-600 text-white p-6 overflow-hidden cursor-grab"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-violet-500/20 backdrop-blur-sm"></div>
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" style={{animationDelay: '1s'}}></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-r from-cyan-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-purple-500/20 backdrop-blur-sm"></div>
             
             <div className="relative flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -455,16 +422,16 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                   <CameraIcon className="w-7 h-7" />
                 </motion.div>
                 <div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-pink-100 bg-clip-text text-transparent">
                     Image Editor
                   </h2>
-                  <p className="text-purple-100 text-sm font-medium">Professional image editing tools</p>
+                  <p className="text-pink-100 text-sm font-medium">Professional image editing tools</p>
                 </div>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                 >
-                  <SparklesIcon className="w-6 h-6 text-yellow-300" />
+                  <SparklesIcon className="w-6 h-6 text-pink-300" />
                 </motion.div>
               </div>
               <motion.button
@@ -479,7 +446,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
           </div>
 
           <div className="flex" style={{ height: 'calc(80vh - 98px)' }}>
-            {/* Enhanced Image Preview - Adjusted for better ratio */}
+            {/* Image Preview with Consistent Styling */}
             <div className="flex-[2_2_0%] p-8 bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center relative overflow-hidden">
               {isCropping ? (
                 <div 
@@ -497,7 +464,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                     style={{ transform: `scale(${image.zoom || 1})` }}
                   />
                   
-                  {/* Enhanced Crop Overlay */}
+                  {/* Crop Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70">
                     <div
                       className="absolute border-2 border-white bg-transparent shadow-2xl"
@@ -510,13 +477,13 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                     />
                   </div>
 
-                  {/* Enhanced Crop Handles */}
+                  {/* Crop Handles with Pink/Purple Theme */}
                   <CropHandle position="top-left" className="cursor-nw-resize" />
                   <CropHandle position="top-right" className="cursor-ne-resize" />
                   <CropHandle position="bottom-left" className="cursor-sw-resize" />
                   <CropHandle position="bottom-right" className="cursor-se-resize" />
 
-                  {/* Enhanced Instructions */}
+                  {/* Instructions */}
                   <div className="absolute top-4 left-4 bg-black/80 text-white px-4 py-3 rounded-2xl text-sm backdrop-blur-md border border-white/20 shadow-lg">
                     ✨ Drag handles to crop • Use zoom to adjust view
                   </div>
@@ -527,7 +494,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                   whileHover={{ scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <div className="absolute -inset-6 bg-gradient-to-r from-purple-500/20 via-violet-500/20 to-indigo-500/20 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
+                  <div className="absolute -inset-6 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-violet-500/20 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
                   <div 
                     ref={containerRef}
                     className="relative max-w-full max-h-full rounded-3xl shadow-2xl border-4 border-white overflow-hidden"
@@ -548,7 +515,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                   </div>
                   {(image.brightness !== 0 || image.contrast !== 0 || image.rotation !== 0) && (
                     <motion.div 
-                      className="absolute top-4 left-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-2xl text-sm flex items-center shadow-lg backdrop-blur-md border border-white/20"
+                      className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-2 rounded-2xl text-sm flex items-center shadow-lg backdrop-blur-md border border-white/20"
                       initial={{ opacity: 0, y: -20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
@@ -644,8 +611,8 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                                 onClick={() => onUpdate(image.id, { aspectRatio: ratio.value })}
                                 className={`p-4 rounded-xl border-2 transition-all duration-200 text-left hover:scale-105 ${
                                   image.aspectRatio === ratio.value
-                                    ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 shadow-lg'
-                                    : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-md'
+                                    ? 'border-pink-500 bg-gradient-to-r from-pink-50 to-purple-50 text-pink-700 shadow-lg'
+                                    : 'border-gray-200 hover:border-pink-300 hover:bg-pink-50/50 hover:shadow-md'
                                 }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -663,7 +630,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                           className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2 ${
                             isCropping 
                               ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' 
-                              : 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                              : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
                           }`}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
@@ -716,7 +683,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                             <select
                               value={image.format}
                               onChange={(e) => onUpdate(image.id, { format: e.target.value as any })}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-gray-50/50"
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-gray-50/50"
                             >
                               {imageFormats.map((format) => (
                                 <option key={format.value} value={format.value}>
@@ -746,7 +713,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
                <div className="p-6 border-t border-gray-200/80">
                   <motion.button
                     onClick={resetImage}
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 px-6 rounded-xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
+                    className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 px-6 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -765,32 +732,32 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
             height: 24px;
             width: 24px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 8px rgba(236, 72, 153, 0.3);
             border: 2px solid white;
             transition: all 0.2s ease;
           }
           
           .slider::-webkit-slider-thumb:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 6px 12px rgba(236, 72, 153, 0.4);
           }
           
           .slider::-moz-range-thumb {
             height: 24px;
             width: 24px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
             cursor: pointer;
             border: 2px solid white;
-            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 8px rgba(236, 72, 153, 0.3);
             transition: all 0.2s ease;
           }
           
           .slider::-moz-range-thumb:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 6px 12px rgba(236, 72, 153, 0.4);
           }
         `}</style>
       </motion.div>
@@ -810,7 +777,7 @@ const TabButton = ({ id, label, icon: Icon, activeTab, onClick }: TabButtonProps
   <button
     onClick={() => onClick(id)}
     className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
-      activeTab === id ? 'bg-white text-purple-700 shadow' : 'text-gray-600 hover:bg-white/50'
+      activeTab === id ? 'bg-white text-pink-700 shadow' : 'text-gray-600 hover:bg-white/50'
     }`}
   >
     <Icon className="w-5 h-5" />
@@ -827,7 +794,7 @@ interface SettingsCardProps {
 const SettingsCard = ({ title, icon: Icon, children }: SettingsCardProps) => (
   <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-      <Icon className="w-5 h-5 mr-3 text-purple-600" />
+      <Icon className="w-5 h-5 mr-3 text-pink-600" />
       {title}
     </h3>
     {children}

@@ -76,36 +76,44 @@ export default function AnalyticsPage() {
       name: 'Total Revenue',
       value: `$${(totalRevenue/1000).toFixed(1)}k`,
       change: `${Math.abs(revenueGrowth).toFixed(1)}%`,
-      changeType: revenueGrowth > 0 ? 'increase' : 'decrease',
+      changeType: revenueGrowth > 0 ? 'increase' as const : 'decrease' as const,
       icon: CurrencyDollarIcon,
-      gradient: 'from-emerald-500 via-green-500 to-teal-500',
+      color: 'from-emerald-500 via-green-500 to-teal-500',
+      iconBg: 'from-emerald-400 to-green-600',
+      glowColor: 'shadow-emerald-500/30',
       description: 'Total sales revenue'
     },
     {
       name: 'Total Orders',
       value: totalOrders.toLocaleString(),
       change: `${ordersGrowth.toFixed(1)}%`,
-      changeType: 'increase',
+      changeType: 'increase' as const,
       icon: ShoppingBagIcon,
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      color: 'from-blue-500 via-cyan-500 to-sky-500',
+      iconBg: 'from-blue-400 to-cyan-600',
+      glowColor: 'shadow-blue-500/30',
       description: 'Total orders placed'
     },
     {
       name: 'New Customers',
       value: totalCustomers.toString(),
       change: `${customersGrowth.toFixed(1)}%`,
-      changeType: 'increase',
+      changeType: 'increase' as const,
       icon: UserGroupIcon,
-      gradient: 'from-purple-500 via-pink-500 to-rose-500',
+      color: 'from-purple-500 via-pink-500 to-rose-500',
+      iconBg: 'from-purple-400 to-pink-600',
+      glowColor: 'shadow-purple-500/30',
       description: 'Joined in period'
     },
     {
       name: 'Avg. Order Value',
       value: `$${averageOrderValue.toFixed(0)}`,
       change: `${aovGrowth.toFixed(1)}%`,
-      changeType: 'increase',
+      changeType: 'increase' as const,
       icon: ChartBarIcon,
-      gradient: 'from-yellow-500 via-orange-500 to-red-500',
+      color: 'from-yellow-500 via-orange-500 to-red-500',
+      iconBg: 'from-yellow-400 to-orange-600',
+      glowColor: 'shadow-yellow-500/30',
       description: 'Average per order'
     }
   ];
@@ -130,10 +138,16 @@ export default function AnalyticsPage() {
                 <p className="text-gray-600 text-lg">Track your business performance and insights.</p>
               </div>
               <div className="flex items-center space-x-4">
+                <div className="hidden md:flex items-center space-x-2">
+                  <SparklesIcon className="w-6 h-6 text-purple-500 animate-pulse" />
+                  <span className="text-sm font-medium text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                    Analytics Dashboard Overview
+                  </span>
+                </div>
                 <select
                   value={selectedPeriod}
                   onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
+                  className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                 >
                     <option>Last 7 Days</option>
                     <option>Last 30 Days</option>
@@ -151,7 +165,7 @@ export default function AnalyticsPage() {
             </div>
           </motion.div>
 
-          {/* Key Metrics */}
+          {/* Enhanced Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {statsData.map((stat, index) => (
               <motion.div
@@ -161,37 +175,40 @@ export default function AnalyticsPage() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300`}></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                 <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
                         <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
+                        <div className="ml-2 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
                       </div>
                       <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
                         {stat.value}
                       </p>
                       <div className="flex items-center space-x-2">
-                        <div className={`flex items-center px-2 py-1 rounded-full ${
-                          stat.changeType === 'increase' ? 'bg-green-100' : 'bg-red-100'
-                        }`}>
+                        <div className="flex items-center">
                           {stat.changeType === 'increase' ? (
-                            <ArrowUpIcon className="w-3 h-3 mr-1 text-green-600" />
+                            <div className="flex items-center bg-green-100 px-2 py-1 rounded-full">
+                              <ArrowUpIcon className="w-3 h-3 text-green-600 mr-1" />
+                              <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                            </div>
                           ) : (
-                            <ArrowDownIcon className="w-3 h-3 mr-1 text-red-600" />
+                            <div className="flex items-center bg-red-100 px-2 py-1 rounded-full">
+                              <ArrowDownIcon className="w-3 h-3 text-red-600 mr-1" />
+                              <span className="text-xs font-bold text-red-700">{stat.change}</span>
+                            </div>
                           )}
-                          <span className={`text-xs font-bold ${
-                            stat.changeType === 'increase' ? 'text-green-700' : 'text-red-700'
-                          }`}>{stat.change}</span>
                         </div>
                         <span className="text-xs text-gray-500">vs last month</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
                     </div>
                     <div className="relative">
-                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.iconBg} rounded-2xl flex items-center justify-center shadow-lg ${stat.glowColor} group-hover:shadow-xl transition-all duration-300`}>
                         <stat.icon className="w-8 h-8 text-white" />
                       </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
                     </div>
                   </div>
                 </div>

@@ -27,7 +27,9 @@ import {
   HashtagIcon,
   Squares2X2Icon,
   TableCellsIcon,
-  ViewColumnsIcon
+  ViewColumnsIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 
@@ -266,7 +268,7 @@ export default function OrdersPage() {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30">
         <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* Enhanced Header */}
           <motion.div
@@ -274,21 +276,30 @@ export default function OrdersPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8 relative"
           >
-            <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl -z-10"></div>
-            <div className="absolute top-8 right-8 w-24 h-24 bg-gradient-to-r from-green-400/20 to-cyan-400/20 rounded-full blur-2xl -z-10"></div>
+            <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute top-8 right-8 w-24 h-24 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-2xl -z-10"></div>
             
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-2">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 bg-clip-text text-transparent mb-2">
                   Orders Management
                 </h1>
                 <p className="text-gray-600 text-lg">Track and manage customer orders with ease</p>
               </div>
-              <div className="hidden md:flex items-center space-x-2">
-                <SparklesIcon className="w-6 h-6 text-blue-500 animate-pulse" />
-                <span className="text-sm font-medium text-blue-700 bg-blue-100 px-3 py-1 rounded-full">
-                  Order Dashboard
-                </span>
+              <div className="flex items-center space-x-4">
+                <div className="hidden md:flex items-center space-x-2">
+                  <SparklesIcon className="w-6 h-6 text-purple-500 animate-pulse" />
+                  <span className="text-sm font-medium text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
+                    Orders Dashboard Overview
+                  </span>
+                </div>
+                <button className="group relative overflow-hidden">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl transition-all duration-200 flex items-center group-hover:scale-105">
+                    <ShoppingBagIcon className="w-5 h-5 mr-2" />
+                    View All Orders
+                  </div>
+                </button>
               </div>
             </div>
           </motion.div>
@@ -303,21 +314,30 @@ export default function OrdersPage() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                 <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
                         <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
-                        <div className="ml-2 w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                        <div className="ml-2 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
                       </div>
                       <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
                         {stat.value}
                       </p>
                       <div className="flex items-center space-x-2">
-                        <div className="flex items-center bg-green-100 px-2 py-1 rounded-full">
-                          <StarIcon className="w-3 h-3 text-green-600 mr-1" />
-                          <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                        <div className="flex items-center">
+                          {stat.changeType === 'increase' ? (
+                            <div className="flex items-center bg-green-100 px-2 py-1 rounded-full">
+                              <ArrowUpIcon className="w-3 h-3 text-green-600 mr-1" />
+                              <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center bg-red-100 px-2 py-1 rounded-full">
+                              <ArrowDownIcon className="w-3 h-3 text-red-600 mr-1" />
+                              <span className="text-xs font-bold text-red-700">{stat.change}</span>
+                            </div>
+                          )}
                         </div>
                         <span className="text-xs text-gray-500">vs last month</span>
                       </div>
@@ -327,7 +347,7 @@ export default function OrdersPage() {
                       <div className={`w-16 h-16 bg-gradient-to-r ${stat.iconBg} rounded-2xl flex items-center justify-center shadow-lg ${stat.glowColor} group-hover:shadow-xl transition-all duration-300`}>
                         <stat.icon className="w-8 h-8 text-white" />
                       </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-bounce"></div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
                     </div>
                   </div>
                 </div>
@@ -342,7 +362,7 @@ export default function OrdersPage() {
             transition={{ delay: 0.4 }}
             className="group relative mb-8"
           >
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
             <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                 <div className="flex-1 max-w-lg">
@@ -353,7 +373,7 @@ export default function OrdersPage() {
                       placeholder="Search orders, customers, email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                     />
                   </div>
                 </div>
@@ -365,8 +385,8 @@ export default function OrdersPage() {
                       onClick={() => setViewMode('cards')}
                       className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         viewMode === 'cards'
-                          ? 'bg-white shadow-sm text-blue-600'
-                          : 'text-gray-600 hover:text-blue-600'
+                          ? 'bg-white shadow-sm text-purple-600'
+                          : 'text-gray-600 hover:text-purple-600'
                       }`}
                     >
                       <Squares2X2Icon className="w-4 h-4 mr-1" />
@@ -376,8 +396,8 @@ export default function OrdersPage() {
                       onClick={() => setViewMode('table')}
                       className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                         viewMode === 'table'
-                          ? 'bg-white shadow-sm text-blue-600'
-                          : 'text-gray-600 hover:text-blue-600'
+                          ? 'bg-white shadow-sm text-purple-600'
+                          : 'text-gray-600 hover:text-purple-600'
                       }`}
                     >
                       <TableCellsIcon className="w-4 h-4 mr-1" />
@@ -389,8 +409,8 @@ export default function OrdersPage() {
                     onClick={() => setShowFilters(!showFilters)}
                     className="group/btn relative overflow-hidden"
                   >
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur opacity-20 group-hover/btn:opacity-40 transition duration-300"></div>
-                    <div className="relative flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 group-hover/btn:scale-105">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-20 group-hover/btn:opacity-40 transition duration-300"></div>
+                    <div className="relative flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 group-hover/btn:scale-105">
                       <FunnelIcon className="w-5 h-5 mr-2" />
                       Filters
                       <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
@@ -414,7 +434,7 @@ export default function OrdersPage() {
                         <select
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
                         >
                           {statusOptions.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -427,7 +447,7 @@ export default function OrdersPage() {
                         <select
                           value={selectedPaymentStatus}
                           onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
                         >
                           {paymentStatusOptions.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -454,12 +474,12 @@ export default function OrdersPage() {
                   transition={{ delay: 0.5 + index * 0.1 }}
                   className="group relative"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-blue-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-purple-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
                   <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                       {/* Order Info */}
                       <div className="flex items-center space-x-4">
-                        <div className="w-14 h-14 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center font-bold text-blue-700 group-hover:scale-110 transition-transform duration-200">
+                        <div className="w-14 h-14 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center font-bold text-purple-700 group-hover:scale-110 transition-transform duration-200">
                           {order.customer.avatar}
                         </div>
                         <div>
@@ -499,7 +519,7 @@ export default function OrdersPage() {
                         {order.trackingNumber && (
                           <div className="text-center">
                             <p className="text-sm text-gray-500 mb-1">Tracking</p>
-                            <div className="flex items-center text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                            <div className="flex items-center text-sm font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-lg">
                               <HashtagIcon className="w-4 h-4 mr-1" />
                               {order.trackingNumber}
                             </div>
@@ -510,15 +530,15 @@ export default function OrdersPage() {
                       {/* Action Buttons */}
                       <div className="flex items-center space-x-3">
                         <button className="group/action relative overflow-hidden">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
-                          <div className="relative p-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
+                          <div className="relative p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                             <EyeIcon className="w-5 h-5" />
                           </div>
                         </button>
                         
                         <button className="group/action relative overflow-hidden">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
-                          <div className="relative p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-red-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
+                          <div className="relative p-2 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                             <PencilIcon className="w-5 h-5" />
                           </div>
                         </button>
@@ -573,11 +593,11 @@ export default function OrdersPage() {
               transition={{ delay: 0.5 }}
               className="group relative"
             >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
               <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
                                   <div className="overflow-x-auto hide-scrollbar">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
+                    <thead className="bg-gradient-to-r from-gray-50 to-purple-50">
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Order Details</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Customer</th>
@@ -595,17 +615,17 @@ export default function OrdersPage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.6 + index * 0.05 }}
-                          className="hover:bg-blue-50/50 transition-colors duration-200 group/row"
+                          className="hover:bg-purple-50/50 transition-colors duration-200 group/row"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center font-bold text-blue-700 text-sm group-hover/row:scale-110 transition-transform duration-200">
+                              <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center font-bold text-purple-700 text-sm group-hover/row:scale-110 transition-transform duration-200">
                                 {order.customer.avatar}
                               </div>
                               <div>
                                 <div className="text-sm font-bold text-gray-900">{order.id}</div>
                                 {order.trackingNumber && (
-                                  <div className="flex items-center text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mt-1">
+                                  <div className="flex items-center text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded mt-1">
                                     <HashtagIcon className="w-3 h-3 mr-1" />
                                     {order.trackingNumber}
                                   </div>
@@ -661,15 +681,15 @@ export default function OrdersPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-2">
                               <button className="group/action relative overflow-hidden">
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
-                                <div className="relative p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
+                                <div className="relative p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                                   <EyeIcon className="w-4 h-4" />
                                 </div>
                               </button>
                               
                               <button className="group/action relative overflow-hidden">
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
-                                <div className="relative p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-red-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
+                                <div className="relative p-1.5 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                                   <PencilIcon className="w-4 h-4" />
                                 </div>
                               </button>
@@ -720,7 +740,7 @@ export default function OrdersPage() {
                   disabled={currentPage === 1}
                   className="group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                   <div className="relative px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 group-hover:scale-105 disabled:hover:scale-100">
                     Previous
                   </div>
@@ -733,13 +753,13 @@ export default function OrdersPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`group relative overflow-hidden w-10 h-10 rounded-lg transition-all duration-200 ${
                         currentPage === page
-                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
                           : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-105'
                       }`}
                     >
                       <span className="relative z-10">{page}</span>
                       {currentPage === page && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-20"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20"></div>
                       )}
                     </button>
                   ))}
@@ -750,7 +770,7 @@ export default function OrdersPage() {
                   disabled={currentPage === totalPages}
                   className="group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                   <div className="relative px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 group-hover:scale-105 disabled:hover:scale-100">
                     Next
                   </div>
@@ -766,9 +786,9 @@ export default function OrdersPage() {
               animate={{ opacity: 1, y: 0 }}
               className="group relative"
             >
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-blue-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-purple-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
               <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-12 text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <ShoppingBagIcon className="w-10 h-10 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders found</h3>

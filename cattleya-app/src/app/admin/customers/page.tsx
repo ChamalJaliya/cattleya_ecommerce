@@ -23,6 +23,7 @@ import {
   ArrowDownIcon,
   UserGroupIcon,
   PlusIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
@@ -202,7 +203,9 @@ export default function CustomersPage() {
       change: '+5.2%',
       changeType: 'increase' as const,
       icon: UserGroupIcon,
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      color: 'from-blue-500 via-cyan-500 to-sky-500',
+      iconBg: 'from-blue-400 to-cyan-600',
+      glowColor: 'shadow-blue-500/30',
       description: 'Customers in database'
     },
     {
@@ -211,7 +214,9 @@ export default function CustomersPage() {
       change: '+2.1%',
       changeType: 'increase' as const,
       icon: CheckIcon,
-      gradient: 'from-emerald-500 via-green-500 to-teal-500',
+      color: 'from-emerald-500 via-green-500 to-teal-500',
+      iconBg: 'from-emerald-400 to-green-600',
+      glowColor: 'shadow-emerald-500/30',
       description: 'Currently active'
     },
     {
@@ -220,7 +225,9 @@ export default function CustomersPage() {
       change: '+8.5%',
       changeType: 'increase' as const,
       icon: CurrencyDollarIcon,
-      gradient: 'from-yellow-500 via-orange-500 to-red-500',
+      color: 'from-yellow-500 via-orange-500 to-red-500',
+      iconBg: 'from-yellow-400 to-orange-600',
+      glowColor: 'shadow-yellow-500/30',
       description: 'Average per customer'
     },
     {
@@ -229,7 +236,9 @@ export default function CustomersPage() {
       change: '-1.5%',
       changeType: 'decrease' as const,
       icon: UserPlusIcon,
-      gradient: 'from-red-500 via-pink-500 to-rose-500',
+      color: 'from-red-500 via-pink-500 to-rose-500',
+      iconBg: 'from-red-400 to-pink-600',
+      glowColor: 'shadow-red-500/30',
       description: 'Joined in last 30 days'
     }
   ];
@@ -255,9 +264,9 @@ export default function CustomersPage() {
               </div>
               <div className="flex items-center space-x-4">
                 <div className="hidden md:flex items-center space-x-2">
-                  <StarIcon className="w-6 h-6 text-purple-500 animate-pulse" />
+                  <SparklesIcon className="w-6 h-6 text-purple-500 animate-pulse" />
                   <span className="text-sm font-medium text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
-                    Customer Dashboard
+                    Customers Dashboard Overview
                   </span>
                 </div>
                 <button className="group relative overflow-hidden">
@@ -281,7 +290,7 @@ export default function CustomersPage() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300`}></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                 <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -293,24 +302,25 @@ export default function CustomersPage() {
                         {stat.value}
                       </p>
                       <div className="flex items-center space-x-2">
-                        <div className={`flex items-center px-2 py-1 rounded-full ${
-                          stat.changeType === 'increase' ? 'bg-green-100' : 'bg-red-100'
-                        }`}>
+                        <div className="flex items-center">
                           {stat.changeType === 'increase' ? (
-                            <ArrowUpIcon className="w-3 h-3 mr-1 text-green-600" />
+                            <div className="flex items-center bg-green-100 px-2 py-1 rounded-full">
+                              <ArrowUpIcon className="w-3 h-3 text-green-600 mr-1" />
+                              <span className="text-xs font-bold text-green-700">{stat.change}</span>
+                            </div>
                           ) : (
-                            <ArrowDownIcon className="w-3 h-3 mr-1 text-red-600" />
+                            <div className="flex items-center bg-red-100 px-2 py-1 rounded-full">
+                              <ArrowDownIcon className="w-3 h-3 text-red-600 mr-1" />
+                              <span className="text-xs font-bold text-red-700">{stat.change}</span>
+                            </div>
                           )}
-                          <span className={`text-xs font-bold ${
-                            stat.changeType === 'increase' ? 'text-green-700' : 'text-red-700'
-                          }`}>{stat.change}</span>
                         </div>
                         <span className="text-xs text-gray-500">vs last month</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
                     </div>
                     <div className="relative">
-                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.iconBg} rounded-2xl flex items-center justify-center shadow-lg ${stat.glowColor} group-hover:shadow-xl transition-all duration-300`}>
                         <stat.icon className="w-8 h-8 text-white" />
                       </div>
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
