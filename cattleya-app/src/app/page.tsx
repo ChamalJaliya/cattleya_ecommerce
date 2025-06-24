@@ -17,9 +17,12 @@ import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useCartStore } from '@/core/application/stores/useCartStore';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import { useProductStore } from '@/core/application/stores/useProductStore';
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import RecentlyViewed from '@/shared/components/RecentlyViewed';
 import Header from '@/shared/components/Header';
 import toast from 'react-hot-toast';
+import { Product } from '@/core/domain/entities/Product';
+import { useState, useEffect } from 'react';
 
 const features = [
   {
@@ -44,37 +47,6 @@ const features = [
   },
 ];
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: 'Phalaenopsis Elegance',
-    price: 89.99,
-    originalPrice: 119.99,
-    rating: 4.9,
-    reviews: 127,
-    badge: 'Bestseller',
-    image: '/api/placeholder/300/300',
-  },
-  {
-    id: 2,
-    name: 'Dendrobium Nobile',
-    price: 65.50,
-    rating: 4.7,
-    reviews: 89,
-    badge: 'New',
-    image: '/api/placeholder/300/300',
-  },
-  {
-    id: 3,
-    name: 'Cattleya Orchid',
-    price: 145.00,
-    rating: 4.8,
-    reviews: 156,
-    badge: 'Premium',
-    image: '/api/placeholder/300/300',
-  },
-];
-
 const testimonials = [
   {
     name: 'Sarah Johnson',
@@ -96,12 +68,25 @@ export default function HomePage() {
   const cartCount = getItemCount();
   const { 
     products, 
-    isInWishlist, 
-    addToWishlist, 
-    removeFromWishlist,
     getPersonalizedRecommendations,
     getRecentlyViewed
   } = useProductStore();
+  const { 
+    isInWishlist: isInWishlistStore, 
+    addToWishlist: addToWishlistStore, 
+    removeFromWishlist: removeFromWishlistStore,
+    fetchWishlist
+  } = useWishlistStore();
+
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration issues and load wishlist data
+  useEffect(() => {
+    setMounted(true);
+    if (user) {
+      fetchWishlist();
+    }
+  }, [user, fetchWishlist]);
 
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 6);
   const personalizedRecommendations = getPersonalizedRecommendations(6);
@@ -110,22 +95,16 @@ export default function HomePage() {
   const handleAddToCart = (product: any) => {
     addItem({
       productId: product.id.toString(),
-      name: product.name,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      image: product.image,
-      inStock: true,
-      maxQuantity: 10,
       quantity: 1
     });
     toast.success(`${product.name} added to cart!`);
   };
 
-  const handleWishlistToggle = (product: any) => {
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
+  const handleWishlistToggle = (product: Product) => {
+    if (isInWishlistStore(product.id)) {
+      removeFromWishlistStore(product.id);
     } else {
-      addToWishlist(product.id);
+      addToWishlistStore(product.id);
     }
   };
 
@@ -283,7 +262,7 @@ export default function HomePage() {
                         onClick={() => handleWishlistToggle(product)}
                         className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors duration-200 shadow-sm"
                       >
-                        {isInWishlist(product.id) ? (
+                        {isInWishlistStore(product.id) ? (
                           <HeartSolidIcon className="w-4 h-4 text-red-500" />
                         ) : (
                           <HeartIcon className="w-4 h-4 text-gray-600" />

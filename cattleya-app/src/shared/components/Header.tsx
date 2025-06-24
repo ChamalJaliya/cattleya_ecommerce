@@ -30,10 +30,11 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { items, toggleCart } = useCartStore();
+  const { cart, toggleCart } = useCartStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  // Use the new cart structure with proper null checks
+  const cartCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
   // Auto-generate breadcrumbs if not provided
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
@@ -257,7 +258,7 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
                     handleLogout();
                     setIsMenuOpen(false);
                   }}
-                  className="block w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                  className="block w-full text-left px-3 py-2 text-base font-medium text-gray-500 hover:text-red-600 rounded-lg transition-colors duration-200 hover:bg-red-50"
                 >
                   Logout
                 </button>
@@ -267,14 +268,14 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
                 <Link 
                   href="/auth/login"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50/50 rounded-lg transition-colors duration-200"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple-600 rounded-lg transition-colors duration-200 hover:bg-purple-50/50"
                 >
                   Sign In
                 </Link>
                 <Link 
                   href="/auth/register"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block px-3 py-2 text-base font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg transition-all duration-200"
+                  className="block px-3 py-2 text-base font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all duration-200"
                 >
                   Get Started
                 </Link>
@@ -284,54 +285,60 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
         </motion.div>
       </header>
 
-      {/* Breadcrumbs & Page Title */}
-      {(finalBreadcrumbs.length > 1 || title) && (
-        <div className="pt-24 pb-6 bg-gradient-to-br from-purple-50/30 to-pink-50/30">
+      {/* Page Header with Breadcrumbs */}
+      {(title || subtitle || finalBreadcrumbs.length > 1) && (
+        <div className="pt-20 pb-8 bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Breadcrumbs */}
             {finalBreadcrumbs.length > 1 && (
-              <motion.nav
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center space-x-2 text-sm text-gray-600 mb-4"
-              >
-                {finalBreadcrumbs.map((crumb, index) => (
-                  <div key={crumb.href} className="flex items-center">
-                    {index === 0 && <HomeIcon className="w-4 h-4 mr-1" />}
-                    {index < finalBreadcrumbs.length - 1 ? (
-                      <Link 
-                        href={crumb.href}
-                        className="hover:text-purple-600 transition-colors duration-200 font-medium"
-                      >
-                        {crumb.label}
-                      </Link>
-                    ) : (
-                      <span className="text-gray-900 font-semibold">{crumb.label}</span>
-                    )}
-                    {index < finalBreadcrumbs.length - 1 && (
-                      <ChevronRightIcon className="w-4 h-4 mx-2 text-gray-400" />
-                    )}
-                  </div>
-                ))}
-              </motion.nav>
+              <nav className="mb-4">
+                <ol className="flex items-center space-x-2 text-sm text-gray-500">
+                  {finalBreadcrumbs.map((crumb, index) => (
+                    <li key={crumb.href} className="flex items-center">
+                      {index > 0 && (
+                        <svg className="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {index === finalBreadcrumbs.length - 1 ? (
+                        <span className="text-gray-900 font-medium">{crumb.label}</span>
+                      ) : (
+                        <Link 
+                          href={crumb.href}
+                          className="hover:text-purple-600 transition-colors duration-200"
+                        >
+                          {crumb.label}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </nav>
             )}
 
-            {/* Page Title */}
-            {title && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <h1 className="text-4xl lg:text-5xl font-serif font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-2">
-                  {title}
-                </h1>
-                {subtitle && (
-                  <p className="text-xl text-gray-600 max-w-3xl">
-                    {subtitle}
-                  </p>
+            {/* Title and Subtitle */}
+            {(title || subtitle) && (
+              <div className="text-center">
+                {title && (
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-4xl font-bold text-gray-900 mb-4"
+                  >
+                    {title}
+                  </motion.h1>
                 )}
-              </motion.div>
+                {subtitle && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-xl text-gray-600 max-w-3xl mx-auto"
+                  >
+                    {subtitle}
+                  </motion.p>
+                )}
+              </div>
             )}
           </div>
         </div>

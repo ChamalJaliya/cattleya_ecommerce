@@ -18,6 +18,7 @@ import {
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useProductStore } from '@/core/application/stores/useProductStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import { Product } from '@/core/domain/entities/Product';
 import AdvancedSearch from '@/shared/components/AdvancedSearch';
 import Pagination from '@/shared/components/Pagination';
@@ -96,16 +97,19 @@ const ProductSkeleton = ({ viewMode = 'grid' }: { viewMode?: string }) => {
 const ProductCard = ({ product, viewMode, index }: { product: Product; viewMode: string; index: number }) => {
   const { addItem } = useCartStore();
   const { 
-    wishlist, 
-    addToWishlist, 
-    removeFromWishlist, 
     getComparisonProducts,
     addToComparison, 
     removeFromComparison,
     isInComparison
   } = useProductStore();
+  const { 
+    wishlist, 
+    addToWishlist: addToWishlistStore, 
+    removeFromWishlist: removeFromWishlistStore,
+    isInWishlist: isInWishlistStore
+  } = useWishlistStore();
 
-  const isInWishlist = wishlist?.some((item: Product) => item.id === product.id) || false;
+  const isInWishlist = isInWishlistStore(product.id);
   const isInComparisonList = isInComparison(product.id);
   const isOnSale = product.salePrice && product.salePrice < product.basePrice;
   const discountPercent = isOnSale ? Math.round(((product.basePrice - product.salePrice!) / product.basePrice) * 100) : 0;
@@ -122,13 +126,6 @@ const ProductCard = ({ product, viewMode, index }: { product: Product; viewMode:
     
     addItem({
       productId: product.id,
-      name: product.name || 'Unnamed Product',
-      price: isOnSale ? product.salePrice! : product.basePrice,
-      originalPrice: isOnSale ? product.basePrice : undefined,
-      image: product.images[0]?.url || '/placeholder-orchid.jpg',
-      variant: {},
-      inStock: product.stockQuantity > 0,
-      maxQuantity: product.stockQuantity,
       quantity: 1
     });
     
@@ -151,10 +148,10 @@ const ProductCard = ({ product, viewMode, index }: { product: Product; viewMode:
     e.preventDefault();
     e.stopPropagation();
     if (isInWishlist) {
-      removeFromWishlist(product.id);
+      removeFromWishlistStore(product.id);
       toast.success('Removed from wishlist');
     } else {
-      addToWishlist(product);
+      addToWishlistStore(product.id);
       toast.success(
         <div className="flex items-center space-x-2">
           <HeartSolidIcon className="w-5 h-5 text-red-500" />
@@ -597,6 +594,7 @@ export default function ProductsPage() {
     getComparisonProducts,
     clearComparison
   } = useProductStore();
+  const { fetchWishlist } = useWishlistStore();
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mounted, setMounted] = useState(false);
@@ -611,8 +609,10 @@ export default function ProductsPage() {
     if (mounted) {
       // Load initial products only after component is mounted
       fetchProducts({ page: 1, limit: 12, sortBy: 'name', sortOrder: 'asc' });
+      // Load wishlist data
+      fetchWishlist();
     }
-  }, [mounted, fetchProducts]);
+  }, [mounted, fetchProducts, fetchWishlist]);
 
   const handleSortChange = async (sortValue: string) => {
     updateFilters({ sortBy: sortValue as any });

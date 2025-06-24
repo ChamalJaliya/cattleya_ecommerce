@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -18,14 +18,34 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import { UserRole } from '@/core/domain/entities/User';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
 
 export default function CustomerDashboard() {
   const { user, isAuthenticated } = useAuthStore();
   const { getItemCount } = useCartStore();
+  const { wishlist, fetchWishlist } = useWishlistStore();
   const router = useRouter();
   const cartCount = getItemCount();
+
+  // Pagination state for wishlist
+  const [wishlistPage, setWishlistPage] = useState(1);
+  const wishlistPageSize = 5; // Show 5 items per page
+  const wishlistTotalPages = Math.ceil((wishlist?.totalItems || 0) / wishlistPageSize);
+  const paginatedWishlistItems = wishlist?.items?.slice((wishlistPage - 1) * wishlistPageSize, wishlistPage * wishlistPageSize) || [];
+
+  // Stats from wishlist
+  const wishlistCount = wishlist?.totalItems || 0;
+  const wishlistValue = wishlist?.totalValue || 0;
+  const wishlistInStock = wishlist?.items?.filter(item => item.productInStock).length || 0;
+
+  // Fetch wishlist data on component mount
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchWishlist();
+    }
+  }, [isAuthenticated, user, fetchWishlist]);
 
   // Mock data for customer dashboard (updated with real cart count)
   const userStats = [
@@ -41,33 +61,33 @@ export default function CustomerDashboard() {
     },
     {
       name: 'Wishlist',
-      value: '12',
-      change: '+3',
-      changeType: 'increase',
+      value: wishlistCount.toString(),
+      change: wishlistCount > 0 ? `+${wishlistCount}` : '',
+      changeType: wishlistCount > 0 ? 'increase' : 'neutral',
       icon: HeartIcon,
       gradient: 'from-red-500 via-pink-500 to-rose-500',
       description: 'Saved items',
       href: '/customer/wishlist'
     },
     {
-      name: 'Orders',
-      value: '8',
+      name: 'Total Value',
+      value: `$${wishlistValue.toFixed(2)}`,
       change: '',
       changeType: 'neutral',
-      icon: ClipboardDocumentListIcon,
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
-      description: 'Total orders',
-      href: '/customer/orders'
+      icon: GiftIcon,
+      gradient: 'from-green-500 via-emerald-500 to-teal-500',
+      description: 'Worth of items',
+      href: '/customer/wishlist'
     },
     {
-      name: 'Profile',
-      value: `${85}%`,
-      change: '+5%',
-      changeType: 'increase',
-      icon: UserIcon,
-      gradient: 'from-emerald-500 via-green-500 to-teal-500',
-      description: 'Profile complete',
-      href: '/customer/profile'
+      name: 'In Stock',
+      value: wishlistInStock.toString(),
+      change: '',
+      changeType: 'neutral',
+      icon: ShoppingBagIcon,
+      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      description: 'Available now',
+      href: '/customer/wishlist'
     }
   ];
 

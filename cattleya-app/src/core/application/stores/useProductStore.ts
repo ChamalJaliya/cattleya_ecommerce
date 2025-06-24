@@ -72,9 +72,6 @@ interface ProductState {
   cartTotal: number;
   cartCount: number;
   
-  // Wishlist
-  wishlist: Product[];
-  
   // Filters
   filters: ProductFilters;
   searchQuery: string;
@@ -104,11 +101,6 @@ interface ProductState {
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  
-  // Wishlist actions
-  addToWishlist: (product: Product) => void;
-  removeFromWishlist: (productId: string) => void;
-  isInWishlist: (productId: string) => boolean;
   
   // Filter actions
   setFilters: (filters: Partial<ProductState['filters']>) => void;
@@ -200,9 +192,6 @@ export const useProductStore = create<ProductState>()(
       cart: [],
       cartTotal: 0,
       cartCount: 0,
-      
-      // Wishlist
-      wishlist: [],
       
       // Filters
       filters: initialFilters,
@@ -378,24 +367,6 @@ export const useProductStore = create<ProductState>()(
       },
 
       clearCart: () => set({ cart: [], cartTotal: 0, cartCount: 0 }),
-
-      // Wishlist actions
-      addToWishlist: (product) => {
-        const { wishlist } = get();
-        if (!wishlist.find(p => p.id === product.id)) {
-          set({ wishlist: [...wishlist, product] });
-        }
-      },
-
-      removeFromWishlist: (productId) => {
-        const { wishlist } = get();
-        set({ wishlist: wishlist.filter(p => p.id !== productId) });
-      },
-
-      isInWishlist: (productId) => {
-        const { wishlist } = get();
-        return wishlist.some(p => p.id === productId);
-      },
 
       // Filter actions
       setFilters: (filters) => set({ filters: { ...get().filters, ...filters } }),
@@ -607,14 +578,13 @@ export const useProductStore = create<ProductState>()(
       },
 
       getPersonalizedRecommendations: (limit = 8) => {
-        const { products, recentlyViewed, cart, wishlist } = get();
+        const { products, recentlyViewed, cart } = get();
         
         // Simple personalization based on user activity
         const viewedProductIds = recentlyViewed.map(item => item.productId);
         const cartProductIds = cart.map(item => item.product.id);
-        const wishlistProductIds = wishlist.map(p => p.id);
         
-        const allInteractedIds = [...viewedProductIds, ...cartProductIds, ...wishlistProductIds];
+        const allInteractedIds = [...viewedProductIds, ...cartProductIds];
         
         return products
           .filter(p => !allInteractedIds.includes(p.id))
@@ -658,7 +628,6 @@ export const useProductStore = create<ProductState>()(
       name: 'product-store',
       partialize: (state) => ({
         cart: state.cart,
-        wishlist: state.wishlist,
         recentlyViewed: state.recentlyViewed,
         searchHistory: state.searchHistory,
         comparisons: state.comparisons,

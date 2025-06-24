@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import {
   HeartIcon,
   ShoppingCartIcon,
@@ -18,151 +19,114 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
-
-// Mock wishlist data
-const mockWishlistItems = [
-  {
-    id: '1',
-    name: 'Cattleya Orchid Premium',
-    description: 'Premium Cattleya orchid with vibrant purple blooms',
-    price: 149.99,
-    originalPrice: 179.99,
-    image: '🌺',
-    category: 'Orchids',
-    rating: 4.8,
-    reviews: 156,
-    inStock: true,
-    stockCount: 25,
-    addedDate: '2024-01-10',
-    onSale: true,
-    discount: 17
-  },
-  {
-    id: '2',
-    name: 'Rare Cattleya Collection',
-    description: 'Exclusive collection of rare Cattleya varieties',
-    price: 299.99,
-    originalPrice: 299.99,
-    image: '🌸',
-    category: 'Orchids',
-    rating: 4.7,
-    reviews: 89,
-    inStock: true,
-    stockCount: 8,
-    addedDate: '2024-01-08',
-    onSale: false,
-    discount: 0
-  },
-  {
-    id: '3',
-    name: 'Orchid Care Kit Professional',
-    description: 'Complete professional care kit with premium tools',
-    price: 129.99,
-    originalPrice: 149.99,
-    image: '🧴',
-    category: 'Accessories',
-    rating: 4.9,
-    reviews: 234,
-    inStock: true,
-    stockCount: 45,
-    addedDate: '2024-01-05',
-    onSale: true,
-    discount: 13
-  },
-  {
-    id: '4',
-    name: 'Beginner Orchid Set',
-    description: 'Perfect starter set for orchid beginners',
-    price: 79.99,
-    originalPrice: 79.99,
-    image: '🌱',
-    category: 'Orchids',
-    rating: 4.6,
-    reviews: 167,
-    inStock: false,
-    stockCount: 0,
-    addedDate: '2024-01-03',
-    onSale: false,
-    discount: 0
-  },
-  {
-    id: '5',
-    name: 'Premium Orchid Fertilizer',
-    description: 'Specially formulated fertilizer for optimal growth',
-    price: 34.99,
-    originalPrice: 39.99,
-    image: '🌿',
-    category: 'Fertilizers',
-    rating: 4.5,
-    reviews: 298,
-    inStock: true,
-    stockCount: 120,
-    addedDate: '2024-01-01',
-    onSale: true,
-    discount: 13
-  },
-  {
-    id: '6',
-    name: 'Decorative Orchid Pot Set',
-    description: 'Beautiful ceramic pots perfect for orchid display',
-    price: 89.99,
-    originalPrice: 89.99,
-    image: '🏺',
-    category: 'Accessories',
-    rating: 4.4,
-    reviews: 145,
-    inStock: true,
-    stockCount: 67,
-    addedDate: '2023-12-28',
-    onSale: false,
-    discount: 0
-  }
-];
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
+import { useCartStore } from '@/core/application/stores/useCartStore';
+import { toast } from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function CustomerWishlistPage() {
-  const [wishlistItems, setWishlistItems] = useState(mockWishlistItems);
+  const { 
+    wishlist, 
+    isLoading, 
+    error, 
+    fetchWishlist, 
+    removeFromWishlist: removeFromWishlistStore,
+    clearWishlist: clearWishlistStore
+  } = useWishlistStore();
+  
+  const { addItem: addToCart } = useCartStore();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
 
-  const categories = ['all', ...Array.from(new Set(wishlistItems.map(item => item.category.toLowerCase())))];
+  // Fetch wishlist on component mount
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
+
+  const wishlistItems = (wishlist?.items || []);
+
+  const categories = ['all', ...Array.from(new Set(wishlistItems.map(item => (item.product.category?.name || '').toLowerCase())))]
 
   const filteredItems = wishlistItems
     .filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || item.category.toLowerCase() === selectedCategory;
+      const matchesSearch = item.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           item.product.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || (item.product.category?.name || '').toLowerCase() === selectedCategory;
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.addedDate).getTime() - new Date(a.addedDate).getTime();
+          return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
         case 'oldest':
-          return new Date(a.addedDate).getTime() - new Date(b.addedDate).getTime();
+          return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
         case 'price-low':
-          return a.price - b.price;
+          return (a.product.displayPrice || a.product.basePrice) - (b.product.displayPrice || b.product.basePrice);
         case 'price-high':
-          return b.price - a.price;
+          return (b.product.displayPrice || b.product.basePrice) - (a.product.displayPrice || a.product.basePrice);
         case 'rating':
-          return b.rating - a.rating;
+          return (b.product.averageRating || 0) - (a.product.averageRating || 0);
         default:
           return 0;
       }
     });
 
-  const removeFromWishlist = (id: string) => {
-    setWishlistItems(items => items.filter(item => item.id !== id));
+  const removeFromWishlist = async (productId: string) => {
+    await removeFromWishlistStore(productId);
   };
 
-  const moveToCart = (id: string) => {
-    // In a real app, this would add to cart and optionally remove from wishlist
-    console.log('Moving item to cart:', id);
+  const moveToCart = async (productId: string) => {
+    try {
+      await addToCart({
+        productId,
+        quantity: 1,
+      });
+      // Remove from wishlist after successfully adding to cart
+      await removeFromWishlistStore(productId);
+      toast.success('Moved to cart and removed from wishlist');
+    } catch (error) {
+      console.error('Failed to move item to cart:', error);
+      toast.error('Failed to move item to cart');
+    }
   };
 
-  const totalValue = wishlistItems.reduce((sum, item) => sum + item.price, 0);
-  const totalSavings = wishlistItems.reduce((sum, item) => sum + (item.originalPrice - item.price), 0);
-  const inStockItems = wishlistItems.filter(item => item.inStock).length;
+  const moveAllToCart = async () => {
+    try {
+      const inStockItems = wishlistItems.filter(item => item.product.isInStock);
+      
+      if (inStockItems.length === 0) {
+        toast.error('No in-stock items to move to cart');
+        return;
+      }
+
+      // Add all in-stock items to cart
+      for (const item of inStockItems) {
+        await addToCart({
+          productId: item.product.id,
+          quantity: 1,
+        });
+      }
+
+      // Clear the wishlist after successfully adding items to cart
+      await clearWishlistStore();
+      
+      toast.success(`Successfully moved ${inStockItems.length} items to cart and cleared wishlist!`);
+    } catch (error) {
+      console.error('Failed to move all items to cart:', error);
+      toast.error('Failed to move items to cart. Please try again.');
+    }
+  };
+
+  const viewProduct = (id: string) => {
+    // Navigate to product detail page
+    window.location.href = `/products/${id}`;
+  };
+
+  const totalValue = wishlistItems.reduce((sum, item) => sum + (item.product.displayPrice || item.product.basePrice), 0);
+  const totalSavings = 0; // You can calculate this if you have sale/original price
+  const inStockItems = wishlistItems.filter(item => item.product.isInStock).length;
 
   const stats = [
     {
@@ -194,6 +158,43 @@ export default function CustomerWishlistPage() {
       description: 'From discounts'
     }
   ];
+
+  // Loading state
+  if (isLoading && !wishlist) {
+    return (
+      <CustomerLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading wishlist...</p>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
+  // Error state
+  if (error && !wishlist) {
+    return (
+      <CustomerLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <HeartIcon className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error loading wishlist</h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={fetchWishlist}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
+  }
 
   return (
     <CustomerLayout>
@@ -303,7 +304,7 @@ export default function CustomerWishlistPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item, index) => (
             <motion.div
-              key={item.id}
+              key={item.product.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -314,17 +315,15 @@ export default function CustomerWishlistPage() {
                 {/* Product Image */}
                 <div className="relative p-6">
                   <div className="aspect-square bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center text-6xl mb-4 shadow-sm">
-                    {item.image}
+                    {item.product.images[0]?.url ? (
+                      <img src={item.product.images[0].url} alt={item.product.name} className="w-64 h-64 object-cover rounded-xl" />
+                    ) : (
+                      <div className="w-64 h-64 bg-gray-200 flex items-center justify-center text-gray-400 rounded-xl">No Image</div>
+                    )}
                   </div>
                   
-                  {item.onSale && (
-                    <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-lg">
-                      -{item.discount}%
-                    </div>
-                  )}
-                  
                   <button
-                    onClick={() => removeFromWishlist(item.id)}
+                    onClick={() => removeFromWishlist(item.product.id)}
                     className="absolute top-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-red-50 transition-all duration-200 group-hover:scale-110"
                   >
                     <HeartSolidIcon className="w-5 h-5 text-red-500" />
@@ -335,15 +334,15 @@ export default function CustomerWishlistPage() {
                 <div className="p-6 pt-0">
                   <div className="flex items-center justify-between mb-2">
                     <span className="inline-flex px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 rounded-full border border-purple-200">
-                      {item.category}
+                      {item.product.category?.name || 'Orchids'}
                     </span>
-                    {!item.inStock && (
+                    {!item.product.isInStock && (
                       <span className="text-sm text-red-600 font-semibold">Out of Stock</span>
                     )}
                   </div>
 
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.product.description}</p>
 
                   {/* Rating */}
                   <div className="flex items-center mb-3">
@@ -352,48 +351,48 @@ export default function CustomerWishlistPage() {
                         <StarIcon
                           key={i}
                           className={`w-4 h-4 ${
-                            i < Math.floor(item.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                            i < Math.floor(item.product.averageRating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'
                           }`}
                         />
                       ))}
                     </div>
                     <span className="text-sm text-gray-600 ml-2">
-                      {item.rating} ({item.reviews} reviews)
+                      {item.product.averageRating} ({item.product.reviews} reviews)
                     </span>
                   </div>
 
                   {/* Price */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xl font-bold text-gray-900">${item.price}</span>
-                      {item.onSale && (
-                        <span className="text-sm text-gray-500 line-through">${item.originalPrice}</span>
-                      )}
+                      <span className="text-xl font-bold text-gray-900">${(item.product.displayPrice || item.product.basePrice)?.toFixed(2) ?? '0.00'}</span>
                     </div>
-                    {item.inStock && (
-                      <span className="text-sm text-green-600 font-semibold">{item.stockCount} in stock</span>
+                    {item.product.isInStock && (
+                      <span className="text-sm text-green-600 font-semibold">{item.product.stockQuantity} in stock</span>
                     )}
                   </div>
 
                   {/* Enhanced Actions */}
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => moveToCart(item.id)}
-                      disabled={!item.inStock}
+                      onClick={() => moveToCart(item.product.id)}
+                      disabled={!item.product.isInStock}
                       className={`group/btn relative overflow-hidden flex-1 flex items-center justify-center px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
-                        item.inStock
+                        item.product.isInStock
                           ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-lg'
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       }`}
                     >
-                      <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300 ${!item.inStock ? 'hidden' : ''}`}></div>
+                      <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300 ${!item.product.isInStock ? 'hidden' : ''}`}></div>
                       <div className="relative flex items-center">
                         <ShoppingCartIcon className="w-4 h-4 mr-2" />
-                        {item.inStock ? 'Add to Cart' : 'Out of Stock'}
+                        {item.product.isInStock ? 'Add to Cart' : 'Out of Stock'}
                       </div>
                     </button>
                     
-                    <button className="group/btn relative overflow-hidden w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                    <button 
+                      onClick={() => viewProduct(item.product.id)}
+                      className="group/btn relative overflow-hidden w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                    >
                       <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>
                       <div className="relative">
                         <EyeIcon className="w-4 h-4 text-gray-600 group-hover:text-purple-600 transition-colors duration-200" />
@@ -402,7 +401,7 @@ export default function CustomerWishlistPage() {
                   </div>
 
                   {/* Added Date */}
-                  <p className="text-xs text-gray-500 mt-3">Added on {item.addedDate}</p>
+                  <p className="text-xs text-gray-500 mt-3">Added {formatDistanceToNow(new Date(item.addedAt), { addSuffix: true })}</p>
                 </div>
               </div>
             </motion.div>
@@ -424,10 +423,12 @@ export default function CustomerWishlistPage() {
                 : 'Try adjusting your search or filter criteria'
               }
             </p>
-            <button className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-              <div className="relative">Explore Products</div>
-            </button>
+            <Link href="/products">
+              <button className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+                <div className="relative">Explore Products</div>
+              </button>
+            </Link>
           </div>
         )}
 
@@ -442,11 +443,17 @@ export default function CustomerWishlistPage() {
                   <p className="text-gray-600">Manage your entire wishlist</p>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button className="group/btn relative overflow-hidden px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200">
+                  <button 
+                    onClick={moveAllToCart}
+                    className="group/btn relative overflow-hidden px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                  >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>
                     <div className="relative">Move All to Cart</div>
                   </button>
-                  <button className="group/btn relative overflow-hidden px-4 py-2 bg-gradient-to-r from-red-100 to-pink-100 text-red-700 rounded-xl hover:from-red-200 hover:to-pink-200 transition-all duration-200">
+                  <button 
+                    onClick={clearWishlistStore}
+                    className="group/btn relative overflow-hidden px-4 py-2 bg-gradient-to-r from-red-100 to-pink-100 text-red-700 rounded-xl hover:from-red-200 hover:to-pink-200 transition-all duration-200"
+                  >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>
                     <div className="relative">Clear Wishlist</div>
                   </button>

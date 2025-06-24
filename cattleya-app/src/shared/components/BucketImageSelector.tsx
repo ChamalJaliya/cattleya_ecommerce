@@ -20,13 +20,19 @@ interface BucketImageSelectorProps {
   onClose: () => void;
   folder?: string;
   maxImages?: number;
+  allowedTypes?: string[];
+  title?: string;
+  previewStyle?: 'square' | 'svg';
 }
 
 export default function BucketImageSelector({
   onImagesSelect,
   onClose,
   folder = 'products',
-  maxImages = 5
+  maxImages = 5,
+  allowedTypes = ['image'],
+  title = 'Select from Image Library',
+  previewStyle = 'square',
 }: BucketImageSelectorProps) {
   const [bucketFiles, setBucketFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,16 +42,22 @@ export default function BucketImageSelector({
 
   useEffect(() => {
     loadBucketFiles();
-  }, [folder]);
+  }, [folder, allowedTypes]);
 
   const loadBucketFiles = async () => {
     setLoading(true);
     try {
-      const files = await mediaApi.listMedia({ 
+      const files = await mediaApi.listMedia({
         folder,
-        type: 'image'
+        type: allowedTypes.length === 1 && allowedTypes[0] !== 'image' ? undefined : 'image',
       });
-      setBucketFiles(files);
+      setBucketFiles(
+        files.filter(file =>
+          allowedTypes.some(type =>
+            type === 'image' ? file.type === 'image' : file.mimeType === type
+          )
+        )
+      );
     } catch (error) {
       console.error('Error loading bucket files:', error);
       toast.error('Failed to load existing images');
@@ -54,7 +66,7 @@ export default function BucketImageSelector({
     }
   };
 
-  const filteredFiles = bucketFiles.filter(file => 
+  const filteredFiles = bucketFiles.filter(file =>
     file.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -94,7 +106,7 @@ export default function BucketImageSelector({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center">
             <FolderIcon className="w-6 h-6 mr-2 text-purple-600" />
-            Select from Image Library
+            {title}
           </h2>
           <div className="flex items-center space-x-2">
             <button
@@ -146,8 +158,8 @@ export default function BucketImageSelector({
             </div>
           ) : (
             <div className={`${
-              viewMode === 'grid' 
-                ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' 
+              viewMode === 'grid'
+                ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
                 : 'space-y-2'
             }`}>
               {filteredFiles.map((file) => (
@@ -162,20 +174,25 @@ export default function BucketImageSelector({
                   onClick={() => handleFileToggle(file.key)}
                 >
                   {viewMode === 'grid' ? (
-                    <div className="aspect-square">
-                      <img
-                        src={file.url}
-                        alt={file.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
-                      
-                      {selectedFiles.has(file.key) && (
-                        <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
-                          <CheckIcon className="w-4 h-4" />
-                        </div>
-                      )}
-                    </div>
+                    previewStyle === 'svg' ? (
+                      <div className="flex items-center justify-center w-full h-32 bg-gray-50">
+                        <img src={file.url} alt={file.name} className="w-20 h-20 object-contain" />
+                      </div>
+                    ) : (
+                      <div className="aspect-square">
+                        <img
+                          src={file.url}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+                        {selectedFiles.has(file.key) && (
+                          <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
+                            <CheckIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                    )
                   ) : (
                     <div className="flex items-center space-x-4 p-3">
                       <img

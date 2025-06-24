@@ -25,6 +25,7 @@ import {
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useProductStore } from '@/core/application/stores/useProductStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import { Product, OrchidSize } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -63,13 +64,16 @@ export default function ProductDetailPage() {
   
   const { 
     products, 
-    isInWishlist, 
-    addToWishlist, 
-    removeFromWishlist, 
     addToRecentlyViewed,
     getRecommendedProducts 
   } = useProductStore();
   const { addItem } = useCartStore();
+  const { 
+    addToWishlist: addToWishlistStore, 
+    removeFromWishlist: removeFromWishlistStore,
+    isInWishlist,
+    fetchWishlist
+  } = useWishlistStore();
   
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
@@ -94,6 +98,11 @@ export default function ProductDetailPage() {
   // Enhanced media items and colors
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [availableColors, setAvailableColors] = useState<ProductColor[]>([]);
+
+  // Load wishlist data on mount
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
 
   useEffect(() => {
     // Ensure products are loaded first
@@ -274,43 +283,40 @@ export default function ProductDetailPage() {
 
   const currentMedia = mediaItems[selectedMediaIndex];
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product || !selectedSize) {
       toast.error('Please select a size');
       return;
     }
 
-    const priceAdjustment = getSizePriceAdjustment(selectedSize);
-    const adjustedPrice = getCurrentPrice();
-    const sizeLabel = orchidSizeLabels[selectedSize]?.label || selectedSize.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-    
-    addItem({
-      productId: product.id,
-      name: `${product.name} - ${sizeLabel}`,
-      price: adjustedPrice,
-      originalPrice: hasDiscount ? product.basePrice * (1 + priceAdjustment) : undefined,
-      image: product.images?.find(img => img.isMain)?.url || product.images?.[0]?.url || '/placeholder-product.jpg',
-      variant: {
-        size: selectedSize,
-        color: selectedColor || undefined
-      },
-      inStock: product.stockQuantity > 0,
-      maxQuantity: product.stockQuantity,
-      quantity: quantity
-    });
-    
-    toast.success(
-      `Added ${quantity} ${sizeLabel} ${product.name} to cart`,
-      { duration: 3000 }
-    );
+    try {
+      await addItem({
+        productId: product.id,
+        quantity: quantity,
+        variantId: selectedSize,
+        selectedAttributes: {
+          size: selectedSize,
+          color: selectedColor || undefined
+        }
+      });
+      
+      const sizeLabel = orchidSizeLabels[selectedSize]?.label || selectedSize.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      toast.success(
+        `Added ${quantity} ${sizeLabel} ${product.name} to cart`,
+        { duration: 3000 }
+      );
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      toast.error('Failed to add item to cart');
+    }
   };
 
   const handleWishlistToggle = () => {
     if (inWishlist) {
-      removeFromWishlist(product.id);
+      removeFromWishlistStore(product.id);
       toast.success('Removed from wishlist');
     } else {
-      addToWishlist(product);
+      addToWishlistStore(product.id);
       toast.success('Added to wishlist');
     }
   };

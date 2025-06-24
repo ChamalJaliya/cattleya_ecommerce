@@ -13,13 +13,16 @@ import {
   BoltIcon,
   CheckIcon,
   EyeSlashIcon,
-  PencilIcon
+  PencilIcon,
+  CloudIcon
 } from '@heroicons/react/24/outline';
 
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import IconUpload from '@/shared/components/IconUpload';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 import { categoriesApi, UpdateCategoryDto, Category } from '@/core/infrastructure/api/categories.api';
+import UploadModeSelector from '@/shared/components/UploadModeSelector';
+import BucketImageSelector from '@/shared/components/BucketImageSelector';
 
 type CategoryFormData = Omit<UpdateCategoryDto, 'icon'> & {
   icon: File | null | string; // Can be a new file, an existing URL string, or null
@@ -34,6 +37,9 @@ export default function EditCategoryPage() {
   const [parentCategories, setParentCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'computer' | 'bucket'>('computer');
+  const [showSvgSelector, setShowSvgSelector] = useState(false);
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
   
   const {
     register,
@@ -239,17 +245,107 @@ export default function EditCategoryPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-purple-100">
                         <div className="md:col-span-2">
                           <label className="block text-sm font-semibold text-gray-700 mb-3">Category Icon (SVG)</label>
-                          <Controller 
-                            name="icon" 
-                            control={control} 
-                            render={({ field }) => (
-                              <IconUpload 
-                                onIconChange={(file) => field.onChange(file)} 
-                                existingIconUrl={typeof field.value === 'string' ? field.value : undefined}
-                                className="w-full" 
-                              />
-                            )} 
-                          />
+                          <UploadModeSelector mode={uploadMode} onModeChange={setUploadMode} allowBucketSelection={true} />
+                          <div className="flex flex-col items-center mb-4">
+                            {iconUrl ? (
+                              <div className="w-24 h-24 flex items-center justify-center bg-white border-2 border-purple-300 rounded-xl shadow-md mb-2 relative">
+                                <img src={iconUrl} alt="Category Icon" className="w-16 h-16 object-contain" />
+                                <button
+                                  type="button"
+                                  className="absolute top-1 right-1 bg-white border border-gray-300 rounded-full p-1 shadow hover:bg-red-100 transition"
+                                  onClick={() => {
+                                    setIconUrl(null);
+                                    setValue('icon', '');
+                                  }}
+                                  aria-label="Remove icon"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-red-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="w-24 h-24 flex items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 mb-2">
+                                No icon selected
+                              </div>
+                            )}
+                          </div>
+                          {uploadMode === 'computer' && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="group relative"
+                            >
+                              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+                              <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-blue-500/10 transition-all duration-300">
+                                <Controller
+                                  name="icon"
+                                  control={control}
+                                  render={({ field }) => (
+                                    <IconUpload
+                                      onIconChange={(file) => {
+                                        field.onChange(file);
+                                        if (!file) {
+                                          setIconUrl(null);
+                                        } else if (typeof file === 'string') {
+                                          setIconUrl(file);
+                                        } else if (file instanceof File) {
+                                          setIconUrl(URL.createObjectURL(file));
+                                        }
+                                      }}
+                                      existingIconUrl={typeof field.value === 'string' ? field.value : undefined}
+                                      className="w-full"
+                                    />
+                                  )}
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+                          {uploadMode === 'bucket' && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="group relative"
+                            >
+                              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+                              <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-blue-500/10 transition-all duration-300">
+                                <div
+                                  className="flex items-center justify-center w-full h-48 border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50/60 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/80 rounded-3xl cursor-pointer transition-all duration-300"
+                                  onClick={() => setShowSvgSelector(true)}
+                                >
+                                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <motion.div
+                                      animate={{ y: [-3, 3, -3], scale: 1 }}
+                                      transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                      <CloudIcon className="w-12 h-12 mb-4 text-blue-500 group-hover:text-blue-600" />
+                                    </motion.div>
+                                    <p className="mb-2 text-sm text-gray-600">
+                                      <span className="font-semibold">Click to browse</span> SVG library
+                                    </p>
+                                    <p className="text-xs text-gray-500">Select from existing SVG icons</p>
+                                  </div>
+                                </div>
+                              </div>
+                              {showSvgSelector && (
+                                <BucketImageSelector
+                                  onImagesSelect={(images) => {
+                                    if (images.length > 0) {
+                                      setValue('icon', images[0].url, { shouldDirty: true });
+                                      setIconUrl(images[0].url);
+                                    }
+                                    setShowSvgSelector(false);
+                                  }}
+                                  onClose={() => setShowSvgSelector(false)}
+                                  folder="essentials"
+                                  maxImages={1}
+                                  allowedTypes={['image/svg+xml']}
+                                  title="Select Category Icon (SVG)"
+                                  previewStyle="svg"
+                                />
+                              )}
+                            </motion.div>
+                          )}
                         </div>
                         
                         <div>

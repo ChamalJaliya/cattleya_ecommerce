@@ -1,24 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface CartItem {
-  id: string;
-  productId: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  description?: string;
-  sku?: string;
-  variant?: {
-    size?: string;
-    color?: string;
-    type?: string;
-  };
-  quantity: number;
-  inStock: boolean;
-  maxQuantity: number;
-}
+import { CartApi, Cart, CartItem, AddToCartRequest, UpdateCartItemRequest } from '../../infrastructure/api/cartApi';
+import { toast } from 'react-hot-toast';
 
 export interface ShippingAddress {
   id?: string;
@@ -48,7 +31,7 @@ export interface PaymentMethod {
 
 interface CartStore {
   // Cart State
-  items: CartItem[];
+  cart: Cart | null;
   isOpen: boolean;
   isLoading: boolean;
   
@@ -66,10 +49,11 @@ interface CartStore {
   total: number;
   
   // Cart Actions
-  addItem: (item: Omit<CartItem, 'id' | 'quantity'> & { quantity?: number }) => void;
-  removeItem: (itemId: string) => void;
-  updateQuantity: (itemId: string, quantity: number) => void;
-  clearCart: () => void;
+  fetchCart: () => Promise<void>;
+  addItem: (data: AddToCartRequest) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   toggleCart: () => void;
   
   // Checkout Actions
@@ -92,7 +76,7 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       // Initial State
-      items: [],
+      cart: null,
       isOpen: false,
       isLoading: false,
       checkoutStep: 'cart',
@@ -106,73 +90,102 @@ export const useCartStore = create<CartStore>()(
       total: 0,
 
       // Cart Actions
-      addItem: (newItem) => {
-        const { items } = get();
-        const existingItem = items.find(item => 
-          item.productId === newItem.productId && 
-          JSON.stringify(item.variant) === JSON.stringify(newItem.variant)
-        );
-
-        if (existingItem) {
-          // Update quantity if item exists
-          const newQuantity = existingItem.quantity + (newItem.quantity || 1);
-          const maxQuantity = existingItem.maxQuantity;
-          
-          set({
-            items: items.map(item =>
-              item.id === existingItem.id
-                ? { ...item, quantity: Math.min(newQuantity, maxQuantity) }
-                : item
-            )
-          });
-        } else {
-          // Add new item
-          const cartItem: CartItem = {
-            ...newItem,
-            id: `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            quantity: newItem.quantity || 1
-          };
-          
-          set({ items: [...items, cartItem] });
+      fetchCart: async () => {
+        try {
+          set({ isLoading: true });
+          const cart = await CartApi.getCart();
+          set({ cart });
+          get().calculateTotals();
+        } catch (error) {
+          console.error('Failed to fetch cart:', error);
+          toast.error('Failed to load cart');
+        } finally {
+          set({ isLoading: false });
         }
-        
-        get().calculateTotals();
       },
 
-      removeItem: (itemId) => {
-        set({ items: get().items.filter(item => item.id !== itemId) });
-        get().calculateTotals();
+      addItem: async (data) => {
+        try {
+          set({ isLoading: true });
+          const cart = await CartApi.addToCart(data);
+          set({ cart });
+          get().calculateTotals();
+          toast.success('Added to cart');
+        } catch (error: any) {
+          console.error('Failed to add item to cart:', error);
+          
+          // Provide specific error messages based on the error
+          if (error.response?.status === 400) {
+            toast.error('Invalid item data. Please try again.');
+          } else if (error.response?.status === 500) {
+            toast.error('Server error. Please try again in a moment.');
+          } else if (error.message?.includes('duplicate') || error.message?.includes('constraint')) {
+            toast.error('Item already in cart. Quantity updated.');
+          } else {
+            toast.error('Failed to add item to cart. Please try again.');
+          }
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
-      updateQuantity: (itemId, quantity) => {
+      removeItem: async (itemId) => {
+        try {
+          set({ isLoading: true });
+          await CartApi.removeFromCart(itemId);
+          await get().fetchCart(); // Refresh cart data
+          toast.success('Item removed from cart');
+        } catch (error) {
+          console.error('Failed to remove item from cart:', error);
+          toast.error('Failed to remove item from cart');
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      updateQuantity: async (itemId, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(itemId);
+          await get().removeItem(itemId);
           return;
         }
 
-        set({
-          items: get().items.map(item =>
-            item.id === itemId
-              ? { ...item, quantity: Math.min(quantity, item.maxQuantity) }
-              : item
-          )
-        });
-        get().calculateTotals();
+        try {
+          set({ isLoading: true });
+          const cart = await CartApi.updateCartItem(itemId, { quantity });
+          set({ cart });
+          get().calculateTotals();
+          toast.success('Cart updated');
+        } catch (error) {
+          console.error('Failed to update cart item:', error);
+          toast.error('Failed to update cart');
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
-      clearCart: () => {
-        set({
-          items: [],
-          checkoutStep: 'cart',
-          shippingAddress: null,
-          paymentMethod: null,
-          orderNotes: '',
-          subtotal: 0,
-          shipping: 0,
-          tax: 0,
-          discount: 0,
-          total: 0
-        });
+      clearCart: async () => {
+        try {
+          set({ isLoading: true });
+          await CartApi.clearCart();
+          set({ 
+            cart: null,
+            checkoutStep: 'cart',
+            shippingAddress: null,
+            paymentMethod: null,
+            orderNotes: '',
+            subtotal: 0,
+            shipping: 0,
+            tax: 0,
+            discount: 0,
+            total: 0
+          });
+          toast.success('Cart cleared');
+        } catch (error) {
+          console.error('Failed to clear cart:', error);
+          toast.error('Failed to clear cart');
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       toggleCart: () => {
@@ -198,12 +211,8 @@ export const useCartStore = create<CartStore>()(
       },
 
       calculateTotals: (appliedDiscount = 0) => {
-        const { items, shippingAddress } = get();
-        const subtotal = items.reduce((sum, item) => {
-          const itemPrice = item.price || 0;
-          const itemQuantity = item.quantity || 0;
-          return sum + (itemPrice * itemQuantity);
-        }, 0);
+        const { cart, shippingAddress } = get();
+        const subtotal = cart?.totalValue || 0;
         
         // Calculate shipping (free over $100, otherwise $10)
         const shipping = subtotal >= 100 ? 0 : 10;
@@ -220,22 +229,22 @@ export const useCartStore = create<CartStore>()(
       },
 
       placeOrder: async () => {
-        const { items, shippingAddress, paymentMethod, orderNotes, total } = get();
+        const { cart, shippingAddress, paymentMethod, orderNotes, total } = get();
         
-        if (!items.length || !shippingAddress || !paymentMethod) {
+        if (!cart?.items.length || !shippingAddress || !paymentMethod) {
           return { success: false, error: 'Missing required information' };
         }
 
         set({ isLoading: true });
 
         try {
-          // Mock API call - replace with actual API integration
+          // Mock API call - replace with actual order API integration
           await new Promise(resolve => setTimeout(resolve, 2000));
           
           const orderId = `ORD-${Date.now()}`;
           
           // Clear cart after successful order
-          get().clearCart();
+          await get().clearCart();
           set({ checkoutStep: 'success', isLoading: false });
           
           return { success: true, orderId };
@@ -247,21 +256,23 @@ export const useCartStore = create<CartStore>()(
 
       // Utility Functions
       getItemCount: () => {
-        return get().items.reduce((count, item) => count + item.quantity, 0);
+        const { cart } = get();
+        return cart?.totalItems || 0;
       },
 
       hasItem: (productId) => {
-        return get().items.some(item => item.productId === productId);
+        const { cart } = get();
+        return cart?.items.some(item => item.product.id === productId) || false;
       },
 
       getItem: (productId) => {
-        return get().items.find(item => item.productId === productId);
+        const { cart } = get();
+        return cart?.items.find(item => item.product.id === productId);
       }
     }),
     {
       name: 'cattleya-cart-storage',
       partialize: (state) => ({
-        items: state.items,
         shippingAddress: state.shippingAddress,
         paymentMethod: state.paymentMethod
       })

@@ -11,6 +11,7 @@ import {
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useProductStore } from '@/core/application/stores/useProductStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import { Product } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -28,11 +29,13 @@ export default function RecentlyViewed({
 }: RecentlyViewedProps) {
   const {
     getRecentlyViewed,
-    clearRecentlyViewed,
-    isInWishlist,
-    addToWishlist,
-    removeFromWishlist
+    clearRecentlyViewed
   } = useProductStore();
+  const { 
+    isInWishlist: isInWishlistStore, 
+    addToWishlist: addToWishlistStore, 
+    removeFromWishlist: removeFromWishlistStore
+  } = useWishlistStore();
   
   const { addItem } = useCartStore();
 
@@ -41,13 +44,6 @@ export default function RecentlyViewed({
   const handleAddToCart = (product: Product) => {
     addItem({
       productId: product.id,
-      name: product.name || 'Unnamed Product',
-      price: product.isOnSale && product.salePrice ? product.salePrice : product.basePrice,
-      originalPrice: product.isOnSale && product.salePrice ? product.basePrice : undefined,
-      image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg',
-      variant: { size: product.defaultSize },
-      inStock: product.stockQuantity > 0,
-      maxQuantity: product.stockQuantity,
       quantity: 1
     });
     
@@ -55,11 +51,11 @@ export default function RecentlyViewed({
   };
 
   const handleWishlistToggle = (product: Product) => {
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
+    if (isInWishlistStore(product.id)) {
+      removeFromWishlistStore(product.id);
       toast.success('Removed from wishlist');
     } else {
-      addToWishlist(product);
+      addToWishlistStore(product.id);
       toast.success('Added to wishlist');
     }
   };
@@ -129,7 +125,7 @@ export default function RecentlyViewed({
                     onClick={() => handleWishlistToggle(product)}
                     className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors duration-200 shadow-sm"
                   >
-                    {isInWishlist(product.id) ? (
+                    {isInWishlistStore(product.id) ? (
                       <HeartSolidIcon className="w-4 h-4 text-red-500" />
                     ) : (
                       <HeartIcon className="w-4 h-4 text-gray-600" />

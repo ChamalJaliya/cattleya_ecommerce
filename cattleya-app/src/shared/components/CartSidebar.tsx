@@ -21,7 +21,7 @@ import Link from 'next/link';
 
 export default function CartSidebar() {
   const {
-    items,
+    cart,
     isOpen,
     subtotal,
     toggleCart,
@@ -30,14 +30,14 @@ export default function CartSidebar() {
     calculateTotals
   } = useCartStore();
 
-  // Ensure totals are calculated on mount and when items change
+  // Ensure totals are calculated on mount and when cart changes
   useEffect(() => {
     calculateTotals();
-  }, [items, calculateTotals]);
+  }, [cart, calculateTotals]);
 
-  const handleQuantityChange = (itemId: string, newQuantity: number) => {
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
-      removeItem(itemId);
+      await removeItem(itemId);
       toast.success('🗑️ Item removed from cart', {
         style: {
           background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
@@ -45,7 +45,7 @@ export default function CartSidebar() {
         },
       });
     } else {
-      updateQuantity(itemId, newQuantity);
+      await updateQuantity(itemId, newQuantity);
       toast.success('✨ Quantity updated', {
         style: {
           background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
@@ -55,8 +55,8 @@ export default function CartSidebar() {
     }
   };
 
-  const handleRemoveItem = (itemId: string) => {
-    removeItem(itemId);
+  const handleRemoveItem = async (itemId: string) => {
+    await removeItem(itemId);
     toast.success('🗑️ Item removed from cart', {
       style: {
         background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
@@ -65,7 +65,7 @@ export default function CartSidebar() {
     });
   };
 
-  const itemsCount = items.length;
+  const itemsCount = cart?.items.length || 0;
   const safeSubtotal = subtotal || 0;
   const hasDiscount = safeSubtotal > 100;
   const shippingCost = safeSubtotal > 100 ? 0 : 15;
@@ -151,7 +151,7 @@ export default function CartSidebar() {
 
                     {/* Cart Items */}
                     <div className="flex-1 overflow-y-auto px-6 py-4 bg-gradient-to-b from-transparent to-purple-50/20">
-                      {items.length === 0 ? (
+                      {!cart || cart.items.length === 0 ? (
                         <motion.div
                           initial={{ opacity: 0, y: 50 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -199,7 +199,7 @@ export default function CartSidebar() {
                       ) : (
                         <div className="space-y-4">
                           <AnimatePresence mode="popLayout">
-                            {items.map((item, index) => (
+                            {cart.items.map((item: any, index: number) => (
                               <motion.div
                                 key={item.id}
                                 layout
@@ -224,8 +224,8 @@ export default function CartSidebar() {
                                     className="relative overflow-hidden rounded-xl shadow-lg"
                                   >
                                     <img
-                                      src={item.image}
-                                      alt={item.name}
+                                      src={item.product.images[0]?.url || '/placeholder-product.jpg'}
+                                      alt={item.product.name}
                                       className="w-20 h-20 object-cover"
                                       onError={(e) => {
                                         const target = e.target as HTMLImageElement;
@@ -238,17 +238,17 @@ export default function CartSidebar() {
                                   <div className="flex-1 min-w-0">
                                     {/* Product Name */}
                                     <h4 className="font-bold text-gray-900 truncate text-lg group-hover:text-purple-600 transition-colors duration-300">
-                                      {item.name}
+                                      {item.product.name}
                                     </h4>
                                     
                                     {/* Price */}
                                     <div className="flex items-center mt-2 space-x-2">
                                       <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                        ${(item.price || 0).toFixed(2)}
+                                        ${(item.product.basePrice || 0).toFixed(2)}
                                       </span>
-                                      {item.originalPrice && item.originalPrice > item.price && (
+                                      {item.product.displayPrice && item.product.displayPrice > item.product.basePrice && (
                                         <span className="text-sm text-gray-500 line-through">
-                                          ${(item.originalPrice || 0).toFixed(2)}
+                                          ${(item.product.displayPrice || 0).toFixed(2)}
                                         </span>
                                       )}
                                     </div>
@@ -304,7 +304,7 @@ export default function CartSidebar() {
                     </div>
 
                     {/* Enhanced Footer */}
-                    {items.length > 0 && (
+                    {(cart?.items?.length ?? 0) > 0 && (
                       <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}

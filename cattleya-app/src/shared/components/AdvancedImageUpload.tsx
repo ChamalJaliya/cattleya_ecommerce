@@ -566,6 +566,9 @@ export default function AdvancedImageUpload({
               onClose={() => setShowBucketSelector(false)}
               folder={bucketFolder}
               maxImages={maxImages - images.length}
+              allowedTypes={['image']}
+              title="Select Product Images"
+              previewStyle="square"
             />
           </Portal>
         )}

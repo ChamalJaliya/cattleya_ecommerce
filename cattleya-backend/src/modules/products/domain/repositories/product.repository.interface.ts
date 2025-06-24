@@ -53,6 +53,7 @@ export interface IProductRepository {
   // Basic CRUD operations
   create(product: Product): Promise<Product>;
   findById(id: string): Promise<Product | null>;
+  findByIds(ids: string[]): Promise<Product[]>;
   findBySlug(slug: string): Promise<Product | null>;
   findBySku(sku: string): Promise<Product | null>;
   findMany(query: ProductQuery): Promise<ProductQueryResult>;

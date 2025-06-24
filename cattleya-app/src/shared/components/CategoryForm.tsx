@@ -10,6 +10,8 @@ import {
 } from '@heroicons/react/24/outline';
 import IconUpload from './IconUpload';
 import { categoriesApi } from '@/core/infrastructure/api/categories.api';
+import BucketImageSelector from './BucketImageSelector';
+import UploadModeSelector from './UploadModeSelector';
 
 interface Category {
   id: string;
@@ -75,6 +77,8 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [iconUploading, setIconUploading] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'computer' | 'bucket'>('computer');
+  const [showSvgSelector, setShowSvgSelector] = useState(false);
 
   // Initialize form data when category changes
   useEffect(() => {
@@ -151,7 +155,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
     const result = await categoriesApi.uploadCategoryIcon(file);
     setIconUploading(false);
     if (result.success && result.data?.url) {
-      setFormData(prev => ({ ...prev, icon: result.data.url }));
+      setFormData(prev => ({ ...prev, icon: result?.data?.url || '' }));
     } else {
       setErrors(prev => ({ ...prev, icon: 'Failed to upload icon' }));
     }
@@ -248,7 +252,37 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Category Icon (SVG)
           </label>
-          <IconUpload onIconChange={handleIconChange} existingIconUrl={formData.icon} />
+          <UploadModeSelector mode={uploadMode} onModeChange={setUploadMode} allowBucketSelection={true} />
+          {uploadMode === 'computer' && (
+            <IconUpload onIconChange={handleIconChange} existingIconUrl={formData.icon} />
+          )}
+          {uploadMode === 'bucket' && (
+            <div className="mt-4">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold shadow hover:from-purple-600 hover:to-pink-600 transition"
+                onClick={() => setShowSvgSelector(true)}
+              >
+                Select from Library
+              </button>
+              {showSvgSelector && (
+                <BucketImageSelector
+                  onImagesSelect={(images) => {
+                    if (images.length > 0) {
+                      setFormData(prev => ({ ...prev, icon: images[0].url }));
+                    }
+                    setShowSvgSelector(false);
+                  }}
+                  onClose={() => setShowSvgSelector(false)}
+                  folder="essentials"
+                  maxImages={1}
+                  allowedTypes={['image/svg+xml']}
+                  title="Select Category Icon (SVG)"
+                  previewStyle="svg"
+                />
+              )}
+            </div>
+          )}
           {iconUploading && (
             <div className="text-xs text-purple-600 mt-1">Uploading icon...</div>
           )}

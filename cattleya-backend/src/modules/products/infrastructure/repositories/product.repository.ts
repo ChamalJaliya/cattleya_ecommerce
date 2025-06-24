@@ -22,8 +22,31 @@ export class ProductRepository implements IProductRepository {
   }
 
   async findById(id: string): Promise<Product | null> {
-    // Simple mock for now
-    return null;
+    const prismaProduct = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        images: true
+      }
+    });
+    
+    return prismaProduct ? this.mapToEntity(prismaProduct) : null;
+  }
+
+  async findByIds(ids: string[]): Promise<Product[]> {
+    if (ids.length === 0) return [];
+    
+    const products = await this.prisma.product.findMany({
+      where: {
+        id: { in: ids }
+      },
+      include: {
+        category: true,
+        images: true
+      }
+    });
+
+    return products.map(p => this.mapToEntity(p));
   }
 
   async findBySlug(slug: string): Promise<Product | null> {

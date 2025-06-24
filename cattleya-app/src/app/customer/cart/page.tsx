@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
-import { useCartStore, CartItem } from '@/core/application/stores/useCartStore';
+import { useCartStore } from '@/core/application/stores/useCartStore';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ import Link from 'next/link';
 export default function CustomerCartPage() {
   const { user } = useAuthStore();
   const {
-    items,
+    cart,
     isLoading,
     checkoutStep,
     shippingAddress,
@@ -37,6 +37,7 @@ export default function CustomerCartPage() {
     shipping,
     tax,
     total,
+    fetchCart,
     removeItem,
     updateQuantity,
     setCheckoutStep,
@@ -45,7 +46,6 @@ export default function CustomerCartPage() {
     setOrderNotes,
     calculateTotals,
     placeOrder,
-    addItem,
   } = useCartStore();
 
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
@@ -107,7 +107,12 @@ export default function CustomerCartPage() {
 
   useEffect(() => {
     calculateTotals();
-  }, [items, calculateTotals]);
+  }, [cart, calculateTotals]);
+
+  // Fetch cart on component mount
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   useEffect(() => {
     // Set default selections
@@ -121,24 +126,22 @@ export default function CustomerCartPage() {
     }
   }, [selectedAddress, selectedPayment]);
 
-  const handleQuantityChange = (itemId: string, newQuantity: number) => {
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
-      removeItem(itemId);
-      toast.success('Item removed from cart');
+      await removeItem(itemId);
     } else {
-      updateQuantity(itemId, newQuantity);
+      await updateQuantity(itemId, newQuantity);
     }
   };
 
-  const handleRemoveItem = (itemId: string) => {
-    removeItem(itemId);
-    toast.success('Item removed from cart');
+  const handleRemoveItem = async (itemId: string) => {
+    await removeItem(itemId);
   };
 
   const handleNextStep = () => {
     switch (checkoutStep) {
       case 'cart':
-        if (items.length === 0) {
+        if (!cart?.items.length) {
           toast.error('Your cart is empty');
           return;
         }
@@ -209,7 +212,7 @@ export default function CustomerCartPage() {
 
   const CartStep = () => (
     <div className="space-y-6">
-      {items.length === 0 ? (
+      {!cart || cart.items.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -229,7 +232,7 @@ export default function CustomerCartPage() {
         </motion.div>
       ) : (
         <div className="space-y-4">
-          {items.map((item, index) => (
+          {cart.items.map((item: any, index: number) => (
              <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -238,11 +241,15 @@ export default function CustomerCartPage() {
                 className="bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20 p-4 flex items-center space-x-4"
             >
                 <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center p-1 flex-shrink-0">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-contain rounded-md" />
+                    <img 
+                      src={item.product.images[0]?.url || '/placeholder-image.jpg'} 
+                      alt={item.product.name} 
+                      className="w-full h-full object-contain rounded-md" 
+                    />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-800 truncate">{item.name}</h4>
-                    <p className="text-sm text-gray-500">${item.price.toFixed(2)} each</p>
+                    <h4 className="font-bold text-gray-800 truncate">{item.product.name}</h4>
+                    <p className="text-sm text-gray-500">${item.product.basePrice.toFixed(2)} each</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -260,7 +267,7 @@ export default function CustomerCartPage() {
                     </button>
                 </div>
                 <div className="w-24 text-right">
-                    <p className="font-bold text-lg text-gray-800">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-bold text-lg text-gray-800">${(item.product.basePrice * item.quantity).toFixed(2)}</p>
                 </div>
                 <button
                     onClick={() => handleRemoveItem(item.id)}
@@ -359,12 +366,12 @@ export default function CustomerCartPage() {
       <div className="bg-fuchsia-50/50 rounded-2xl p-6 border border-fuchsia-100">
         <h4 className="font-semibold text-gray-900 mb-4 text-lg">Order Summary</h4>
         <div className="space-y-4">
-          {items.map((item) => (
+          {cart?.items.map((item: any) => (
             <div key={item.id} className="flex justify-between items-center text-sm">
               <span className="text-gray-700">
-                {item.name} × {item.quantity}
+                {item.product.name} × {item.quantity}
               </span>
-              <span className="font-medium text-gray-800">${(item.price * item.quantity).toFixed(2)}</span>
+              <span className="font-medium text-gray-800">${(item.product.basePrice * item.quantity).toFixed(2)}</span>
             </div>
           ))}
           <div className="border-t border-fuchsia-200 pt-4 mt-4">
@@ -471,7 +478,7 @@ export default function CustomerCartPage() {
                 className="flex items-center space-x-2 text-purple-600"
               >
                 <ShoppingCartIcon className="w-8 h-8 drop-shadow-lg" />
-                <span className="text-2xl font-bold">{items.length}</span>
+                <span className="text-2xl font-bold">{cart?.items.length || 0}</span>
               </motion.div>
             </div>
           </div>
@@ -721,7 +728,7 @@ export default function CustomerCartPage() {
 
                   <motion.button
                     onClick={handleNextStep}
-                    disabled={isLoading || (checkoutStep === 'cart' && items.length === 0)}
+                    disabled={isLoading || (checkoutStep === 'cart' && !cart?.items.length)}
                     className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                     whileHover={{ scale: 1.02, x: 5 }}
                     whileTap={{ scale: 0.98 }}
@@ -798,7 +805,7 @@ export default function CustomerCartPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <span className="text-gray-600 font-medium">Subtotal ({items.length} items)</span>
+                    <span className="text-gray-600 font-medium">Subtotal ({cart?.items.length || 0} items)</span>
                     <span className="font-bold text-gray-800">${subtotal.toFixed(2)}</span>
                   </motion.div>
                   

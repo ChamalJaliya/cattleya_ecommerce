@@ -22,7 +22,7 @@ import { PaymentMethodResponseDto } from '../../application/dto/payment-method-r
 import { SetupIntentResponseDto } from '../../application/dto/setup-intent-response.dto';
 
 @ApiTags('Payment Methods')
-@Controller('api/payment-methods')
+@Controller('payment-methods')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PaymentMethodsController {

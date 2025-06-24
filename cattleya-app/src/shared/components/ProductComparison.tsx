@@ -26,6 +26,7 @@ import {
 import { StarIcon as StarSolidIcon, HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useProductStore } from '@/core/application/stores/useProductStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
+import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import { Product, OrchidSize } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -53,13 +54,15 @@ export default function ProductComparison({ isOpen, onClose }: ProductComparison
   const {
     getComparisonProducts,
     removeFromComparison,
-    clearComparison,
-    wishlist,
-    addToWishlist,
-    removeFromWishlist
+    clearComparison
   } = useProductStore();
   
   const { addItem } = useCartStore();
+  const { 
+    isInWishlist: isInWishlistStore, 
+    addToWishlist: addToWishlistStore, 
+    removeFromWishlist: removeFromWishlistStore
+  } = useWishlistStore();
   const [selectedSizes, setSelectedSizes] = useState<Record<string, OrchidSize>>({});
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -81,18 +84,14 @@ export default function ProductComparison({ isOpen, onClose }: ProductComparison
 
   const handleAddToCart = (product: Product) => {
     const selectedSize = selectedSizes[product.id] || product.defaultSize;
-    const sizeLabel = sizeLabels[selectedSize] || selectedSize?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown Size';
     
     addItem({
       productId: product.id,
-      name: `${product.name} - ${sizeLabel}`,
-      price: product.salePrice && product.salePrice < product.basePrice ? product.salePrice : product.basePrice,
-      originalPrice: product.salePrice && product.salePrice < product.basePrice ? product.basePrice : undefined,
-      image: product.images[0]?.url || '/placeholder-orchid.jpg',
-      variant: { size: selectedSize },
-      inStock: product.stockQuantity > 0,
-      maxQuantity: product.stockQuantity,
-      quantity: 1
+      quantity: 1,
+      variantId: selectedSize,
+      selectedAttributes: {
+        size: selectedSize
+      }
     });
     
     toast.success(
@@ -111,13 +110,13 @@ export default function ProductComparison({ isOpen, onClose }: ProductComparison
   };
 
   const handleWishlistToggle = (product: Product) => {
-    const isInWishlist = wishlist.some(item => item.id === product.id);
+    const isInWishlist = isInWishlistStore(product.id);
     
     if (isInWishlist) {
-      removeFromWishlist(product.id);
+      removeFromWishlistStore(product.id);
       toast.success('Removed from wishlist');
     } else {
-      addToWishlist(product);
+      addToWishlistStore(product.id);
       toast.success(
         <div className="flex items-center space-x-2">
           <HeartSolidIcon className="w-5 h-5 text-red-500" />
@@ -546,7 +545,7 @@ export default function ProductComparison({ isOpen, onClose }: ProductComparison
                                     onClick={() => handleWishlistToggle(product)}
                                     className="border-2 border-gray-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all duration-200 flex items-center justify-center p-3"
                                   >
-                                    {wishlist.some(item => item.id === product.id) ? (
+                                    {isInWishlistStore(product.id) ? (
                                       <HeartSolidIcon className="w-4 h-4 text-red-500" />
                                     ) : (
                                       <HeartIcon className="w-4 h-4 text-gray-400" />

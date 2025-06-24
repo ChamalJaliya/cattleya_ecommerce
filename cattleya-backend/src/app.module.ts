@@ -11,6 +11,8 @@ import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { CartModule } from './modules/cart/cart.module';
 import databaseConfig from './shared/config/database.config';
 import appConfig from './shared/config/app.config';
 import awsConfig from './shared/config/aws.config';
@@ -43,6 +45,8 @@ import awsConfig from './shared/config/aws.config';
     OrdersModule,
     AddressesModule,
     PaymentMethodsModule,
+    WishlistModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

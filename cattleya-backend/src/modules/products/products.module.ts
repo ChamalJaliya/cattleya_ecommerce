@@ -5,5 +5,6 @@ import { SharedModule } from '../../shared/shared.module';
 
 @Module({
   imports: [ProductsInfrastructureModule, ProductsApplicationModule, SharedModule],
+  exports: [ProductsInfrastructureModule],
 })
 export class ProductsModule {} 
