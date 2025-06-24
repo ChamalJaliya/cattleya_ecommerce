@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartApi, Cart, CartItem, AddToCartRequest, UpdateCartItemRequest } from '../../infrastructure/api/cartApi';
-import { toast } from 'react-hot-toast';
+import { customToast } from '../../../shared/utils/toast';
+import { useAuthStore } from './useAuthStore';
 
 export interface ShippingAddress {
   id?: string;
@@ -53,7 +54,7 @@ interface CartStore {
   addItem: (data: AddToCartRequest) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
-  clearCart: () => Promise<void>;
+  clearCart: (skipApiCall?: boolean) => Promise<void>;
   toggleCart: () => void;
   
   // Checkout Actions
@@ -70,6 +71,9 @@ interface CartStore {
   getItemCount: () => number;
   hasItem: (productId: string) => boolean;
   getItem: (productId: string) => CartItem | undefined;
+  
+  // Authentication handling
+  handleAuthStateChange: (isAuthenticated: boolean) => void;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -96,56 +100,106 @@ export const useCartStore = create<CartStore>()(
           const cart = await CartApi.getCart();
           set({ cart });
           get().calculateTotals();
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to fetch cart:', error);
-          toast.error('Failed to load cart');
-        } finally {
+          
+          // If unauthorized (401), clear cart and don't show error
+          if (error.response?.status === 401) {
+            set({ 
+              cart: null,
+              checkoutStep: 'cart',
+              shippingAddress: null,
+              paymentMethod: null,
+              orderNotes: '',
+              subtotal: 0,
+              shipping: 0,
+              tax: 0,
+              discount: 0,
+              total: 0,
+              isLoading: false
+            });
+            return;
+          }
+          
+          // For other errors, show error message
+          customToast.error('Failed to load cart');
           set({ isLoading: false });
         }
       },
 
       addItem: async (data) => {
+        // Check authentication first
+        const { isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated) {
+          customToast.auth.loginError();
+          return;
+        }
+
         try {
           set({ isLoading: true });
           const cart = await CartApi.addToCart(data);
           set({ cart });
           get().calculateTotals();
-          toast.success('Added to cart');
+          customToast.cart.added('Product');
         } catch (error: any) {
           console.error('Failed to add item to cart:', error);
           
+          // If unauthorized (401), redirect to login
+          if (error.response?.status === 401) {
+            customToast.auth.loginError();
+            set({ isLoading: false });
+            return;
+          }
+          
           // Provide specific error messages based on the error
           if (error.response?.status === 400) {
-            toast.error('Invalid item data. Please try again.');
-          } else if (error.response?.status === 500) {
-            toast.error('Server error. Please try again in a moment.');
-          } else if (error.message?.includes('duplicate') || error.message?.includes('constraint')) {
-            toast.error('Item already in cart. Quantity updated.');
+            customToast.error(error.response.data?.message || 'Invalid request');
+          } else if (error.response?.status === 404) {
+            customToast.error('Product not found');
+          } else if (error.response?.status === 409) {
+            customToast.warning('Product already in cart');
           } else {
-            toast.error('Failed to add item to cart. Please try again.');
+            customToast.cart.error('add');
           }
-        } finally {
           set({ isLoading: false });
         }
       },
 
       removeItem: async (itemId) => {
+        // Check authentication first
+        const { isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated) {
+          customToast.auth.loginError();
+          return;
+        }
+
         try {
           set({ isLoading: true });
           await CartApi.removeFromCart(itemId);
           await get().fetchCart(); // Refresh cart data
-          toast.success('Item removed from cart');
-        } catch (error) {
+          customToast.cart.removed('Item');
+        } catch (error: any) {
           console.error('Failed to remove item from cart:', error);
-          toast.error('Failed to remove item from cart');
-        } finally {
+          
+          // If unauthorized (401), just clear local state without API call
+          if (error.response?.status === 401) {
+            set({ 
+              cart: null,
+              isLoading: false 
+            });
+            return;
+          }
+          
+          customToast.cart.error('remove');
           set({ isLoading: false });
         }
       },
 
       updateQuantity: async (itemId, quantity) => {
-        if (quantity <= 0) {
-          await get().removeItem(itemId);
+        // Check authentication first
+        const { isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated) {
+          customToast.auth.loginError();
           return;
         }
 
@@ -154,19 +208,37 @@ export const useCartStore = create<CartStore>()(
           const cart = await CartApi.updateCartItem(itemId, { quantity });
           set({ cart });
           get().calculateTotals();
-          toast.success('Cart updated');
-        } catch (error) {
+          customToast.cart.updated();
+        } catch (error: any) {
           console.error('Failed to update cart item:', error);
-          toast.error('Failed to update cart');
-        } finally {
+          
+          // If unauthorized (401), just clear local state without API call
+          if (error.response?.status === 401) {
+            set({ 
+              cart: null,
+              isLoading: false 
+            });
+            return;
+          }
+          
+          customToast.cart.error('update');
           set({ isLoading: false });
         }
       },
 
-      clearCart: async () => {
+      clearCart: async (skipApiCall = false) => {
         try {
-          set({ isLoading: true });
-          await CartApi.clearCart();
+          if (!skipApiCall) {
+            // Check authentication first (only when making API call)
+            const { isAuthenticated } = useAuthStore.getState();
+            if (!isAuthenticated) {
+              customToast.auth.loginError();
+              return;
+            }
+            
+            set({ isLoading: true });
+            await CartApi.clearCart();
+          }
           set({ 
             cart: null,
             checkoutStep: 'cart',
@@ -177,13 +249,17 @@ export const useCartStore = create<CartStore>()(
             shipping: 0,
             tax: 0,
             discount: 0,
-            total: 0
+            total: 0,
+            isLoading: false
           });
-          toast.success('Cart cleared');
+          if (!skipApiCall) {
+            customToast.cart.cleared();
+          }
         } catch (error) {
           console.error('Failed to clear cart:', error);
-          toast.error('Failed to clear cart');
-        } finally {
+          if (!skipApiCall) {
+            customToast.cart.error('clear');
+          }
           set({ isLoading: false });
         }
       },
@@ -268,6 +344,13 @@ export const useCartStore = create<CartStore>()(
       getItem: (productId) => {
         const { cart } = get();
         return cart?.items.find(item => item.product.id === productId);
+      },
+
+      // Authentication handling
+      handleAuthStateChange: (isAuthenticated) => {
+        if (!isAuthenticated) {
+          get().clearCart(true); // Skip API call during logout
+        }
       }
     }),
     {

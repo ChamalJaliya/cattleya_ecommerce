@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import toast from 'react-hot-toast';
+import { customToast } from '@/shared/utils/toast';
 import { 
   PhoneIcon,
   EnvelopeIcon,
@@ -91,10 +91,11 @@ export default function ContactPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      toast.success('Message sent successfully! We\'ll get back to you soon.');
+      customToast.success('Message sent successfully! We\'ll get back to you soon.');
       reset();
     } catch (error) {
-      toast.error('Failed to send message. Please try again.');
+      console.error('Failed to send message:', error);
+      customToast.error('Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

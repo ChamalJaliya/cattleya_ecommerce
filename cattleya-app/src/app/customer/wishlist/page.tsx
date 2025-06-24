@@ -21,7 +21,7 @@ import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
 import { useWishlistStore } from '@/core/application/stores/useWishlistStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
-import { toast } from 'react-hot-toast';
+import { customToast } from '@/shared/utils/toast';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function CustomerWishlistPage() {
@@ -85,22 +85,22 @@ export default function CustomerWishlistPage() {
       });
       // Remove from wishlist after successfully adding to cart
       await removeFromWishlistStore(productId);
-      toast.success('Moved to cart and removed from wishlist');
+      customToast.success('Moved to cart and removed from wishlist');
     } catch (error) {
       console.error('Failed to move item to cart:', error);
-      toast.error('Failed to move item to cart');
+      customToast.error('Failed to move item to cart');
     }
   };
 
   const moveAllToCart = async () => {
-    try {
-      const inStockItems = wishlistItems.filter(item => item.product.isInStock);
-      
-      if (inStockItems.length === 0) {
-        toast.error('No in-stock items to move to cart');
-        return;
-      }
+    const inStockItems = wishlistItems.filter(item => item.product.isInStock);
+    
+    if (inStockItems.length === 0) {
+      customToast.warning('No in-stock items to move to cart');
+      return;
+    }
 
+    try {
       // Add all in-stock items to cart
       for (const item of inStockItems) {
         await addToCart({
@@ -108,14 +108,13 @@ export default function CustomerWishlistPage() {
           quantity: 1,
         });
       }
-
-      // Clear the wishlist after successfully adding items to cart
-      await clearWishlistStore();
       
-      toast.success(`Successfully moved ${inStockItems.length} items to cart and cleared wishlist!`);
+      // Clear wishlist after successfully adding all items to cart
+      await clearWishlistStore();
+      customToast.success(`Successfully moved ${inStockItems.length} items to cart and cleared wishlist!`);
     } catch (error) {
-      console.error('Failed to move all items to cart:', error);
-      toast.error('Failed to move items to cart. Please try again.');
+      console.error('Failed to move items to cart:', error);
+      customToast.error('Failed to move items to cart. Please try again.');
     }
   };
 

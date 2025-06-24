@@ -70,11 +70,15 @@ export class ProductsController {
   @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
   @ApiQuery({ name: 'isFeatured', required: false, type: Boolean, description: 'Filter by featured status' })
   async findAll(@Query() query: ProductQueryDto) {
+    const start = Date.now();
     try {
       const result = await this.getProductsUseCase.findMany(query);
-
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/products - ${elapsed}ms`);
       return result;
     } catch (error) {
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/products - ERROR after ${elapsed}ms`);
       throw new HttpException(
         { success: false, message: 'Failed to retrieve products', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR

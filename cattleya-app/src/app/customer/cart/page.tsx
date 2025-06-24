@@ -21,11 +21,11 @@ import { StarIcon } from '@heroicons/react/24/solid';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
 import { useCartStore } from '@/core/application/stores/useCartStore';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
-import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { customToast } from '@/shared/utils/toast';
 
 export default function CustomerCartPage() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const {
     cart,
     isLoading,
@@ -109,10 +109,12 @@ export default function CustomerCartPage() {
     calculateTotals();
   }, [cart, calculateTotals]);
 
-  // Fetch cart on component mount
+  // Fetch cart on component mount only if authenticated
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [fetchCart, isAuthenticated]);
 
   useEffect(() => {
     // Set default selections
@@ -141,15 +143,15 @@ export default function CustomerCartPage() {
   const handleNextStep = () => {
     switch (checkoutStep) {
       case 'cart':
-        if (!cart?.items.length) {
-          toast.error('Your cart is empty');
+        if (!cart || cart.items.length === 0) {
+          customToast.warning('Your cart is empty');
           return;
         }
         setCheckoutStep('shipping');
         break;
       case 'shipping':
         if (!selectedAddress) {
-          toast.error('Please select a shipping address');
+          customToast.warning('Please select a shipping address');
           return;
         }
         setShippingAddress(selectedAddress);
@@ -157,7 +159,7 @@ export default function CustomerCartPage() {
         break;
       case 'payment':
         if (!selectedPayment) {
-          toast.error('Please select a payment method');
+          customToast.warning('Please select a payment method');
           return;
         }
         setPaymentMethod(selectedPayment);
@@ -186,10 +188,10 @@ export default function CustomerCartPage() {
   const handlePlaceOrder = async () => {
     const result = await placeOrder();
     if (result.success) {
-      toast.success('Order placed successfully!');
+      customToast.order.placed(result.orderId || 'Order');
       setCheckoutStep('success');
     } else {
-      toast.error(result.error || 'Failed to place order');
+      customToast.error(result.error || 'Failed to place order');
     }
   };
 
@@ -678,7 +680,7 @@ export default function CustomerCartPage() {
                 </motion.div>
               </div>
 
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 <motion.div
                   key={checkoutStep}
                   initial={{ opacity: 0, x: 20, scale: 0.95 }}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - Cattleya Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.3);
+        }
+        .success {
+            background: rgba(0, 255, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌺 Cattleya Backend CORS Test</h1>
+        <p>Test the CORS configuration of your backend server.</p>
+        
+        <div>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <button onclick="testCors()">Test CORS Endpoint</button>
+            <button onclick="testApi()">Test API Endpoint</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:3001';
+        
+        function addResult(title, data, isError = false) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+            resultDiv.innerHTML = `
+                <h3>${title}</h3>
+                <p><strong>URL:</strong> ${data.url}</p>
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Response:</strong></p>
+                <pre>${JSON.stringify(data.response, null, 2)}</pre>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        async function testHealth() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/health`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                addResult('Health Test', {
+                    url: `${BACKEND_URL}/api/health`,
+                    status: response.status,
+                    response: data
+                });
+            } catch (error) {
+                addResult('Health Test', {
+                    url: `${BACKEND_URL}/api/health`,
+                    status: 'ERROR',
+                    response: error.message
+                }, true);
+            }
+        }
+        
+        async function testCors() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/cors-test`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                addResult('CORS Test', {
+                    url: `${BACKEND_URL}/api/cors-test`,
+                    status: response.status,
+                    response: data
+                });
+            } catch (error) {
+                addResult('CORS Test', {
+                    url: `${BACKEND_URL}/api/cors-test`,
+                    status: 'ERROR',
+                    response: error.message
+                }, true);
+            }
+        }
+        
+        async function testApi() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/products?page=1&limit=5`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                addResult('API Test', {
+                    url: `${BACKEND_URL}/api/products`,
+                    status: response.status,
+                    response: data
+                });
+            } catch (error) {
+                addResult('API Test', {
+                    url: `${BACKEND_URL}/api/products`,
+                    status: 'ERROR',
+                    response: error.message
+                }, true);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(() => {
+                testHealth();
+            }, 1000);
+        };
+    </script>
+</body>
+</html> 

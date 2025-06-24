@@ -26,7 +26,7 @@ import ProductComparison from '@/shared/components/ProductComparison';
 import Header from '@/shared/components/Header';
 import Link from 'next/link';
 import Image from 'next/image';
-import toast from 'react-hot-toast';
+import { customToast } from '@/shared/utils/toast';
 
 const SORT_OPTIONS = [
   { value: 'name', label: 'Name A-Z', icon: '🔤' },
@@ -116,69 +116,66 @@ const ProductCard = ({ product, viewMode, index }: { product: Product; viewMode:
   const isLowStock = product.stockQuantity <= 5;
   const isOutOfStock = product.stockQuantity === 0;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
     if (isOutOfStock) {
-      toast.error('Product is out of stock!');
+      customToast.warning('Product is out of stock!');
       return;
     }
     
-    addItem({
-      productId: product.id,
-      quantity: 1
-    });
-    
-    toast.success(
-      <div className="flex items-center space-x-2">
-        <ShoppingCartIcon className="w-5 h-5 text-green-500" />
-        <span>Added to cart!</span>
-      </div>,
-      {
-        style: {
-          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
-          border: '1px solid rgba(34, 197, 94, 0.2)',
-          borderRadius: '12px',
-        },
-      }
-    );
+    try {
+      await addItem({
+        productId: product.id,
+        quantity: 1,
+      });
+      // Toast is handled by the cart store
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      // Error toast is handled by the cart store
+    }
   };
 
-  const handleWishlist = (e: React.MouseEvent) => {
+  const handleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
     if (isInWishlist) {
-      removeFromWishlistStore(product.id);
-      toast.success('Removed from wishlist');
+      try {
+        await removeFromWishlistStore(product.id);
+        // Toast is handled by the wishlist store
+      } catch (error) {
+        console.error('Failed to remove from wishlist:', error);
+        // Error toast is handled by the wishlist store
+      }
     } else {
-      addToWishlistStore(product.id);
-      toast.success(
-        <div className="flex items-center space-x-2">
-          <HeartSolidIcon className="w-5 h-5 text-red-500" />
-          <span>Added to wishlist!</span>
-        </div>,
-        {
-          style: {
-            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            borderRadius: '12px',
-          },
-        }
-      );
+      try {
+        await addToWishlistStore(product.id);
+        // Toast is handled by the wishlist store
+      } catch (error) {
+        console.error('Failed to add to wishlist:', error);
+        // Error toast is handled by the wishlist store
+      }
     }
   };
 
   const handleComparison = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
     if (isInComparisonList) {
       removeFromComparison(product.id);
-      toast.success('Removed from comparison');
-    } else if (getComparisonProducts().length >= 4) {
-      toast.error('You can only compare up to 4 products');
+      customToast.info('Removed from comparison');
     } else {
+      const comparisonList = getComparisonProducts();
+      if (comparisonList.length >= 4) {
+        customToast.warning('You can only compare up to 4 products');
+        return;
+      }
+      
       addToComparison(product);
-      toast.success('Added to comparison!');
+      customToast.primary('Added to comparison!');
     }
   };
 
@@ -227,6 +224,7 @@ const ProductCard = ({ product, viewMode, index }: { product: Product; viewMode:
                 src={product.images[0]?.url || '/next.svg'}
                 alt={product.name || 'Unnamed Product'}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover group-hover:scale-110 transition-transform duration-700"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -388,6 +386,7 @@ const ProductCard = ({ product, viewMode, index }: { product: Product; viewMode:
               src={product.images[0]?.url || '/next.svg'}
               alt={product.name || 'Unnamed Product'}
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover group-hover:scale-110 transition-transform duration-700"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -685,7 +684,7 @@ export default function ProductsPage() {
 
   const handleClearComparison = () => {
     clearComparison();
-    toast.success('Comparison list cleared!');
+    customToast.success('Comparison list cleared!');
   };
 
   // Don't render until mounted to avoid hydration issues

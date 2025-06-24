@@ -160,23 +160,25 @@ export class CategoriesController {
   })
   @ApiQuery({ name: 'includeTree', required: false, description: 'Include full tree structure' })
   async findAllPublic(@Query('includeTree') includeTree?: boolean) {
+    const start = Date.now();
     try {
       let categories: Category[];
-
       if (includeTree) {
         categories = await this.categoryRepository.findTree();
       } else {
         categories = await this.categoryRepository.findAll();
       }
-
       const responseData = categories.map(cat => this.mapToResponseDto(cat));
-
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/categories/public - ${elapsed}ms`);
       return {
         success: true,
         data: responseData,
         total: responseData.length
       };
     } catch (error) {
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/categories/public - ERROR after ${elapsed}ms`);
       throw new HttpException(
         { success: false, message: 'Failed to retrieve categories', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR
@@ -197,9 +199,9 @@ export class CategoriesController {
   @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status' })
   @ApiQuery({ name: 'includeTree', required: false, description: 'Include full tree structure' })
   async findAll(@Query() query: CategoryQueryDto) {
+    const start = Date.now();
     try {
       let categories: Category[];
-
       if (query.includeTree) {
         categories = await this.categoryRepository.findTree();
       } else {
@@ -210,15 +212,17 @@ export class CategoriesController {
         };
         categories = await this.categoryRepository.findAll(filters);
       }
-
       const responseData = categories.map(cat => this.mapToResponseDto(cat));
-
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/categories - ${elapsed}ms`);
       return {
         success: true,
         data: responseData,
         total: responseData.length
       };
     } catch (error) {
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/categories - ERROR after ${elapsed}ms`);
       throw new HttpException(
         { success: false, message: 'Failed to retrieve categories', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR

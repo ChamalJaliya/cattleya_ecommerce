@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { WishlistApi, Wishlist, WishlistItem } from '../../infrastructure/api/wishlistApi';
-import toast from 'react-hot-toast';
+import { customToast } from '../../../shared/utils/toast';
+import { useAuthStore } from './useAuthStore';
 
 interface WishlistStore {
   wishlist: Wishlist | null;
@@ -21,32 +22,71 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
   error: null,
 
   fetchWishlist: async () => {
+    // Check authentication first
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) {
+      // Don't make API call if not authenticated
+      set({ wishlist: null, isLoading: false, error: null });
+      return;
+    }
+
     try {
       set({ isLoading: true, error: null });
       const wishlist = await WishlistApi.getWishlist();
       set({ wishlist, isLoading: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch wishlist';
+    } catch (error: any) {
+      console.error('Failed to fetch wishlist:', error);
+      
+      // If unauthorized (401), clear wishlist and don't show error
+      if (error.response?.status === 401) {
+        set({ wishlist: null, isLoading: false, error: null });
+        return;
+      }
+      
+      const errorMessage = error.response?.data?.message || 'Failed to fetch wishlist';
       set({ error: errorMessage, isLoading: false });
-      toast.error(errorMessage);
+      customToast.error(errorMessage);
     }
   },
 
   addToWishlist: async (productId: string) => {
+    // Check authentication first
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) {
+      customToast.auth.loginError();
+      return;
+    }
+
     try {
       set({ isLoading: true, error: null });
       await WishlistApi.addToWishlist(productId);
       // Refresh wishlist
       await get().fetchWishlist();
-      toast.success('Added to wishlist');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add to wishlist';
+      customToast.wishlist.added('Product');
+    } catch (error: any) {
+      console.error('Failed to add to wishlist:', error);
+      
+      // If unauthorized (401), redirect to login
+      if (error.response?.status === 401) {
+        customToast.auth.loginError();
+        set({ isLoading: false });
+        return;
+      }
+      
+      const errorMessage = error.response?.data?.message || 'Failed to add to wishlist';
       set({ error: errorMessage, isLoading: false });
-      toast.error(errorMessage);
+      customToast.wishlist.error('add');
     }
   },
 
   removeFromWishlist: async (productId: string) => {
+    // Check authentication first
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) {
+      customToast.auth.loginError();
+      return;
+    }
+
     try {
       set({ isLoading: true, error: null });
       await WishlistApi.removeFromWishlist(productId);
@@ -63,15 +103,31 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
         };
         set({ wishlist: updatedWishlist, isLoading: false });
       }
-      toast.success('Removed from wishlist');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to remove from wishlist';
+      customToast.wishlist.removed('Product');
+    } catch (error: any) {
+      console.error('Failed to remove from wishlist:', error);
+      
+      // If unauthorized (401), redirect to login
+      if (error.response?.status === 401) {
+        customToast.auth.loginError();
+        set({ isLoading: false });
+        return;
+      }
+      
+      const errorMessage = error.response?.data?.message || 'Failed to remove from wishlist';
       set({ error: errorMessage, isLoading: false });
-      toast.error(errorMessage);
+      customToast.wishlist.error('remove');
     }
   },
 
   clearWishlist: async () => {
+    // Check authentication first
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) {
+      customToast.auth.loginError();
+      return;
+    }
+
     try {
       set({ isLoading: true, error: null });
       await WishlistApi.clearWishlist();
@@ -79,11 +135,20 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
         wishlist: { totalItems: 0, totalValue: 0, items: [] }, 
         isLoading: false 
       });
-      toast.success('Wishlist cleared');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to clear wishlist';
+      customToast.success('Wishlist cleared');
+    } catch (error: any) {
+      console.error('Failed to clear wishlist:', error);
+      
+      // If unauthorized (401), redirect to login
+      if (error.response?.status === 401) {
+        customToast.auth.loginError();
+        set({ isLoading: false });
+        return;
+      }
+      
+      const errorMessage = error.response?.data?.message || 'Failed to clear wishlist';
       set({ error: errorMessage, isLoading: false });
-      toast.error(errorMessage);
+      customToast.error(errorMessage);
     }
   },
 

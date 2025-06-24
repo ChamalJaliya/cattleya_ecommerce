@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import toast from 'react-hot-toast';
+import { customToast } from '@/shared/utils/toast';
 import { EyeIcon, EyeSlashIcon, ArrowLeftIcon, CheckCircleIcon, UserIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import { UserRole } from '@/core/domain/entities/User';
@@ -62,28 +62,25 @@ export default function LoginPage() {
         const user = useAuthStore.getState().user;
         
         if (user?.role === UserRole.ADMIN) {
-          toast.success('Welcome back, Admin! Redirecting to admin dashboard...');
-          setTimeout(() => {
-            router.push('/admin/dashboard');
-          }, 1500);
+          customToast.success('Welcome back, Admin! Redirecting to admin dashboard...');
+          router.push('/admin/dashboard');
         } else {
-          toast.success('Welcome back! Redirecting to dashboard...');
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 1500);
+          customToast.success('Welcome back! Redirecting to dashboard...');
+          router.push('/dashboard');
         }
       } else {
-        toast.error('Invalid credentials. Please try again.');
+        customToast.auth.loginError();
       }
     } catch (error) {
-      toast.error('Invalid credentials. Please try again.');
+      console.error('Login error:', error);
+      customToast.auth.loginError();
     }
   };
 
   const handleDemoLogin = (account: typeof demoAccounts[0]) => {
     setValue('email', account.email);
     setValue('password', account.password);
-    toast.success(`Demo credentials loaded for ${account.role}`);
+    customToast.success(`Demo credentials loaded for ${account.role}`);
   };
 
   return (

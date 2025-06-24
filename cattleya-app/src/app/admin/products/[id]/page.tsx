@@ -281,6 +281,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
                           : product.images[selectedImage].url}
                         alt={product.name}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover"
                       />
                     ) : (
@@ -326,6 +327,7 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
                               src={typeof image === 'string' ? image : image.url}
                               alt={`${product.name} ${index + 1}`}
                               fill
+                              sizes="80px"
                               className="object-cover"
                             />
                           </button>

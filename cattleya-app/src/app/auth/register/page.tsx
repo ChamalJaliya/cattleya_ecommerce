@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import toast from 'react-hot-toast';
+import { customToast } from '@/shared/utils/toast';
 import { 
   EyeIcon, 
   EyeSlashIcon, 
@@ -58,7 +58,7 @@ export default function RegisterPage() {
       // Get user from store to determine role (new users are always customers)
       const user = useAuthStore.getState().user;
       
-      toast.success('Account created successfully! Welcome to Cattleya! 🌺');
+      customToast.auth.registerSuccess();
       
       setTimeout(() => {
         if (user?.role === UserRole.ADMIN) {
@@ -68,7 +68,8 @@ export default function RegisterPage() {
         }
       }, 1500);
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      customToast.auth.registerError();
     }
   };
 

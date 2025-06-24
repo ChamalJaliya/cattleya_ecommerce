@@ -563,7 +563,7 @@ export default function ImageEditorModal({ image, onClose, onUpdate }: ImageEdit
               </div>
 
               <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                <AnimatePresence mode="wait">
+                <AnimatePresence>
                   <motion.div
                     key={activeTab}
                     initial={{ opacity: 0, y: 20 }}

@@ -27,11 +27,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message: typeof message === 'string' ? message : (message as any).message || message,
     };
 
-    this.logger.error(
-      `${request.method} ${request.url} - ${status} - ${JSON.stringify(errorResponse.message)}`,
-      exception instanceof Error ? exception.stack : undefined,
-      'HttpExceptionFilter'
-    );
+    // Handle 401 errors more gracefully - they're often expected
+    if (status === HttpStatus.UNAUTHORIZED) {
+      // Log as warning instead of error for expected auth failures
+      this.logger.warn(
+        `${request.method} ${request.url} - ${status} - "Unauthorized"`,
+        'HttpExceptionFilter'
+      );
+    } else {
+      // Log other errors as errors
+      this.logger.error(
+        `${request.method} ${request.url} - ${status} - ${JSON.stringify(errorResponse.message)}`,
+        exception instanceof Error ? exception.stack : undefined,
+        'HttpExceptionFilter'
+      );
+    }
 
     response.status(status).json(errorResponse);
   }

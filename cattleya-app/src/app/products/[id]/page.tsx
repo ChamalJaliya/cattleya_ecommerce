@@ -31,6 +31,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import ProductReviews from '@/shared/components/ProductReviews';
 import Header from '@/shared/components/Header';
+import { customToast } from '@/shared/utils/toast';
 
 interface MediaItem {
   id: string;
@@ -69,8 +70,8 @@ export default function ProductDetailPage() {
   } = useProductStore();
   const { addItem } = useCartStore();
   const { 
-    addToWishlist: addToWishlistStore, 
-    removeFromWishlist: removeFromWishlistStore,
+    addToWishlist, 
+    removeFromWishlist,
     isInWishlist,
     fetchWishlist
   } = useWishlistStore();
@@ -284,8 +285,8 @@ export default function ProductDetailPage() {
   const currentMedia = mediaItems[selectedMediaIndex];
 
   const handleAddToCart = async () => {
-    if (!product || !selectedSize) {
-      toast.error('Please select a size');
+    if (!selectedSize) {
+      customToast.warning('Please select a size');
       return;
     }
 
@@ -293,31 +294,22 @@ export default function ProductDetailPage() {
       await addItem({
         productId: product.id,
         quantity: quantity,
-        variantId: selectedSize,
-        selectedAttributes: {
-          size: selectedSize,
-          color: selectedColor || undefined
-        }
+        selectedAttributes: { size: selectedSize }
       });
-      
-      const sizeLabel = orchidSizeLabels[selectedSize]?.label || selectedSize.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      toast.success(
-        `Added ${quantity} ${sizeLabel} ${product.name} to cart`,
-        { duration: 3000 }
-      );
+      // Toast is handled by the cart store
     } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Failed to add item to cart');
+      console.error('Failed to add item to cart:', error);
+      // Error toast is handled by the cart store
     }
   };
 
   const handleWishlistToggle = () => {
     if (inWishlist) {
-      removeFromWishlistStore(product.id);
-      toast.success('Removed from wishlist');
+      removeFromWishlist(product.id);
+      // Toast is handled by the wishlist store
     } else {
-      addToWishlistStore(product.id);
-      toast.success('Added to wishlist');
+      addToWishlist(product.id);
+      // Toast is handled by the wishlist store
     }
   };
 
@@ -383,7 +375,7 @@ export default function ProductDetailPage() {
 
   const MediaViewer = () => (
     <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl shadow-xl border border-gray-200/50 overflow-hidden backdrop-blur-sm">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <motion.div
           key={selectedMediaIndex}
           initial={{ opacity: 0, scale: 0.95 }}

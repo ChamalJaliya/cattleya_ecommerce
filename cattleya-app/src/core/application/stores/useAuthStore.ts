@@ -9,7 +9,10 @@ import {
   ChangePasswordRequest 
 } from '@/core/infrastructure/api/users.api';
 import { ApiError } from '@/core/infrastructure/api/base-api.service';
-import toast from 'react-hot-toast';
+import { customToast } from '../../../shared/utils/toast';
+
+// Import cart store to clear it on logout
+import { useCartStore } from './useCartStore';
 
 interface AuthState {
   // Authentication state
@@ -55,52 +58,50 @@ export const useAuthStore = create<AuthState>()(
       setError: (error) => set({ error }),
 
       // API actions
-      login: async (credentials) => {
+      login: async (credentials: LoginRequest) => {
         set({ isLoading: true, error: null });
         try {
           const response = await usersApi.login(credentials);
-          
           if (response.authenticated) {
-            set({ 
-              user: response.user, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
+            set({ user: response.user, isAuthenticated: true, isLoading: false });
+            customToast.auth.loginSuccess();
             return true;
           } else {
             set({ error: 'Login failed', isLoading: false });
+            customToast.auth.loginError();
             return false;
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.error('Login error:', error);
           const errorMessage = error instanceof ApiError 
             ? error.message 
-            : 'An unexpected error occurred';
+            : 'Login failed. Please try again.';
           set({ error: errorMessage, isLoading: false });
+          customToast.auth.loginError();
           return false;
         }
       },
 
-      register: async (userData) => {
+      register: async (userData: RegisterRequest) => {
         set({ isLoading: true, error: null });
         try {
           const response = await usersApi.register(userData);
-          
           if (response.authenticated) {
-            set({ 
-              user: response.user, 
-              isAuthenticated: true, 
-              isLoading: false 
-            });
+            set({ user: response.user, isAuthenticated: true, isLoading: false });
+            customToast.auth.registerSuccess();
             return true;
           } else {
             set({ error: 'Registration failed', isLoading: false });
+            customToast.auth.registerError();
             return false;
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.error('Registration error:', error);
           const errorMessage = error instanceof ApiError 
             ? error.message 
-            : 'An unexpected error occurred';
+            : 'Registration failed. Please try again.';
           set({ error: errorMessage, isLoading: false });
+          customToast.auth.registerError();
           return false;
         }
       },
@@ -109,25 +110,54 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           await usersApi.logout();
+          
+          // Clear cart store on logout (skip API call since token is invalid)
+          const cartStore = useCartStore.getState();
+          cartStore.clearCart(true);
+          
           set({ 
             user: null, 
             isAuthenticated: false, 
             isLoading: false,
-            error: null
+            error: null 
           });
-        } catch (error) {
-          // Even if logout fails on server, clear local state
+          customToast.auth.logoutSuccess();
+        } catch (error: any) {
+          console.error('Logout error:', error);
+          // Even if logout fails, clear local state
+          const cartStore = useCartStore.getState();
+          cartStore.clearCart(true);
+          
           set({ 
             user: null, 
             isAuthenticated: false, 
             isLoading: false,
-            error: null
+            error: null 
           });
+          customToast.auth.logoutSuccess();
         }
       },
 
       checkAuth: async () => {
         set({ isLoading: true, error: null });
+        
+        // Check if we have a token stored before making API call
+        const hasToken = typeof window !== 'undefined' && (
+          localStorage.getItem('access_token') || 
+          document.cookie.includes('access_token')
+        );
+        
+        if (!hasToken) {
+          // No token found, user is not authenticated
+          set({ 
+            user: null, 
+            isAuthenticated: false, 
+            isLoading: false,
+            error: null
+          });
+          return;
+        }
+        
         try {
           const authStatus = await usersApi.checkAuth();
           
@@ -184,7 +214,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateProfile: async (data) => {
+      updateProfile: async (data: UpdateProfileRequest) => {
         set({ isLoading: true, error: null });
         try {
           const response = await usersApi.updateProfile(data);
@@ -194,12 +224,12 @@ export const useAuthStore = create<AuthState>()(
               user: response.data, 
               isLoading: false 
             });
-            toast.success('Profile updated successfully!');
+            customToast.auth.profileUpdateSuccess();
             return true;
           } else {
             const errorMessage = response.message || 'Failed to update profile';
             set({ error: errorMessage, isLoading: false });
-            toast.error(errorMessage);
+            customToast.auth.profileUpdateError(errorMessage);
             return false;
           }
         } catch (error) {
@@ -207,24 +237,24 @@ export const useAuthStore = create<AuthState>()(
             ? error.message 
             : 'An unexpected error occurred';
           set({ error: errorMessage, isLoading: false });
-          toast.error(errorMessage);
+          customToast.auth.profileUpdateError(errorMessage);
           return false;
         }
       },
 
-      changePassword: async (data) => {
+      changePassword: async (data: ChangePasswordRequest) => {
         set({ isLoading: true, error: null });
         try {
           const response = await usersApi.changePassword(data);
           
           if (response.success) {
             set({ isLoading: false });
-            toast.success('Password changed successfully!');
+            customToast.auth.passwordChangeSuccess();
             return true;
           } else {
             const errorMessage = response.message || 'Failed to change password';
             set({ error: errorMessage, isLoading: false });
-            toast.error(errorMessage);
+            customToast.auth.passwordChangeError(errorMessage);
             return false;
           }
         } catch (error) {
@@ -232,12 +262,12 @@ export const useAuthStore = create<AuthState>()(
             ? error.message 
             : 'An unexpected error occurred';
           set({ error: errorMessage, isLoading: false });
-          toast.error(errorMessage);
+          customToast.auth.passwordChangeError(errorMessage);
           return false;
         }
       },
 
-      uploadAvatar: async (file) => {
+      uploadAvatar: async (file: File) => {
         set({ isLoading: true, error: null });
         try {
           const response = await usersApi.uploadAvatar(file);
@@ -249,12 +279,12 @@ export const useAuthStore = create<AuthState>()(
               const updatedUser = { ...user, avatar: response.url };
               set({ user: updatedUser, isLoading: false });
             }
-            toast.success('Avatar uploaded successfully!');
+            customToast.auth.avatarUploadSuccess();
             return response.url;
           } else {
             const errorMessage = 'Failed to upload avatar';
             set({ error: errorMessage, isLoading: false });
-            toast.error(errorMessage);
+            customToast.auth.avatarUploadError(errorMessage);
             return null;
           }
         } catch (error) {
@@ -262,7 +292,7 @@ export const useAuthStore = create<AuthState>()(
             ? error.message 
             : 'An unexpected error occurred';
           set({ error: errorMessage, isLoading: false });
-          toast.error(errorMessage);
+          customToast.auth.avatarUploadError(errorMessage);
           return null;
         }
       },

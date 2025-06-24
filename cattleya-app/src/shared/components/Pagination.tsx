@@ -121,7 +121,7 @@ export default function Pagination({
 
         {/* Page Numbers */}
         <div className="flex items-center space-x-1">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {pages.map((page, index) => (
               <motion.div
                 key={`${page}-${index}`}

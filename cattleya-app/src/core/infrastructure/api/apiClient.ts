@@ -13,8 +13,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      console.error('Unauthorized access. Please log in again.');
+      // Handle unauthorized access - log as warning instead of error
+      console.warn('Unauthorized access. Please log in again.');
       // You can redirect to login page or clear auth state here
       localStorage.removeItem('access_token');
       sessionStorage.removeItem('access_token');

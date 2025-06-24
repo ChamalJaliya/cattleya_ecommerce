@@ -23,6 +23,7 @@ import Header from '@/shared/components/Header';
 import toast from 'react-hot-toast';
 import { Product } from '@/core/domain/entities/Product';
 import { useState, useEffect } from 'react';
+import { customToast } from '@/shared/utils/toast';
 
 const features = [
   {
@@ -92,12 +93,12 @@ export default function HomePage() {
   const personalizedRecommendations = getPersonalizedRecommendations(6);
   const recentlyViewedProducts = getRecentlyViewed();
 
-  const handleAddToCart = (product: any) => {
-    addItem({
-      productId: product.id.toString(),
-      quantity: 1
+  const handleAddToCart = async (product: any) => {
+    await addItem({
+      productId: product.id,
+      quantity: 1,
     });
-    toast.success(`${product.name} added to cart!`);
+    // Toast is handled by the cart store
   };
 
   const handleWishlistToggle = (product: Product) => {
