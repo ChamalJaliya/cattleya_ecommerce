@@ -51,7 +51,7 @@ export const useMediaStore = create<MediaState>()(
       selectedFiles: [],
       isLoading: false,
       error: null,
-      currentFolder: 'media',
+      currentFolder: '',
       currentType: null,
       searchTerm: '',
       viewMode: 'cards',
@@ -86,7 +86,6 @@ export const useMediaStore = create<MediaState>()(
         try {
           set({ isLoading: true, error: null });
           const response = await mediaApi.listMedia(params);
-          // The API client now returns the array directly, so we can use it.
           set({ mediaFiles: Array.isArray(response) ? response : [] });
         } catch (error) {
           set({ 

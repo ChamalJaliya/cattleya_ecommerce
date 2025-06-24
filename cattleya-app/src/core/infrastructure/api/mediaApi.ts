@@ -263,6 +263,17 @@ class MediaApi {
   isFileSizeValid(file: File): boolean {
     return file.size <= this.getMaxFileSize();
   }
+
+  async listFolders(): Promise<string[]> {
+    // Call the backend with an empty prefix to get all top-level folders
+    const response = await apiClient.get('/products/media/folders', { params: { prefix: '' } });
+    return response.data.data;
+  }
+
+  async createFolder(folderName: string): Promise<{ success: boolean; folder: string }> {
+    const response = await apiClient.post('/products/media/folders', { folderName });
+    return response.data;
+  }
 }
 
 export const mediaApi = new MediaApi(); 

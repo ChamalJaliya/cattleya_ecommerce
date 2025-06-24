@@ -115,7 +115,7 @@ export class S3Service {
     return getSignedUrl(this.s3, command, { expiresIn });
   }
 
-  async listFiles(prefix: string = 'media'): Promise<MediaFile[]> {
+  async listFiles(prefix: string = ''): Promise<MediaFile[]> {
     try {
       // Check if we have the necessary configuration
       if (!this.bucket) {
@@ -322,5 +322,27 @@ export class S3Service {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async listFolders(prefix = ''): Promise<string[]> {
+    const command = new ListObjectsV2Command({
+      Bucket: this.bucket,
+      Delimiter: '/',
+      Prefix: prefix,
+    });
+    const response = await this.s3.send(command);
+    return (response.CommonPrefixes || [])
+      .map(p => p.Prefix?.replace(/\/$/, ''))
+      .filter(Boolean) as string[];
+  }
+
+  async createFolder(folderName: string): Promise<{ success: boolean; folder: string }> {
+    const key = folderName.endsWith('/') ? folderName : `${folderName}/`;
+    await this.s3.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      Body: '',
+    }));
+    return { success: true, folder: key };
   }
 } 

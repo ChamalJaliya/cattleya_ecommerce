@@ -25,7 +25,7 @@ import toast from 'react-hot-toast';
 
 interface ImageData {
   id: string;
-  file: File;
+  file?: File;
   preview: string;
   editedPreview?: string;
   croppedPreview?: string;
@@ -46,6 +46,11 @@ interface ImageData {
     width: number;
     height: number;
   };
+  isFromBucket?: boolean;
+  bucketKey?: string;
+  originalName?: string;
+  size?: number;
+  mimeType?: string;
 }
 
 interface ImageEditorModalProps {

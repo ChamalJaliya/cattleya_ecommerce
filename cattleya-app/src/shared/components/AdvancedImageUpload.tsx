@@ -26,15 +26,28 @@ import {
   SwatchIcon,
   CameraIcon,
   DocumentArrowUpIcon,
-  ScissorsIcon
+  ScissorsIcon,
+  FolderIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  CloudIcon,
+  ComputerDesktopIcon,
+  ArrowDownTrayIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import ImageEditorModal from './ImageEditorModal';
 import Portal from './Portal';
+import UploadModeSelector from './UploadModeSelector';
+import BucketImageSelector from './BucketImageSelector';
+import { MediaFile } from '../../core/infrastructure/api/mediaApi';
+import { mediaApi } from '../../core/infrastructure/api/mediaApi';
 
 interface ImageData {
   id: string;
-  file: File;
+  file?: File;
   preview: string;
   editedPreview?: string;
   croppedPreview?: string;
@@ -55,12 +68,20 @@ interface ImageData {
     width: number;
     height: number;
   };
+  // New properties for bucket selection
+  isFromBucket?: boolean;
+  bucketKey?: string;
+  originalName?: string;
+  size?: number;
+  mimeType?: string;
 }
 
 interface AdvancedImageUploadProps {
   onImagesChange: (images: ImageData[]) => void;
   maxImages?: number;
   className?: string;
+  allowBucketSelection?: boolean;
+  bucketFolder?: string;
 }
 
 const aspectRatios = [
@@ -80,7 +101,9 @@ const imageFormats = [
 export default function AdvancedImageUpload({ 
   onImagesChange, 
   maxImages = 5, 
-  className = '' 
+  className = '',
+  allowBucketSelection = true,
+  bucketFolder = 'products'
 }: AdvancedImageUploadProps) {
   const [images, setImages] = useState<ImageData[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -89,6 +112,15 @@ export default function AdvancedImageUpload({
   const [cropStart, setCropStart] = useState({ x: 0, y: 0 });
   const [cropEnd, setCropEnd] = useState({ x: 0, y: 0 });
   const [isCroppingActive, setIsCroppingActive] = useState(false);
+  
+  // New state for bucket selection
+  const [showBucketSelector, setShowBucketSelector] = useState(false);
+  const [bucketFiles, setBucketFiles] = useState<MediaFile[]>([]);
+  const [loadingBucketFiles, setLoadingBucketFiles] = useState(false);
+  const [bucketSearchTerm, setBucketSearchTerm] = useState('');
+  const [bucketViewMode, setBucketViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedBucketFiles, setSelectedBucketFiles] = useState<Set<string>>(new Set());
+  const [uploadMode, setUploadMode] = useState<'computer' | 'bucket'>('computer');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -110,8 +142,63 @@ export default function AdvancedImageUpload({
     blur: 0,
     rotation: 0,
     zoom: 1,
-    panOffset: { x: 0, y: 0 }
+    panOffset: { x: 0, y: 0 },
+    isFromBucket: false
   });
+
+  const createImageDataFromBucket = (mediaFile: MediaFile): ImageData => ({
+    id: generateId(),
+    preview: mediaFile.url,
+    isMain: images.length === 0,
+    aspectRatio: '1:1',
+    quality: 85,
+    format: 'jpeg',
+    brightness: 0,
+    contrast: 0,
+    saturation: 0,
+    blur: 0,
+    rotation: 0,
+    zoom: 1,
+    panOffset: { x: 0, y: 0 },
+    isFromBucket: true,
+    bucketKey: mediaFile.key,
+    originalName: mediaFile.name,
+    size: mediaFile.size,
+    mimeType: mediaFile.mimeType
+  });
+
+  // Load bucket files
+  const loadBucketFiles = useCallback(async () => {
+    if (!allowBucketSelection) return;
+    
+    setLoadingBucketFiles(true);
+    try {
+      const files = await mediaApi.listMedia({ 
+        folder: bucketFolder,
+        type: 'image'
+      });
+      setBucketFiles(files);
+    } catch (error) {
+      console.error('Error loading bucket files:', error);
+      toast.error('Failed to load existing images');
+    } finally {
+      setLoadingBucketFiles(false);
+    }
+  }, [allowBucketSelection, bucketFolder]);
+
+  // Check for duplicates
+  const isDuplicate = useCallback((newImage: ImageData): boolean => {
+    return images.some(existingImage => {
+      if (newImage.isFromBucket && existingImage.isFromBucket) {
+        return existingImage.bucketKey === newImage.bucketKey;
+      }
+      if (!newImage.isFromBucket && !existingImage.isFromBucket && newImage.file && existingImage.file) {
+        return existingImage.file.name === newImage.file.name && 
+               existingImage.file.size === newImage.file.size;
+      }
+      return false;
+    });
+  }, [images]);
 
   const handleFileSelect = useCallback((files: FileList) => {
     const newImages = Array.from(files).map(createImageData);
@@ -121,10 +208,45 @@ export default function AdvancedImageUpload({
       return;
     }
 
-    const updatedImages = [...images, ...newImages];
+    // Filter out duplicates
+    const uniqueImages = newImages.filter(newImage => {
+      if (isDuplicate(newImage)) {
+        toast.error(`Duplicate detected: ${newImage.file?.name}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (uniqueImages.length === 0) return;
+
+    const updatedImages = [...images, ...uniqueImages];
     setImages(updatedImages);
     onImagesChange(updatedImages);
-  }, [images, maxImages, onImagesChange]);
+  }, [images, maxImages, onImagesChange, isDuplicate]);
+
+  const handleBucketImagesSelect = useCallback((mediaFiles: MediaFile[]) => {
+    const newImages = mediaFiles.map(createImageDataFromBucket);
+    
+    if (images.length + newImages.length > maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`);
+      return;
+    }
+
+    // Filter out duplicates
+    const uniqueImages = newImages.filter(newImage => {
+      if (isDuplicate(newImage)) {
+        toast.error(`Duplicate detected: ${newImage.originalName}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (uniqueImages.length === 0) return;
+
+    const updatedImages = [...images, ...uniqueImages];
+    setImages(updatedImages);
+    onImagesChange(updatedImages);
+  }, [images, maxImages, onImagesChange, isDuplicate]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -181,6 +303,12 @@ export default function AdvancedImageUpload({
     }
   };
 
+  // Filter bucket files based on search
+  const filteredBucketFiles = bucketFiles.filter(file => 
+    file.name.toLowerCase().includes(bucketSearchTerm.toLowerCase()) ||
+    file.folder.toLowerCase().includes(bucketSearchTerm.toLowerCase())
+  );
+
   // Ensure only one image is main
   useEffect(() => {
     const mainImages = images.filter(img => img.isMain);
@@ -203,127 +331,216 @@ export default function AdvancedImageUpload({
     }
   }, [images.length, onImagesChange]);
 
+  // Load bucket files when selector is opened
+  useEffect(() => {
+    if (showBucketSelector) {
+      loadBucketFiles();
+    }
+  }, [showBucketSelector, loadBucketFiles]);
+
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Upload Area */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="group relative"
-      >
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600/20 via-violet-600/20 to-indigo-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
-        <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-purple-500/10 transition-all duration-300">
-          <div
-            className={`flex items-center justify-center w-full h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 ${
-              dragActive
-                ? 'border-purple-500 bg-gradient-to-br from-purple-50/80 to-violet-50/80'
-                : 'border-purple-300 bg-gradient-to-br from-purple-50/60 to-violet-50/60 hover:from-purple-100/80 hover:to-violet-100/80'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <motion.div
-                animate={{ 
-                  y: dragActive ? [-5, 5, -5] : [-3, 3, -3],
-                  scale: dragActive ? 1.1 : 1
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <CloudArrowUpIcon className="w-12 h-12 mb-4 text-purple-500 group-hover:text-purple-600" />
-              </motion.div>
-              <p className="mb-2 text-sm text-gray-600">
-                <span className="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              <p className="text-xs text-gray-500">PNG, JPG, WEBP (MAX. {maxImages} images)</p>
-              <div className="flex items-center mt-2 space-x-1">
-                <SparklesIcon className="w-4 h-4 text-purple-400 animate-pulse" />
-                <span className="text-xs text-purple-600 font-medium">Advanced editing available</span>
-                <StarIcon className="w-4 h-4 text-violet-400 animate-bounce" />
+      {/* Upload Mode Selector */}
+      <UploadModeSelector
+        mode={uploadMode}
+        onModeChange={setUploadMode}
+        allowBucketSelection={allowBucketSelection}
+      />
+
+      {/* Upload Area - Computer Mode */}
+      {uploadMode === 'computer' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="group relative"
+        >
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600/20 via-violet-600/20 to-indigo-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+          <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-purple-500/10 transition-all duration-300">
+            <div
+              className={`flex items-center justify-center w-full h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 ${
+                dragActive
+                  ? 'border-purple-500 bg-gradient-to-br from-purple-50/80 to-violet-50/80'
+                  : 'border-purple-300 bg-gradient-to-br from-purple-50/60 to-violet-50/60 hover:from-purple-100/80 hover:to-violet-100/80'
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <motion.div
+                  animate={{ 
+                    y: dragActive ? [-5, 5, -5] : [-3, 3, -3],
+                    scale: dragActive ? 1.1 : 1
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <CloudArrowUpIcon className="w-12 h-12 mb-4 text-purple-500 group-hover:text-purple-600" />
+                </motion.div>
+                <p className="mb-2 text-sm text-gray-600">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500">PNG, JPG, WEBP (MAX. {maxImages} images)</p>
+                <div className="flex items-center mt-2 space-x-1">
+                  <SparklesIcon className="w-4 h-4 text-purple-400 animate-pulse" />
+                  <span className="text-xs text-purple-600 font-medium">Advanced editing available</span>
+                  <StarIcon className="w-4 h-4 text-violet-400 animate-bounce" />
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept="image/*"
+                onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
+              />
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Bucket Selector Button - Bucket Mode */}
+      {uploadMode === 'bucket' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="group relative"
+        >
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+          <div className="relative bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/30 p-8 hover:shadow-blue-500/10 transition-all duration-300">
+            <div
+              className="flex items-center justify-center w-full h-64 border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50/60 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/80 rounded-3xl cursor-pointer transition-all duration-300"
+              onClick={() => setShowBucketSelector(true)}
+            >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <motion.div
+                  animate={{ 
+                    y: [-3, 3, -3],
+                    scale: 1
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <CloudIcon className="w-12 h-12 mb-4 text-blue-500 group-hover:text-blue-600" />
+                </motion.div>
+                <p className="mb-2 text-sm text-gray-600">
+                  <span className="font-semibold">Click to browse</span> image library
+                </p>
+                <p className="text-xs text-gray-500">Select from existing images (MAX. {maxImages} images)</p>
+                <div className="flex items-center mt-2 space-x-1">
+                  <SparklesIcon className="w-4 h-4 text-blue-400 animate-pulse" />
+                  <span className="text-xs text-blue-600 font-medium">No duplicates guaranteed</span>
+                  <StarIcon className="w-4 h-4 text-indigo-400 animate-bounce" />
+                </div>
               </div>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              multiple
-              accept="image/*"
-              onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
-            />
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Image Grid */}
       {images.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
+          className="space-y-4"
         >
-          {images.map((image, index) => (
-            <motion.div
-              key={image.id}
-              layout
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className={`relative aspect-square rounded-2xl shadow-lg overflow-hidden group border-4 transition-all duration-300 ${
-                image.isMain ? 'border-purple-500' : 'border-transparent'
-              }`}
-            >
-              <img
-                src={image.croppedPreview || image.editedPreview || image.preview}
-                alt={`preview ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              {/* Overlay Controls */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex space-x-2">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedImage(image)}
-                    className="bg-purple-500 text-white rounded-full p-2 hover:bg-purple-600 transition-colors duration-200 shadow-md"
-                    title="Edit Image"
-                  >
-                    <CogIcon className="w-4 h-4" />
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => removeImage(image.id)}
-                    className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors duration-200 shadow-md"
-                    title="Remove Image"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Main Image Badge */}
-              {image.isMain && (
-                <div className="absolute top-2 left-2 bg-gradient-to-r from-purple-500 to-violet-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
-                  <StarIcon className="w-3 h-3 inline mr-1" />
-                  Main
-                </div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-800">Selected Images ({images.length}/{maxImages})</h3>
+            <div className="flex items-center space-x-2">
+              {images.some(img => img.isFromBucket) && (
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  <CloudIcon className="w-3 h-3 inline mr-1" />
+                  From Library
+                </span>
               )}
-
-              {/* Settings Applied Badge */}
-              {(image.brightness !== 0 || image.contrast !== 0 || image.rotation !== 0 || image.croppedPreview) && (
-                <div className="absolute bottom-2 left-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
-                  <SparklesIcon className="w-3 h-3 inline mr-1" />
-                  Edited
-                </div>
+              {images.some(img => !img.isFromBucket) && (
+                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                  <ComputerDesktopIcon className="w-3 h-3 inline mr-1" />
+                  Uploaded
+                </span>
               )}
-            </motion.div>
-          ))}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {images.map((image, index) => (
+              <motion.div
+                key={image.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className={`relative aspect-square rounded-2xl shadow-lg overflow-hidden group border-4 transition-all duration-300 ${
+                  image.isMain ? 'border-purple-500' : 'border-transparent'
+                }`}
+              >
+                <img
+                  src={image.croppedPreview || image.editedPreview || image.preview}
+                  alt={`preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Overlay Controls */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex space-x-2">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setSelectedImage(image)}
+                      className="bg-purple-500 text-white rounded-full p-2 hover:bg-purple-600 transition-colors duration-200 shadow-md"
+                      title="Edit Image"
+                    >
+                      <CogIcon className="w-4 h-4" />
+                    </motion.button>
+                    
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => removeImage(image.id)}
+                      className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors duration-200 shadow-md"
+                      title="Remove Image"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Main Image Badge */}
+                {image.isMain && (
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-purple-500 to-violet-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
+                    <StarIcon className="w-3 h-3 inline mr-1" />
+                    Main
+                  </div>
+                )}
+
+                {/* Source Badge */}
+                {image.isFromBucket ? (
+                  <div className="absolute bottom-2 left-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
+                    <CloudIcon className="w-3 h-3 inline mr-1" />
+                    Library
+                  </div>
+                ) : (
+                  <div className="absolute bottom-2 left-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
+                    <ComputerDesktopIcon className="w-3 h-3 inline mr-1" />
+                    Uploaded
+                  </div>
+                )}
+
+                {/* Settings Applied Badge */}
+                {(image.brightness !== 0 || image.contrast !== 0 || image.rotation !== 0 || image.croppedPreview) && (
+                  <div className="absolute bottom-2 right-2 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs font-medium shadow-md">
+                    <SparklesIcon className="w-3 h-3 inline mr-1" />
+                    Edited
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       )}
 
@@ -335,6 +552,20 @@ export default function AdvancedImageUpload({
               image={selectedImage}
               onClose={() => setSelectedImage(null)}
               onUpdate={updateImageSettings}
+            />
+          </Portal>
+        )}
+      </AnimatePresence>
+
+      {/* Bucket Image Selector Modal */}
+      <AnimatePresence>
+        {showBucketSelector && (
+          <Portal>
+            <BucketImageSelector
+              onImagesSelect={handleBucketImagesSelect}
+              onClose={() => setShowBucketSelector(false)}
+              folder={bucketFolder}
+              maxImages={maxImages - images.length}
             />
           </Portal>
         )}

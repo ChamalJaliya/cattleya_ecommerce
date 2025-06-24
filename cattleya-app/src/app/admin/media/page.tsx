@@ -57,21 +57,34 @@ export default function MediaPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const checkbox = useRef<HTMLInputElement>(null);
+  const [folderOptions, setFolderOptions] = useState<{ value: string; label: string }[]>([]);
 
   // Memoize the filtered media files
   const filteredMedia = useMemo(() => {
     // Ensure mediaFiles is always an array
     const files = Array.isArray(mediaFiles) ? mediaFiles : [];
-    
-    return files
-      .filter(file => {
-        const folderMatch = !currentFolder || file.folder === currentFolder || currentFolder === 'media';
-        const typeMatch = !currentType || file.type.startsWith(currentType);
-        const searchTermMatch =
-          !searchTerm || file.name.toLowerCase().includes(searchTerm.toLowerCase());
-        return folderMatch && typeMatch && searchTermMatch;
-      })
-      .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+    // Filter out directory placeholders (e.g., type 'other', size 0, name empty)
+    const realFiles = files.filter(file => file.name && file.type !== 'other' && file.size > 0);
+    if (!currentFolder || currentFolder === '') {
+      // All Folders: show all real files
+      return realFiles
+        .filter(file => {
+          const typeMatch = !currentType || file.type.startsWith(currentType);
+          const searchTermMatch = !searchTerm || file.name.toLowerCase().includes(searchTerm.toLowerCase());
+          return typeMatch && searchTermMatch;
+        })
+        .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+    } else {
+      // Specific folder
+      return realFiles
+        .filter(file => {
+          const folderMatch = file.folder === currentFolder;
+          const typeMatch = !currentType || file.type.startsWith(currentType);
+          const searchTermMatch = !searchTerm || file.name.toLowerCase().includes(searchTerm.toLowerCase());
+          return folderMatch && typeMatch && searchTermMatch;
+        })
+        .sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+    }
   }, [mediaFiles, currentFolder, currentType, searchTerm]);
 
   // Handle indeterminate checkbox state
@@ -87,6 +100,24 @@ export default function MediaPage() {
     fetchMediaFiles();
     fetchMediaStats();
   }, [fetchMediaFiles, fetchMediaStats]);
+
+  // Fetch folders dynamically
+  useEffect(() => {
+    async function fetchFolders() {
+      const folders = await mediaApi.listFolders();
+      // Only include valid, non-empty, top-level folder names (no nested)
+      const topLevelFolders = Array.isArray(folders)
+        ? folders
+            .map(f => f.replace(/\/$/, '')) // remove trailing slash
+            .filter(f => f && !f.includes('/')) // non-empty, no subfolders
+        : [];
+      setFolderOptions([
+        { value: '', label: 'All Folders' },
+        ...topLevelFolders.map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))
+      ]);
+    }
+    fetchFolders();
+  }, []);
 
   // Handle file upload
   const handleFileUpload = useCallback(async (files: FileList | File[]) => {
@@ -179,59 +210,112 @@ export default function MediaPage() {
     { value: 'audio', label: 'Audio', icon: VideoCameraIcon },
   ];
 
-  const folderOptions = [
-    { value: 'media', label: 'All Folders' },
-    { value: 'products', label: 'Products' },
-    { value: 'documents', label: 'Documents' },
-    { value: 'sharables', label: 'Sharables' },
-  ];
-
-  const statsData = (mediaStats && mediaStats.data) ? [
-    {
-        name: 'Total Files',
-        value: mediaStats.data.totalFiles?.toString() || '0',
-        change: '+12',
-        changeType: 'increase' as const,
-        icon: FolderIcon,
-        color: 'from-blue-500 via-cyan-500 to-sky-500',
-        iconBg: 'from-blue-400 to-cyan-600',
-        glowColor: 'shadow-blue-500/30',
-        description: 'Files in library'
-    },
-    {
-        name: 'Total Storage',
-        value: mediaStats.data.totalSizeFormatted || '0 Bytes',
-        change: '+2.5GB',
-        changeType: 'increase' as const,
-        icon: SparklesIcon,
-        color: 'from-yellow-500 via-orange-500 to-red-500',
-        iconBg: 'from-yellow-400 to-orange-600',
-        glowColor: 'shadow-yellow-500/30',
-        description: 'Storage used'
-    },
-    {
-        name: 'Images',
-        value: (mediaStats.data.byType?.image?.count || 0).toString(),
-        change: '+8',
-        changeType: 'increase' as const,
-        icon: PhotoIcon,
-        color: 'from-emerald-500 via-green-500 to-teal-500',
-        iconBg: 'from-emerald-400 to-green-600',
-        glowColor: 'shadow-emerald-500/30',
-        description: 'JPG, PNG, GIF files'
-    },
-    {
-        name: 'Videos & Docs',
-        value: (((mediaStats.data.byType?.video?.count || 0) + (mediaStats.data.byType?.document?.count || 0))).toString(),
-        change: '+3',
-        changeType: 'increase' as const,
-        icon: DocumentIcon,
-        color: 'from-purple-500 via-pink-500 to-rose-500',
-        iconBg: 'from-purple-400 to-pink-600',
-        glowColor: 'shadow-purple-500/30',
-        description: 'MP4, PDF files'
+  // Overview cards: show stats for all folders if 'All Folders' is selected
+  const statsData = (mediaStats && mediaStats.data) ? (() => {
+    if (!currentFolder || currentFolder === '') {
+      // All Folders: aggregate stats
+      return [
+        {
+          name: 'Total Files',
+          value: mediaStats.data.totalFiles?.toString() || '0',
+          change: '+12',
+          changeType: 'increase' as const,
+          icon: FolderIcon,
+          color: 'from-blue-500 via-cyan-500 to-sky-500',
+          iconBg: 'from-blue-400 to-cyan-600',
+          glowColor: 'shadow-blue-500/30',
+          description: 'Files in library'
+        },
+        {
+          name: 'Total Storage',
+          value: mediaStats.data.totalSizeFormatted || '0 Bytes',
+          change: '+2.5GB',
+          changeType: 'increase' as const,
+          icon: SparklesIcon,
+          color: 'from-yellow-500 via-orange-500 to-red-500',
+          iconBg: 'from-yellow-400 to-orange-600',
+          glowColor: 'shadow-yellow-500/30',
+          description: 'Storage used'
+        },
+        {
+          name: 'Images',
+          value: (mediaStats.data.byType?.image?.count || 0).toString(),
+          change: '+8',
+          changeType: 'increase' as const,
+          icon: PhotoIcon,
+          color: 'from-emerald-500 via-green-500 to-teal-500',
+          iconBg: 'from-emerald-400 to-green-600',
+          glowColor: 'shadow-emerald-500/30',
+          description: 'JPG, PNG, GIF files'
+        },
+        {
+          name: 'Videos & Docs',
+          value: (((mediaStats.data.byType?.video?.count || 0) + (mediaStats.data.byType?.document?.count || 0))).toString(),
+          change: '+3',
+          changeType: 'increase' as const,
+          icon: DocumentIcon,
+          color: 'from-purple-500 via-pink-500 to-rose-500',
+          iconBg: 'from-purple-400 to-pink-600',
+          glowColor: 'shadow-purple-500/30',
+          description: 'MP4, PDF files'
+        }
+      ];
+    } else {
+      // Specific folder: filter stats
+      const folderStats = mediaStats.data.byFolder?.[currentFolder] || { count: 0, size: 0, sizeFormatted: '0 Bytes' };
+      // Filter mediaFiles for this folder
+      const files = Array.isArray(mediaFiles) ? mediaFiles.filter(f => f.folder === currentFolder) : [];
+      const imageCount = files.filter(f => f.type === 'image').length;
+      const videoCount = files.filter(f => f.type === 'video').length;
+      const docCount = files.filter(f => f.type === 'document').length;
+      return [
+        {
+          name: 'Total Files',
+          value: folderStats.count.toString(),
+          change: '',
+          changeType: 'increase' as const,
+          icon: FolderIcon,
+          color: 'from-blue-500 via-cyan-500 to-sky-500',
+          iconBg: 'from-blue-400 to-cyan-600',
+          glowColor: 'shadow-blue-500/30',
+          description: `Files in ${currentFolder}`
+        },
+        {
+          name: 'Total Storage',
+          value: folderStats.sizeFormatted || '0 Bytes',
+          change: '',
+          changeType: 'increase' as const,
+          icon: SparklesIcon,
+          color: 'from-yellow-500 via-orange-500 to-red-500',
+          iconBg: 'from-yellow-400 to-orange-600',
+          glowColor: 'shadow-yellow-500/30',
+          description: `Storage used in ${currentFolder}`
+        },
+        {
+          name: 'Images',
+          value: imageCount.toString(),
+          change: '',
+          changeType: 'increase' as const,
+          icon: PhotoIcon,
+          color: 'from-emerald-500 via-green-500 to-teal-500',
+          iconBg: 'from-emerald-400 to-green-600',
+          glowColor: 'shadow-emerald-500/30',
+          description: 'JPG, PNG, GIF files'
+        },
+        {
+          name: 'Videos & Docs',
+          value: (videoCount + docCount).toString(),
+          change: '',
+          changeType: 'increase' as const,
+          icon: DocumentIcon,
+          color: 'from-purple-500 via-pink-500 to-rose-500',
+          iconBg: 'from-purple-400 to-pink-600',
+          glowColor: 'shadow-purple-500/30',
+          description: 'MP4, PDF files'
+        }
+      ];
     }
-  ] : [];
+  })() : [];
 
   return (
     <AdminLayout>
@@ -381,7 +465,16 @@ export default function MediaPage() {
                   {/* Folder Filter */}
                   <select
                     value={currentFolder}
-                    onChange={(e) => setCurrentFolder(e.target.value)}
+                    onChange={e => {
+                      const folder = e.target.value;
+                      setCurrentFolder(folder);
+                      if (!folder) {
+                        // All Folders: omit folder param
+                        fetchMediaFiles();
+                      } else {
+                        fetchMediaFiles({ folder });
+                      }
+                    }}
                     className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                   >
                     {folderOptions.map(option => (
@@ -628,6 +721,44 @@ export default function MediaPage() {
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Upload Files</h2>
+                {/* Folder Dropdown and Create Folder */}
+                <div className="flex items-center space-x-4 mb-6">
+                  <select
+                    value={currentFolder || ''}
+                    onChange={e => setCurrentFolder(e.target.value)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    {folderOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition"
+                    onClick={async () => {
+                      const folderName = prompt('Enter new folder name:');
+                      if (!folderName) return;
+                      try {
+                        const res = await mediaApi.createFolder(folderName);
+                        if (res.success) {
+                          // Refresh folder list and select new folder
+                          const folders = await mediaApi.listFolders();
+                          setFolderOptions([
+                            { value: '', label: 'All Folders' },
+                            ...folders.map(f => ({ value: f, label: f.charAt(0).toUpperCase() + f.slice(1) }))
+                          ]);
+                          setCurrentFolder(folderName);
+                          alert('Folder created!');
+                        }
+                      } catch (err) {
+                        alert('Failed to create folder.');
+                      }
+                    }}
+                  >
+                    + Create Folder
+                  </button>
+                </div>
                 <div 
                   onDragEnter={handleDrag}
                   onDragOver={handleDrag}

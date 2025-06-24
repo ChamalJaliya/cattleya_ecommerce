@@ -113,9 +113,9 @@ export class ProductsController {
   }
 
   @Get('media')
-  @ApiOperation({ summary: 'List all media files' })
+  @ApiOperation({ summary: 'List all media files (scalable, supports any top-level folder)' })
   @ApiQuery({ name: 'type', required: false, description: 'Filter by file type' })
-  @ApiQuery({ name: 'folder', required: false, description: 'Filter by folder' })
+  @ApiQuery({ name: 'folder', required: false, description: 'Filter by folder (top-level, e.g., media, products, etc.)' })
   @ApiQuery({ name: 'search', required: false, description: 'Search by filename' })
   @ApiResponse({ status: 200, description: 'Media files retrieved successfully', type: [MediaFileDto] })
   async listMedia(
@@ -124,292 +124,24 @@ export class ProductsController {
     @Query('search') search?: string,
   ): Promise<MediaFile[]> {
     let files: MediaFile[];
-
-    if (folder) {
-      files = await this.s3Service.listFilesByFolder(folder);
-    } else if (type) {
-      files = await this.s3Service.listFilesByType(type);
-    } else {
-      files = await this.s3Service.listFiles();
+    // Use the folder as prefix if provided, otherwise use bucket root ('')
+    const prefix = folder ? folder : '';
+    files = await this.s3Service.listFiles(prefix);
+    if (type) {
+      files = files.filter(file => file.type === type);
     }
-
     if (search) {
       files = files.filter(file => 
         file.name.toLowerCase().includes(search.toLowerCase())
       );
     }
-
     return files;
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get product by ID' })
-  @ApiParam({ name: 'id', description: 'Product ID', example: '507f1f77bcf86cd799439011' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Product found',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { $ref: '#/components/schemas/ProductResponseDto' }
-      }
-    }
-  })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  async findOne(@Param('id') id: string) {
-    try {
-      // For now, return mock data since we're focusing on compilation
-      return {
-        success: true,
-        data: {
-          id,
-          name: 'Mock Product',
-          slug: 'mock-product',
-          description: 'This is a mock product',
-          basePrice: 29.99,
-          stockQuantity: 10,
-          isActive: true,
-          isFeatured: false,
-          averageRating: 4.5,
-          reviewCount: 0,
-          category: {
-            id: 'mock-category-id',
-            name: 'Mock Category',
-            slug: 'mock-category'
-          },
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Product not found' },
-        HttpStatus.NOT_FOUND
-      );
-    }
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new product' })
-  @ApiBody({ type: CreateProductDto })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Product created successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { $ref: '#/components/schemas/ProductResponseDto' },
-        message: { type: 'string' }
-      }
-    }
-  })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  async create(@Body() createProductDto: CreateProductDto) {
-    try {
-      const productResponse = await this.createProductUseCase.execute(createProductDto);
-      return {
-        success: true,
-        data: productResponse,
-        message: 'Product created successfully'
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to create product', error: error.message },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Update product' })
-  @ApiParam({ name: 'id', description: 'Product ID', example: '507f1f77bcf86cd799439011' })
-  @ApiBody({ type: UpdateProductDto })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Product updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { $ref: '#/components/schemas/ProductResponseDto' },
-        message: { type: 'string' }
-      }
-    }
-  })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    try {
-      // Mock implementation for now
-      return {
-        success: true,
-        data: { id, ...updateProductDto },
-        message: 'Product updated successfully'
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to update product', error: error.message },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete product' })
-  @ApiParam({ name: 'id', description: 'Product ID', example: '507f1f77bcf86cd799439011' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Product deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' }
-      }
-    }
-  })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  async remove(@Param('id') id: string) {
-    try {
-      // Mock implementation for now
-      return {
-        success: true,
-        message: 'Product deleted successfully'
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to delete product', error: error.message },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-  }
-
-  @Get('search/:term')
-  @ApiOperation({ summary: 'Search products by term' })
-  @ApiParam({ name: 'term', description: 'Search term', example: 'cattleya purple' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Maximum search results (default: 20)' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Search results retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { type: 'array', items: { $ref: '#/components/schemas/ProductResponseDto' } },
-        meta: {
-          type: 'object',
-          properties: {
-            searchTerm: { type: 'string' },
-            total: { type: 'number' }
-          }
-        }
-      }
-    }
-  })
-  async search(@Param('term') term: string, @Query('limit') limit?: number) {
-    try {
-      const products = await this.getProductsUseCase.search(term, limit || 20);
-
-      return {
-        success: true,
-        data: products,
-        meta: {
-          searchTerm: term,
-          total: products.length
-        }
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Search failed', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Post('media/upload')
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  }))
-  @ApiOperation({ summary: 'Upload a single media file' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'File to upload',
-        },
-        folder: {
-          type: 'string',
-          description: 'Folder to upload to (optional)',
-          example: 'products',
-        },
-        metadata: {
-          type: 'string',
-          description: 'JSON metadata (optional)',
-          example: '{"uploadedBy": "admin", "category": "product"}',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 201, description: 'File uploaded successfully', type: UploadResultDto })
-  async uploadMedia(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('folder') folder?: string,
-    @Body('metadata') metadata?: string,
-  ): Promise<UploadResult> {
-    if (!file) {
-      throw new HttpException('No file provided', HttpStatus.BAD_REQUEST);
-    }
-
-    const parsedMetadata = metadata ? JSON.parse(metadata) : {};
-    return this.s3Service.uploadFile(file, folder || 'media', parsedMetadata);
-  }
-
-  @Post('media/upload-multiple')
-  @UseInterceptors(FilesInterceptor('files', 10))
-  @ApiOperation({ summary: 'Upload multiple media files' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        files: {
-          type: 'array',
-          items: {
-            type: 'string',
-            format: 'binary',
-          },
-          description: 'Files to upload',
-        },
-        folder: {
-          type: 'string',
-          description: 'Folder to upload to (optional)',
-          example: 'products',
-        },
-        metadata: {
-          type: 'string',
-          description: 'JSON metadata (optional)',
-          example: '{"uploadedBy": "admin", "category": "product"}',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 201, description: 'Files uploaded successfully', type: [UploadResultDto] })
-  async uploadMultipleMedia(
-    @UploadedFiles() files: Express.Multer.File[],
-    @Body('folder') folder?: string,
-    @Body('metadata') metadata?: string,
-  ): Promise<UploadResult[]> {
-    if (!files || files.length === 0) {
-      throw new HttpException('No files provided', HttpStatus.BAD_REQUEST);
-    }
-
-    const parsedMetadata = metadata ? JSON.parse(metadata) : {};
-    return this.s3Service.uploadMultipleFiles(files, folder || 'media', parsedMetadata);
+  @Get('media/folders')
+  async listFolders(@Query('prefix') prefix?: string) {
+    // List folders at the given prefix, or root if not provided
+    return this.s3Service.listFolders(prefix || '');
   }
 
   @Get('media/stats')
@@ -694,5 +426,25 @@ export class ProductsController {
       return this.s3Service.listFilesByFolder(`sharables/${type}`);
     }
     return this.s3Service.listFiles('sharables');
+  }
+
+  @Post('media/folders')
+  async createFolder(@Body('folderName') folderName: string) {
+    if (!folderName || /[\\:*?"<>|]/.test(folderName)) {
+      throw new HttpException('Invalid folder name', HttpStatus.BAD_REQUEST);
+    }
+    return this.s3Service.createFolder(folderName);
+  }
+
+  @Get('files')
+  @ApiOperation({ summary: 'List all files in a specific folder (dynamic, any top-level folder)' })
+  @ApiQuery({ name: 'folder', required: true, description: 'Top-level folder name (e.g., media, products, etc.)' })
+  @ApiResponse({ status: 200, description: 'Files retrieved successfully', type: [MediaFileDto] })
+  async listFilesInFolder(@Query('folder') folder: string): Promise<MediaFile[]> {
+    if (!folder) {
+      throw new HttpException('Folder query parameter is required', HttpStatus.BAD_REQUEST);
+    }
+    // List all files under the given folder (e.g., 'media', 'products', etc.)
+    return this.s3Service.listFiles(folder);
   }
 } 
