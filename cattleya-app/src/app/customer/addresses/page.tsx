@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   MapPinIcon,
@@ -13,64 +13,16 @@ import {
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import CustomerLayout from '@/shared/components/layouts/CustomerLayout';
-
-// Mock addresses data
-const mockAddresses = [
-  {
-    id: '1',
-    type: 'shipping',
-    isDefault: true,
-    label: 'Home',
-    firstName: 'John',
-    lastName: 'Smith',
-    company: '',
-    street: '123 Garden Street',
-    apartment: 'Apt 4B',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10001',
-    country: 'United States',
-    phone: '+1 (555) 123-4567'
-  },
-  {
-    id: '2',
-    type: 'billing',
-    isDefault: true,
-    label: 'Home',
-    firstName: 'John',
-    lastName: 'Smith',
-    company: '',
-    street: '123 Garden Street',
-    apartment: 'Apt 4B',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10001',
-    country: 'United States',
-    phone: '+1 (555) 123-4567'
-  },
-  {
-    id: '3',
-    type: 'shipping',
-    isDefault: false,
-    label: 'Office',
-    firstName: 'John',
-    lastName: 'Smith',
-    company: 'Tech Solutions Inc.',
-    street: '456 Business Ave',
-    apartment: 'Suite 200',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10002',
-    country: 'United States',
-    phone: '+1 (555) 987-6543'
-  }
-];
+import { addressesApi, Address, CreateAddressDto, UpdateAddressDto } from '@/core/infrastructure/api/addressesApi';
 
 export default function CustomerAddressesPage() {
-  const [addresses, setAddresses] = useState(mockAddresses);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<CreateAddressDto>({
     type: 'shipping',
     isDefault: false,
     label: '',
@@ -86,6 +38,24 @@ export default function CustomerAddressesPage() {
     phone: ''
   });
 
+  // Load addresses on component mount
+  useEffect(() => {
+    loadAddresses();
+  }, []);
+
+  const loadAddresses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await addressesApi.getAddresses();
+      setAddresses(response.data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load addresses');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -93,56 +63,90 @@ export default function CustomerAddressesPage() {
     }));
   };
 
-  const handleSave = () => {
-    if (editingId) {
-      // Update existing address
-      setAddresses(prev => prev.map(addr => 
-        addr.id === editingId ? { ...formData, id: editingId } : addr
-      ));
-      setEditingId(null);
-    } else {
-      // Add new address
-      const newAddress = {
-        ...formData,
-        id: Date.now().toString()
-      };
-      setAddresses(prev => [...prev, newAddress]);
-      setShowAddForm(false);
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      if (editingId) {
+        // Update existing address
+        const updateData: UpdateAddressDto = { ...formData };
+        await addressesApi.updateAddress(editingId, updateData);
+        setEditingId(null);
+      } else {
+        // Add new address
+        await addressesApi.createAddress(formData);
+        setShowAddForm(false);
+      }
+      
+      // Reload addresses
+      await loadAddresses();
+      
+      // Reset form
+      setFormData({
+        type: 'shipping',
+        isDefault: false,
+        label: '',
+        firstName: '',
+        lastName: '',
+        company: '',
+        street: '',
+        apartment: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'United States',
+        phone: ''
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save address');
+    } finally {
+      setSaving(false);
     }
-    
-    // Reset form
-    setFormData({
-      type: 'shipping',
-      isDefault: false,
-      label: '',
-      firstName: '',
-      lastName: '',
-      company: '',
-      street: '',
-      apartment: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: 'United States',
-      phone: ''
-    });
   };
 
-  const handleEdit = (address: typeof mockAddresses[0]) => {
-    setFormData(address);
+  const handleEdit = (address: Address) => {
+    setFormData({
+      type: address.type,
+      isDefault: address.isDefault,
+      label: address.label || '',
+      firstName: address.firstName,
+      lastName: address.lastName,
+      company: address.company || '',
+      street: address.street,
+      apartment: address.apartment || '',
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      country: address.country,
+      phone: address.phone || ''
+    });
     setEditingId(address.id);
     setShowAddForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    setAddresses(prev => prev.filter(addr => addr.id !== id));
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this address?')) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await addressesApi.deleteAddress(id);
+      await loadAddresses();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete address');
+    }
   };
 
-  const handleSetDefault = (id: string, type: string) => {
-    setAddresses(prev => prev.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id && addr.type === type ? true : addr.type === type ? false : addr.isDefault
-    })));
+  const handleSetDefault = async (id: string) => {
+    try {
+      setError(null);
+      await addressesApi.setDefaultAddress(id);
+      await loadAddresses();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set default address');
+    }
   };
 
   const handleCancel = () => {
@@ -167,6 +171,43 @@ export default function CustomerAddressesPage() {
 
   const shippingAddresses = addresses.filter(addr => addr.type === 'shipping');
   const billingAddresses = addresses.filter(addr => addr.type === 'billing');
+
+  // Loading state
+  if (loading) {
+    return (
+      <CustomerLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading addresses...</p>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <CustomerLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MapPinIcon className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error loading addresses</h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={loadAddresses}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
+  }
 
   const AddressForm = () => (
     <motion.div
@@ -200,23 +241,26 @@ export default function CustomerAddressesPage() {
                 onChange={(e) => handleInputChange('type', e.target.value)}
                 className="sr-only"
               />
-              <div className={`w-full p-4 rounded-xl border-2 transition-all duration-300 ${
+              <div className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
                 formData.type === 'shipping'
-                  ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg shadow-purple-500/20'
-                  : 'border-gray-200 bg-white/50 backdrop-blur-sm hover:border-purple-300'
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-gray-200 hover:border-purple-300'
               }`}>
                 <div className="flex items-center space-x-3">
-                  <HomeIcon className={`w-5 h-5 ${formData.type === 'shipping' ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <HomeIcon className={`w-5 h-5 ${
+                    formData.type === 'shipping' ? 'text-purple-600' : 'text-gray-400'
+                  }`} />
                   <div>
-                    <p className={`font-medium ${formData.type === 'shipping' ? 'text-purple-600' : 'text-gray-700'}`}>
-                      Shipping Address
-                    </p>
-                    <p className="text-sm text-gray-500">For deliveries</p>
+                    <div className={`font-semibold ${
+                      formData.type === 'shipping' ? 'text-purple-900' : 'text-gray-700'
+                    }`}>Shipping</div>
+                    <div className={`text-sm ${
+                      formData.type === 'shipping' ? 'text-purple-600' : 'text-gray-500'
+                    }`}>For deliveries</div>
                   </div>
                 </div>
               </div>
             </label>
-            
             <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
@@ -226,18 +270,22 @@ export default function CustomerAddressesPage() {
                 onChange={(e) => handleInputChange('type', e.target.value)}
                 className="sr-only"
               />
-              <div className={`w-full p-4 rounded-xl border-2 transition-all duration-300 ${
+              <div className={`w-full p-4 rounded-xl border-2 transition-all duration-200 ${
                 formData.type === 'billing'
-                  ? 'border-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg shadow-purple-500/20'
-                  : 'border-gray-200 bg-white/50 backdrop-blur-sm hover:border-purple-300'
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-gray-200 hover:border-purple-300'
               }`}>
                 <div className="flex items-center space-x-3">
-                  <BuildingOfficeIcon className={`w-5 h-5 ${formData.type === 'billing' ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <BuildingOfficeIcon className={`w-5 h-5 ${
+                    formData.type === 'billing' ? 'text-purple-600' : 'text-gray-400'
+                  }`} />
                   <div>
-                    <p className={`font-medium ${formData.type === 'billing' ? 'text-purple-600' : 'text-gray-700'}`}>
-                      Billing Address
-                    </p>
-                    <p className="text-sm text-gray-500">For payments</p>
+                    <div className={`font-semibold ${
+                      formData.type === 'billing' ? 'text-purple-900' : 'text-gray-700'
+                    }`}>Billing</div>
+                    <div className={`text-sm ${
+                      formData.type === 'billing' ? 'text-purple-600' : 'text-gray-500'
+                    }`}>For payments</div>
                   </div>
                 </div>
               </div>
@@ -245,9 +293,23 @@ export default function CustomerAddressesPage() {
           </div>
         </div>
 
-        {/* Address Label */}
+        {/* Default Address Toggle */}
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            id="isDefault"
+            checked={formData.isDefault}
+            onChange={(e) => handleInputChange('isDefault', e.target.checked)}
+            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+          />
+          <label htmlFor="isDefault" className="text-sm font-medium text-gray-700">
+            Set as default {formData.type} address
+          </label>
+        </div>
+
+        {/* Label */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Address Label</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Label (Optional)</label>
           <input
             type="text"
             value={formData.label}
@@ -286,7 +348,6 @@ export default function CustomerAddressesPage() {
             type="text"
             value={formData.company}
             onChange={(e) => handleInputChange('company', e.target.value)}
-            placeholder="Company name"
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
           />
         </div>
@@ -298,7 +359,6 @@ export default function CustomerAddressesPage() {
             type="text"
             value={formData.street}
             onChange={(e) => handleInputChange('street', e.target.value)}
-            placeholder="Street address"
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
           />
         </div>
@@ -310,7 +370,6 @@ export default function CustomerAddressesPage() {
             type="text"
             value={formData.apartment}
             onChange={(e) => handleInputChange('apartment', e.target.value)}
-            placeholder="Apartment, suite, unit, etc."
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
           />
         </div>
@@ -349,140 +408,130 @@ export default function CustomerAddressesPage() {
         {/* Country */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-          <select
+          <input
+            type="text"
             value={formData.country}
             onChange={(e) => handleInputChange('country', e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
-          >
-            <option value="United States">United States</option>
-            <option value="Canada">Canada</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="Australia">Australia</option>
-          </select>
+          />
         </div>
 
         {/* Phone */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number (Optional)</label>
           <input
             type="tel"
             value={formData.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
-            placeholder="+1 (555) 123-4567"
             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
           />
         </div>
 
-        {/* Default Address */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="isDefault"
-            checked={formData.isDefault}
-            onChange={(e) => handleInputChange('isDefault', e.target.checked)}
-            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-          />
-          <label htmlFor="isDefault" className="ml-2 text-sm text-gray-700">
-            Set as default {formData.type} address
-          </label>
-        </div>
-
-        {/* Save Button */}
+        {/* Action Buttons */}
         <div className="flex items-center justify-end space-x-4 pt-4">
           <button
             onClick={handleCancel}
-            className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200"
+            disabled={saving}
+            className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
+            disabled={saving}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200 disabled:opacity-50 flex items-center space-x-2"
           >
-            {editingId ? 'Update Address' : 'Add Address'}
+            {saving && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            <span>{editingId ? 'Update Address' : 'Add Address'}</span>
           </button>
         </div>
       </div>
     </motion.div>
   );
 
-  const AddressCard = ({ address, index }: { address: typeof mockAddresses[0], index: number }) => (
+  const AddressCard = ({ address, index }: { address: Address, index: number }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+      className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 relative"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-            {address.type === 'shipping' ? (
-              <HomeIcon className="w-5 h-5 text-purple-600" />
-            ) : (
-              <BuildingOfficeIcon className="w-5 h-5 text-purple-600" />
-            )}
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">{address.label}</h3>
-            <p className="text-sm text-gray-600 capitalize">{address.type} Address</p>
-          </div>
+      {/* Default Badge */}
+      {address.isDefault && (
+        <div className="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+          <CheckIcon className="w-3 h-3" />
+          Default
         </div>
-        
-        <div className="flex items-center space-x-2">
-          {address.isDefault && (
-            <span className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 text-xs px-2 py-1 rounded-full border border-green-200">
-              Default
-            </span>
+      )}
+
+      {/* Address Type Icon */}
+      <div className="flex items-center space-x-3 mb-4">
+        {address.type === 'shipping' ? (
+          <HomeIcon className="w-6 h-6 text-purple-600" />
+        ) : (
+          <BuildingOfficeIcon className="w-6 h-6 text-purple-600" />
+        )}
+        <div>
+          <h3 className="font-semibold text-gray-900 capitalize">{address.type} Address</h3>
+          {address.label && (
+            <p className="text-sm text-gray-500">{address.label}</p>
           )}
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => handleEdit(address)}
-              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
-            >
-              <PencilIcon className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleDelete(address.id)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
 
-      <div className="space-y-2 mb-4">
-        <p className="text-gray-900">
+      {/* Address Details */}
+      <div className="space-y-2 text-gray-700">
+        <p className="font-medium">
           {address.firstName} {address.lastName}
         </p>
         {address.company && (
-          <p className="text-gray-600">{address.company}</p>
+          <p className="text-sm">{address.company}</p>
         )}
-        <p className="text-gray-600">
-          {address.street}
-          {address.apartment && `, ${address.apartment}`}
-        </p>
-        <p className="text-gray-600">
-          {address.city}, {address.state} {address.zipCode}
-        </p>
-        <p className="text-gray-600">{address.country}</p>
-        <p className="text-gray-600">{address.phone}</p>
+        <p>{address.street}</p>
+        {address.apartment && (
+          <p>{address.apartment}</p>
+        )}
+        <p>{address.city}, {address.state} {address.zipCode}</p>
+        <p>{address.country}</p>
+        {address.phone && (
+          <p className="text-sm text-gray-600">{address.phone}</p>
+        )}
       </div>
 
-      {!address.isDefault && (
+      {/* Action Buttons */}
+      <div className="flex items-center justify-end space-x-2 mt-6 pt-4 border-t border-gray-100">
+        {!address.isDefault && (
+          <button
+            onClick={() => handleSetDefault(address.id)}
+            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+            title="Set as default"
+          >
+            <CheckIcon className="w-4 h-4" />
+          </button>
+        )}
         <button
-          onClick={() => handleSetDefault(address.id, address.type)}
-          className="w-full py-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 text-purple-700 rounded-xl hover:shadow-md transition-all duration-200"
+          onClick={() => handleEdit(address)}
+          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+          title="Edit address"
         >
-          Set as Default
+          <PencilIcon className="w-4 h-4" />
         </button>
-      )}
+        <button
+          onClick={() => handleDelete(address.id)}
+          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+          title="Delete address"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </button>
+      </div>
     </motion.div>
   );
 
   return (
     <CustomerLayout>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -494,7 +543,7 @@ export default function CustomerAddressesPage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                  Address Management
+                  My Addresses
                 </h1>
                 <p className="text-gray-600">Manage your shipping and billing addresses</p>
               </div>

@@ -32,108 +32,14 @@ import {
   ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
-
-// Mock orders data
-const mockOrders = [
-  {
-    id: 'ORD-001',
-    customer: {
-      name: 'John Smith',
-      email: 'john@example.com',
-      avatar: 'JS'
-    },
-    items: [
-      { name: 'Cattleya Orchid Premium', quantity: 1, price: 149.99 }
-    ],
-    total: 149.99,
-    status: 'delivered',
-    paymentStatus: 'paid',
-    shippingAddress: '123 Garden St, New York, NY 10001',
-    orderDate: '2024-01-15',
-    deliveryDate: '2024-01-18',
-    trackingNumber: 'TRK123456789'
-  },
-  {
-    id: 'ORD-002',
-    customer: {
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      avatar: 'SJ'
-    },
-    items: [
-      { name: 'Orchid Care Kit', quantity: 1, price: 89.99 },
-      { name: 'Premium Potting Mix', quantity: 2, price: 24.99 }
-    ],
-    total: 139.97,
-    status: 'shipped',
-    paymentStatus: 'paid',
-    shippingAddress: '456 Bloom Ave, Los Angeles, CA 90210',
-    orderDate: '2024-01-14',
-    deliveryDate: '2024-01-17',
-    trackingNumber: 'TRK987654321'
-  },
-  {
-    id: 'ORD-003',
-    customer: {
-      name: 'Mike Wilson',
-      email: 'mike@example.com',
-      avatar: 'MW'
-    },
-    items: [
-      { name: 'Rare Cattleya Collection', quantity: 1, price: 299.99 }
-    ],
-    total: 299.99,
-    status: 'processing',
-    paymentStatus: 'paid',
-    shippingAddress: '789 Flower Rd, Miami, FL 33101',
-    orderDate: '2024-01-13',
-    deliveryDate: '2024-01-16',
-    trackingNumber: null
-  },
-  {
-    id: 'ORD-004',
-    customer: {
-      name: 'Emily Davis',
-      email: 'emily@example.com',
-      avatar: 'ED'
-    },
-    items: [
-      { name: 'Beginner Orchid Set', quantity: 1, price: 79.99 },
-      { name: 'Orchid Fertilizer Pro', quantity: 1, price: 29.99 }
-    ],
-    total: 109.98,
-    status: 'pending',
-    paymentStatus: 'pending',
-    shippingAddress: '321 Plant St, Seattle, WA 98101',
-    orderDate: '2024-01-12',
-    deliveryDate: null,
-    trackingNumber: null
-  },
-  {
-    id: 'ORD-005',
-    customer: {
-      name: 'Robert Brown',
-      email: 'robert@example.com',
-      avatar: 'RB'
-    },
-    items: [
-      { name: 'Cattleya Orchid Premium', quantity: 2, price: 149.99 }
-    ],
-    total: 299.98,
-    status: 'cancelled',
-    paymentStatus: 'refunded',
-    shippingAddress: '654 Garden Way, Chicago, IL 60601',
-    orderDate: '2024-01-11',
-    deliveryDate: null,
-    trackingNumber: null
-  }
-];
+import { ordersApi } from '@/core/infrastructure/api/orders.api';
+import OrderViewModal from '@/shared/components/OrderViewModal';
 
 const statusOptions = ['All Status', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const paymentStatusOptions = ['All Payment', 'pending', 'paid', 'refunded'];
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('All Payment');
@@ -141,26 +47,44 @@ export default function OrdersPage() {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
   const itemsPerPage = 12;
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewOrder, setViewOrder] = useState<any>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === 'All Status' || order.status === selectedStatus;
-    const matchesPayment = selectedPaymentStatus === 'All Payment' || order.paymentStatus === selectedPaymentStatus;
-    
-    return matchesSearch && matchesStatus && matchesPayment;
-  });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-
+  // Fetch orders from backend
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    async function fetchOrders() {
+      setLoading(true);
+      setError(null);
+      try {
+        const query: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+        };
+        if (searchTerm) query.search = searchTerm;
+        if (selectedStatus !== 'All Status') query.status = selectedStatus;
+        if (selectedPaymentStatus !== 'All Payment') query.paymentStatus = selectedPaymentStatus;
+        const res = await ordersApi.getOrders(query);
+        setOrders(res.data.items || []);
+        setTotalPages(res.data.totalPages || 1);
+        setTotalOrders(res.data.total || 0);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load orders');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOrders();
+  }, [searchTerm, selectedStatus, selectedPaymentStatus, currentPage]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -265,6 +189,19 @@ export default function OrdersPage() {
       description: 'Orders in transit'
     }
   ];
+
+  const handleViewOrder = async (orderId: string) => {
+    setViewLoading(true);
+    setViewModalOpen(true);
+    try {
+      const res = await ordersApi.getOrder(orderId);
+      setViewOrder(res.data);
+    } catch (err) {
+      setViewOrder(null);
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -466,7 +403,7 @@ export default function OrdersPage() {
             {viewMode === 'cards' ? (
               /* Card View */
               <div className="space-y-6 min-h-[600px]">
-              {paginatedOrders.map((order, index) => (
+              {orders.map((order, index) => (
                 <motion.div
                   key={order.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -529,7 +466,7 @@ export default function OrdersPage() {
 
                       {/* Action Buttons */}
                       <div className="flex items-center space-x-3">
-                        <button className="group/action relative overflow-hidden">
+                        <button className="group/action relative overflow-hidden" onClick={() => handleViewOrder(order.id)}>
                           <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
                           <div className="relative p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                             <EyeIcon className="w-5 h-5" />
@@ -559,12 +496,12 @@ export default function OrdersPage() {
                         <span className="text-sm font-medium text-gray-700">Order Items:</span>
                       </div>
                       <div className="space-y-1">
-                        {order.items.map((item, itemIndex) => (
+                        {order.items.map((item: any, itemIndex: any) => (
                           <div key={itemIndex} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
-                            <span className="text-gray-900">{item.name}</span>
+                            <span className="text-gray-900">{item.name || item.productName}</span>
                             <div className="flex items-center space-x-4">
                               <span className="text-gray-600">Qty: {item.quantity}</span>
-                              <span className="font-medium text-gray-900">${item.price.toFixed(2)}</span>
+                              <span className="font-medium text-gray-900">${item.price?.toFixed(2)}</span>
                             </div>
                           </div>
                         ))}
@@ -609,7 +546,7 @@ export default function OrdersPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white/50 backdrop-blur-sm divide-y divide-gray-200">
-                      {paginatedOrders.map((order, index) => (
+                      {orders.map((order, index) => (
                         <motion.tr
                           key={order.id}
                           initial={{ opacity: 0, x: -20 }}
@@ -641,9 +578,9 @@ export default function OrdersPage() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-gray-900">
-                              {order.items.map((item, idx) => (
+                              {order.items.map((item: any, idx: any) => (
                                 <div key={idx} className="mb-1 last:mb-0">
-                                  <span className="font-medium">{item.quantity}x</span> {item.name}
+                                  <span className="font-medium">{item.quantity}x</span> {item.name || item.productName}
                                 </div>
                               ))}
                             </div>
@@ -680,7 +617,7 @@ export default function OrdersPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center space-x-2">
-                              <button className="group/action relative overflow-hidden">
+                              <button className="group/action relative overflow-hidden" onClick={() => handleViewOrder(order.id)}>
                                 <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
                                 <div className="relative p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                                   <EyeIcon className="w-4 h-4" />
@@ -713,7 +650,7 @@ export default function OrdersPage() {
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && filteredOrders.length > 0 && (
+          {totalPages > 1 && orders.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -723,14 +660,14 @@ export default function OrdersPage() {
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <span>Showing</span>
                 <span className="font-medium text-gray-900">
-                  {Math.min(startIndex + 1, filteredOrders.length)}
+                  {Math.min(currentPage * itemsPerPage - itemsPerPage + 1, totalOrders)}
                 </span>
                 <span>to</span>
                 <span className="font-medium text-gray-900">
-                  {Math.min(startIndex + itemsPerPage, filteredOrders.length)}
+                  {Math.min(currentPage * itemsPerPage, totalOrders)}
                 </span>
                 <span>of</span>
-                <span className="font-medium text-gray-900">{filteredOrders.length}</span>
+                <span className="font-medium text-gray-900">{totalOrders}</span>
                 <span>orders</span>
               </div>
               
@@ -780,7 +717,7 @@ export default function OrdersPage() {
           )}
 
           {/* Enhanced Empty State */}
-          {filteredOrders.length === 0 && (
+          {orders.length === 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -798,6 +735,7 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
+      <OrderViewModal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} order={viewOrder} loading={viewLoading} />
     </AdminLayout>
   );
 } 

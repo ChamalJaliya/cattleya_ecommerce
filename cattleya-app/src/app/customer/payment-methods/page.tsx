@@ -387,11 +387,13 @@ export default function CustomerPaymentMethodsPage() {
       className="relative group w-full max-w-sm mx-auto h-60"
     >
       <div
-        className={`relative w-full h-full rounded-2xl shadow-xl transition-all duration-500 transform-style-3d group-hover:transform-gpu group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/30 overflow-hidden flex flex-col justify-between p-6 bg-gradient-to-br ${getBrandColor(method.brand)} text-white`}
+        className={`relative w-full h-full rounded-2xl shadow-xl transition-all duration-500 transform-style-preserve-3d group-hover:transform-gpu group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-purple-500/30 overflow-hidden flex flex-col justify-between p-6 bg-gradient-to-br ${getBrandColor(method.brand)} text-white`}
       >
         {/* Holographic Effect */}
-        <div className="absolute inset-0 w-full h-full bg-blend-overlay opacity-0 group-hover:opacity-10 transition-opacity duration-500"
-          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3e%3cdefs%3e%3clinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3e%3cstop offset='0%25' style='stop-color:%23ff00ff;stop-opacity:0.2' /%3e%3cstop offset='100%25' style='stop-color:%2300ffff;stop-opacity:0.2' /%3e%3c/linearGradient%3e%3c/defs%3e%3crect fill='url(%23g)' width='100' height='100'/%3e%3c/svg%3e")` }}>
+        <div 
+          className="absolute inset-0 w-full h-full bg-blend-overlay opacity-0 group-hover:opacity-10 transition-opacity duration-500"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3e%3cdefs%3e%3clinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3e%3cstop offset='0%25' style='stop-color:%23ff00ff;stop-opacity:0.2' /%3e%3cstop offset='100%25' style='stop-color:%2300ffff;stop-opacity:0.2' /%3e%3c/linearGradient%3e%3c/defs%3e%3crect fill='url(%23g)' width='100' height='100'/%3e%3c/svg%3e")` }}
+        >
         </div>
 
         {/* Card Content */}
@@ -404,7 +406,7 @@ export default function CustomerPaymentMethodsPage() {
             <div className="w-8 h-5 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-sm shadow-inner" />
           </div>
         </div>
-        
+
         <div className="relative z-10 text-center">
           <div className="font-mono text-xl tracking-widest">
             {'•••• •••• •••• ' + method.last4}
@@ -425,14 +427,23 @@ export default function CustomerPaymentMethodsPage() {
 
       {/* Action buttons overlay */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <button onClick={() => handleEdit(method)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110">
+        <button 
+          onClick={() => handleEdit(method)} 
+          className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110"
+        >
           <PencilIcon className="w-5 h-5" />
         </button>
-        <button onClick={() => handleDelete(method.id)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110">
+        <button 
+          onClick={() => handleDelete(method.id)} 
+          className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110"
+        >
           <TrashIcon className="w-5 h-5" />
         </button>
         {!method.isDefault && (
-          <button onClick={() => handleSetDefault(method.id)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110">
+          <button 
+            onClick={() => handleSetDefault(method.id)} 
+            className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white transform hover:scale-110"
+          >
             <StarIcon className="w-5 h-5" />
           </button>
         )}
@@ -516,9 +527,10 @@ export default function CustomerPaymentMethodsPage() {
               <p className="text-gray-600 mb-6">Add your first payment method to get started</p>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
               >
-                Add Payment Method
+                <PlusIcon className="w-5 h-5" />
+                <span>Add Your First Payment Method</span>
               </button>
             </motion.div>
           )}

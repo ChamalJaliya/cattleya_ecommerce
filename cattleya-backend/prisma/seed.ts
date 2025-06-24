@@ -886,6 +886,47 @@ async function main() {
 
   console.log('✅ Created reviews for all products');
 
+  // Create addresses for each customer
+  for (const customer of customers) {
+    await prisma.address.create({
+      data: {
+        userId: customer.id,
+        type: 'shipping',
+        label: 'Home',
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        company: 'Orchid Lovers Inc.',
+        street: `${100 + Math.floor(Math.random() * 900)} Orchid Lane`,
+        apartment: `Apt ${Math.floor(Math.random() * 20) + 1}`,
+        city: 'Blossom City',
+        state: 'CA',
+        zipCode: '90001',
+        country: 'USA',
+        phone: `+1-555-01${Math.floor(1000 + Math.random() * 9000)}`,
+        isDefault: true,
+      }
+    });
+    await prisma.address.create({
+      data: {
+        userId: customer.id,
+        type: 'billing',
+        label: 'Office',
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        company: 'Orchid Lovers Inc.',
+        street: `${200 + Math.floor(Math.random() * 800)} Petal Avenue`,
+        apartment: `Suite ${Math.floor(Math.random() * 50) + 1}`,
+        city: 'Flora Town',
+        state: 'NY',
+        zipCode: '10001',
+        country: 'USA',
+        phone: `+1-555-02${Math.floor(1000 + Math.random() * 9000)}`,
+        isDefault: true,
+      }
+    });
+  }
+  console.log('✅ Created addresses for all customers');
+
   const totalProducts = await prisma.product.count();
   const totalReviews = await prisma.review.count();
   const totalCategories = await prisma.category.count();
