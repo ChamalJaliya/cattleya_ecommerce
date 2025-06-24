@@ -98,7 +98,7 @@ export const useCartStore = create<CartStore>()(
         try {
           set({ isLoading: true });
           const cart = await CartApi.getCart();
-          set({ cart });
+          set({ cart, isLoading: false });
           get().calculateTotals();
         } catch (error: any) {
           console.error('Failed to fetch cart:', error);
@@ -121,24 +121,17 @@ export const useCartStore = create<CartStore>()(
             return;
           }
           
-          // For other errors, show error message
+          // For other errors, show error message and ensure loading is false
           customToast.error('Failed to load cart');
           set({ isLoading: false });
         }
       },
 
       addItem: async (data) => {
-        // Check authentication first
-        const { isAuthenticated } = useAuthStore.getState();
-        if (!isAuthenticated) {
-          customToast.auth.loginError();
-          return;
-        }
-
         try {
           set({ isLoading: true });
           const cart = await CartApi.addToCart(data);
-          set({ cart });
+          set({ cart, isLoading: false });
           get().calculateTotals();
           customToast.cart.added('Product');
         } catch (error: any) {
@@ -166,13 +159,6 @@ export const useCartStore = create<CartStore>()(
       },
 
       removeItem: async (itemId) => {
-        // Check authentication first
-        const { isAuthenticated } = useAuthStore.getState();
-        if (!isAuthenticated) {
-          customToast.auth.loginError();
-          return;
-        }
-
         try {
           set({ isLoading: true });
           await CartApi.removeFromCart(itemId);
@@ -196,17 +182,10 @@ export const useCartStore = create<CartStore>()(
       },
 
       updateQuantity: async (itemId, quantity) => {
-        // Check authentication first
-        const { isAuthenticated } = useAuthStore.getState();
-        if (!isAuthenticated) {
-          customToast.auth.loginError();
-          return;
-        }
-
         try {
           set({ isLoading: true });
           const cart = await CartApi.updateCartItem(itemId, { quantity });
-          set({ cart });
+          set({ cart, isLoading: false });
           get().calculateTotals();
           customToast.cart.updated();
         } catch (error: any) {
@@ -229,13 +208,6 @@ export const useCartStore = create<CartStore>()(
       clearCart: async (skipApiCall = false) => {
         try {
           if (!skipApiCall) {
-            // Check authentication first (only when making API call)
-            const { isAuthenticated } = useAuthStore.getState();
-            if (!isAuthenticated) {
-              customToast.auth.loginError();
-              return;
-            }
-            
             set({ isLoading: true });
             await CartApi.clearCart();
           }

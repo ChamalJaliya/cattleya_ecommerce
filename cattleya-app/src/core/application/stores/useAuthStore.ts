@@ -13,6 +13,7 @@ import { customToast } from '../../../shared/utils/toast';
 
 // Import cart store to clear it on logout
 import { useCartStore } from './useCartStore';
+import { useWishlistStore } from './useWishlistStore';
 
 interface AuthState {
   // Authentication state
@@ -64,6 +65,17 @@ export const useAuthStore = create<AuthState>()(
           const response = await usersApi.login(credentials);
           if (response.authenticated) {
             set({ user: response.user, isAuthenticated: true, isLoading: false });
+            // Only fetch cart/wishlist for customers
+            if (response.user.role === 'CUSTOMER') {
+              try {
+                const cartStore = useCartStore.getState();
+                const wishlistStore = useWishlistStore.getState();
+                await cartStore.fetchCart();
+                await wishlistStore.fetchWishlist();
+              } catch (error) {
+                console.warn('Failed to fetch cart/wishlist after login:', error);
+              }
+            }
             customToast.auth.loginSuccess();
             return true;
           } else {
@@ -88,6 +100,17 @@ export const useAuthStore = create<AuthState>()(
           const response = await usersApi.register(userData);
           if (response.authenticated) {
             set({ user: response.user, isAuthenticated: true, isLoading: false });
+            // Only fetch cart/wishlist for customers
+            if (response.user.role === 'CUSTOMER') {
+              try {
+                const cartStore = useCartStore.getState();
+                const wishlistStore = useWishlistStore.getState();
+                await cartStore.fetchCart();
+                await wishlistStore.fetchWishlist();
+              } catch (error) {
+                console.warn('Failed to fetch cart/wishlist after registration:', error);
+              }
+            }
             customToast.auth.registerSuccess();
             return true;
           } else {
@@ -111,9 +134,12 @@ export const useAuthStore = create<AuthState>()(
         try {
           await usersApi.logout();
           
-          // Clear cart store on logout (skip API call since token is invalid)
+          // Clear cart and wishlist stores on logout (skip API call since token is invalid)
           const cartStore = useCartStore.getState();
+          const wishlistStore = useWishlistStore.getState();
+          
           cartStore.clearCart(true);
+          wishlistStore.clearWishlist(true);
           
           set({ 
             user: null, 
@@ -126,7 +152,10 @@ export const useAuthStore = create<AuthState>()(
           console.error('Logout error:', error);
           // Even if logout fails, clear local state
           const cartStore = useCartStore.getState();
+          const wishlistStore = useWishlistStore.getState();
+          
           cartStore.clearCart(true);
+          wishlistStore.clearWishlist(true);
           
           set({ 
             user: null, 
@@ -169,6 +198,18 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true, 
               isLoading: false 
             });
+            
+            // Only fetch cart/wishlist for customers
+            if (profileResponse.data.role === 'CUSTOMER') {
+              try {
+                const cartStore = useCartStore.getState();
+                const wishlistStore = useWishlistStore.getState();
+                await cartStore.fetchCart();
+                await wishlistStore.fetchWishlist();
+              } catch (error) {
+                console.warn('Failed to fetch cart/wishlist after auth check:', error);
+              }
+            }
           } else {
             set({ 
               user: null, 
@@ -198,6 +239,18 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true, 
               isLoading: false 
             });
+            
+            // Only fetch cart/wishlist for customers
+            if (response.data.role === 'CUSTOMER') {
+              try {
+                const cartStore = useCartStore.getState();
+                const wishlistStore = useWishlistStore.getState();
+                await cartStore.fetchCart();
+                await wishlistStore.fetchWishlist();
+              } catch (error) {
+                console.warn('Failed to fetch cart/wishlist after profile fetch:', error);
+              }
+            }
           } else {
             set({ error: 'Failed to fetch profile', isLoading: false });
           }

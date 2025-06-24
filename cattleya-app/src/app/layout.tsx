@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import ClientWrapper from './ClientWrapper';
+import Header from '@/shared/components/Header';
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 
@@ -56,6 +57,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900" suppressHydrationWarning>
         <ClientWrapper>
+          <Header />
           <Toaster 
             position="top-center"
             reverseOrder={false}

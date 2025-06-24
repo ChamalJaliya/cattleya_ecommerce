@@ -30,11 +30,11 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { cart, toggleCart } = useCartStore();
+  const { cart, toggleCart, getItemCount } = useCartStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Use the new cart structure with proper null checks
-  const cartCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  // Use the getItemCount method from cart store for accurate count
+  const cartCount = getItemCount();
 
   // Auto-generate breadcrumbs if not provided
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
@@ -289,33 +289,6 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
       {(title || subtitle || finalBreadcrumbs.length > 1) && (
         <div className="pt-20 pb-8 bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Breadcrumbs */}
-            {finalBreadcrumbs.length > 1 && (
-              <nav className="mb-4">
-                <ol className="flex items-center space-x-2 text-sm text-gray-500">
-                  {finalBreadcrumbs.map((crumb, index) => (
-                    <li key={crumb.href} className="flex items-center">
-                      {index > 0 && (
-                        <svg className="w-4 h-4 mx-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {index === finalBreadcrumbs.length - 1 ? (
-                        <span className="text-gray-900 font-medium">{crumb.label}</span>
-                      ) : (
-                        <Link 
-                          href={crumb.href}
-                          className="hover:text-purple-600 transition-colors duration-200"
-                        >
-                          {crumb.label}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            )}
-
             {/* Title and Subtitle */}
             {(title || subtitle) && (
               <div className="text-center">

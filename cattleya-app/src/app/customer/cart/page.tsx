@@ -128,6 +128,10 @@ export default function CustomerCartPage() {
     }
   }, [selectedAddress, selectedPayment]);
 
+  // Show loading state only when authenticated and actually loading
+  const showLoading = isAuthenticated && isLoading;
+  const showUnauthenticated = !isAuthenticated;
+
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
       await removeItem(itemId);
@@ -459,451 +463,500 @@ export default function CustomerCartPage() {
       <div className="max-w-6xl mx-auto relative">
         {/* Animated background */}
         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-purple-50 via-pink-50 to-white animate-bg-move" />
-        {/* Enhanced Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative mb-8"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 rounded-2xl blur-xl"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                  Checkout
-                </h1>
-                <p className="text-gray-600">Complete your purchase securely</p>
-              </div>
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                className="flex items-center space-x-2 text-purple-600"
-              >
-                <ShoppingCartIcon className="w-8 h-8 drop-shadow-lg" />
-                <span className="text-2xl font-bold">{cart?.items.length || 0}</span>
-              </motion.div>
+        
+        {/* Show loading state */}
+        {showLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-center min-h-[400px]"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">Loading your cart...</p>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
-        {/* Enhanced Progress Steps */}
-        <div className="mb-8">
-          <div className="relative">
-            {/* Animated background for steps */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 via-pink-100/30 to-purple-100/30 rounded-2xl blur-xl"></div>
-            <div className="relative bg-white/60 backdrop-blur-md rounded-2xl border border-white/30 p-6 shadow-xl">
-              <div className="flex items-center justify-between">
-                {Object.entries(stepTitles).map(([step, title], index) => {
-                  const isActive = step === checkoutStep;
-                  const isCompleted = ['cart', 'shipping', 'payment', 'review'].indexOf(step) < ['cart', 'shipping', 'payment', 'review'].indexOf(checkoutStep);
-                  return (
-                    <div key={step} className="flex items-center relative">
-                      <motion.div 
-                        className={`relative w-14 h-14 rounded-full flex items-center justify-center font-semibold transition-all duration-500 border-2 ${
-                          isActive 
-                            ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white shadow-2xl shadow-purple-500/40 border-pink-400 animate-border-glow' 
-                            : isCompleted 
-                              ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white shadow-2xl shadow-green-500/40 border-emerald-400' 
-                              : 'bg-white/80 backdrop-blur-sm text-gray-600 border-gray-300 shadow-lg'
-                        }`}
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        whileTap={{ scale: 0.95 }}
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ delay: index * 0.1, type: "spring", stiffness: 200 }}
-                      >
-                        {/* Glowing effect for active step */}
-                        {isActive && (
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 blur-lg opacity-50 animate-pulse"></div>
-                        )}
-                        
-                        {/* Step content */}
-                        <div className="relative z-10">
-                          {isCompleted ? (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                            >
-                              <CheckCircleIcon className="w-7 h-7" />
-                            </motion.div>
-                          ) : (
-                            <motion.span
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.3 }}
-                              className="text-lg font-bold"
-                            >
-                              {index + 1}
-                            </motion.span>
-                          )}
-                        </div>
-                      </motion.div>
-                      
-                      {/* Step title with enhanced styling */}
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 + 0.2 }}
-                        className="ml-4 text-center"
-                      >
-                        <span className={`block font-semibold text-sm transition-all duration-300 ${
-                          isActive 
-                            ? 'text-purple-600 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent' 
-                            : isCompleted 
-                              ? 'text-green-600' 
-                              : 'text-gray-500'
-                        }`}>
-                          {title}
-                        </span>
-                        {/* Progress indicator */}
-                        <motion.div
-                          className={`h-1 mt-2 rounded-full transition-all duration-500 ${
-                            isActive 
-                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30' 
-                              : isCompleted 
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-lg shadow-green-500/30' 
-                                : 'bg-gray-200'
-                          }`}
-                          initial={{ width: 0 }}
-                          animate={{ width: isActive || isCompleted ? '100%' : '0%' }}
-                          transition={{ delay: index * 0.1 + 0.4, duration: 0.8 }}
-                        />
-                      </motion.div>
-                      
-                      {/* Connecting line */}
-                      {index < Object.keys(stepTitles).length - 1 && (
-                        <motion.div 
-                          className={`w-16 h-1 mx-4 rounded-full transition-all duration-700 ${
-                            isCompleted 
-                              ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 shadow-lg shadow-green-500/30 animate-bg-move' 
-                              : 'bg-gradient-to-r from-gray-200 to-gray-300'
-                          }`}
-                          initial={{ scaleX: 0 }}
-                          animate={{ scaleX: isCompleted ? 1 : 0.3 }}
-                          transition={{ delay: index * 0.1 + 0.6, duration: 1 }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+        {/* Show unauthenticated message */}
+        {showUnauthenticated && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center min-h-[400px]"
+          >
+            <div className="text-center max-w-md">
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShoppingCartIcon className="w-10 h-10 text-purple-500" />
               </div>
-              
-              {/* Progress percentage indicator */}
-              <motion.div 
-                className="mt-4 text-center"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
-                  <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Step {['cart', 'shipping', 'payment', 'review', 'success'].indexOf(checkoutStep) + 1} of 5
-                  </span>
-                  <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                </div>
-              </motion.div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Sign in to view your cart</h2>
+              <p className="text-gray-600 mb-8">Please sign in to access your shopping cart and continue with your purchase.</p>
+              <div className="space-y-3">
+                <Link href="/auth/login">
+                  <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transition-all duration-200">
+                    Sign In
+                  </button>
+                </Link>
+                <Link href="/products">
+                  <button className="w-full border border-gray-200 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-50 transition-colors duration-200">
+                    Continue Shopping
+                  </button>
+                </Link>
+              </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            <motion.div 
-              className="relative bg-white/70 backdrop-blur-xl rounded-3xl border border-white/40 p-8 shadow-2xl shadow-purple-500/10 overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
+        {/* Show main cart content only when authenticated and not loading */}
+        {isAuthenticated && !isLoading && (
+          <>
+            {/* Enhanced Header */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              className="relative mb-8"
             >
-              {/* Animated background effects */}
-              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-2xl animate-float"></div>
-              <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-blue-400/20 to-cyan-400/20 rounded-full blur-xl animate-float" style={{ animationDelay: '1s' }}></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-purple-300/10 to-pink-300/10 rounded-full blur-3xl animate-pulse"></div>
-              
-              {/* Enhanced header with gradient text and icons */}
-              <div className="relative z-10 mb-8">
-                <div className="flex items-center justify-between mb-4">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10 rounded-2xl blur-xl"></div>
+              <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <motion.h2 
-                      className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      {stepTitles[checkoutStep]}
-                    </motion.h2>
-                    <motion.p 
-                      className="text-gray-600 font-medium"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      {checkoutStep === 'cart' && 'Review your items and quantities'}
-                      {checkoutStep === 'shipping' && 'Choose your delivery address'}
-                      {checkoutStep === 'payment' && 'Select your payment method'}
-                      {checkoutStep === 'review' && 'Review your order details'}
-                      {checkoutStep === 'success' && 'Your order has been confirmed'}
-                    </motion.p>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                      Checkout
+                    </h1>
+                    <p className="text-gray-600">Complete your purchase securely</p>
                   </div>
-                  
-                  {/* Step-specific icon with animation */}
                   <motion.div
-                    className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30"
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                    className="flex items-center space-x-2 text-purple-600"
                   >
-                    {checkoutStep === 'cart' && <ShoppingCartIcon className="w-8 h-8 text-purple-600" />}
-                    {checkoutStep === 'shipping' && <TruckIcon className="w-8 h-8 text-purple-600" />}
-                    {checkoutStep === 'payment' && <CreditCardIcon className="w-8 h-8 text-purple-600" />}
-                    {checkoutStep === 'review' && <CheckCircleIcon className="w-8 h-8 text-purple-600" />}
-                    {checkoutStep === 'success' && <CheckCircleIcon className="w-8 h-8 text-green-600" />}
+                    <ShoppingCartIcon className="w-8 h-8 drop-shadow-lg" />
+                    <span className="text-2xl font-bold">{cart?.items.length || 0}</span>
                   </motion.div>
                 </div>
-                
-                {/* Progress bar */}
-                <motion.div 
-                  className="w-full bg-gray-200 rounded-full h-2 overflow-hidden"
-                  initial={{ opacity: 0, scaleX: 0 }}
-                  animate={{ opacity: 1, scaleX: 1 }}
-                  transition={{ delay: 0.6, duration: 0.8 }}
-                >
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full shadow-lg"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(['cart', 'shipping', 'payment', 'review', 'success'].indexOf(checkoutStep) + 1) * 20}%` }}
-                    transition={{ delay: 0.8, duration: 1, ease: "easeOut" }}
-                  />
-                </motion.div>
               </div>
+            </motion.div>
 
-              <AnimatePresence>
-                <motion.div
-                  key={checkoutStep}
-                  initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -20, scale: 0.95 }}
-                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                  className="relative z-10"
-                >
-                  {checkoutStep === 'cart' && <CartStep />}
-                  {checkoutStep === 'shipping' && <ShippingStep />}
-                  {checkoutStep === 'payment' && <PaymentStep />}
-                  {checkoutStep === 'review' && <ReviewStep />}
-                  {checkoutStep === 'success' && <SuccessStep />}
-                </motion.div>
-              </AnimatePresence>
+            {/* Enhanced Progress Steps */}
+            <div className="mb-8">
+              <div className="relative">
+                {/* Animated background for steps */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 via-pink-100/30 to-purple-100/30 rounded-2xl blur-xl"></div>
+                <div className="relative bg-white/60 backdrop-blur-md rounded-2xl border border-white/30 p-6 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    {Object.entries(stepTitles).map(([step, title], index) => {
+                      const isActive = step === checkoutStep;
+                      const isCompleted = ['cart', 'shipping', 'payment', 'review'].indexOf(step) < ['cart', 'shipping', 'payment', 'review'].indexOf(checkoutStep);
+                      return (
+                        <div key={step} className="flex items-center relative">
+                          <motion.div 
+                            className={`relative w-14 h-14 rounded-full flex items-center justify-center font-semibold transition-all duration-500 border-2 ${
+                              isActive 
+                                ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white shadow-2xl shadow-purple-500/40 border-pink-400 animate-border-glow' 
+                                : isCompleted 
+                                  ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 text-white shadow-2xl shadow-green-500/40 border-emerald-400' 
+                                  : 'bg-white/80 backdrop-blur-sm text-gray-600 border-gray-300 shadow-lg'
+                            }`}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            whileTap={{ scale: 0.95 }}
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ delay: index * 0.1, type: "spring", stiffness: 200 }}
+                          >
+                            {/* Glowing effect for active step */}
+                            {isActive && (
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 blur-lg opacity-50 animate-pulse"></div>
+                            )}
+                            
+                            {/* Step content */}
+                            <div className="relative z-10">
+                              {isCompleted ? (
+                                <motion.div
+                                  initial={{ scale: 0, rotate: -180 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                                >
+                                  <CheckCircleIcon className="w-7 h-7" />
+                                </motion.div>
+                              ) : (
+                                <motion.span
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 0.3 }}
+                                  className="text-lg font-bold"
+                                >
+                                  {index + 1}
+                                </motion.span>
+                              )}
+                            </div>
+                          </motion.div>
+                          
+                          {/* Step title with enhanced styling */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 + 0.2 }}
+                            className="ml-4 text-center"
+                          >
+                            <span className={`block font-semibold text-sm transition-all duration-300 ${
+                              isActive 
+                                ? 'text-purple-600 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent' 
+                                : isCompleted 
+                                  ? 'text-green-600' 
+                                  : 'text-gray-500'
+                            }`}>
+                              {title}
+                            </span>
+                            {/* Progress indicator */}
+                            <motion.div
+                              className={`h-1 mt-2 rounded-full transition-all duration-500 ${
+                                isActive 
+                                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30' 
+                                  : isCompleted 
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-lg shadow-green-500/30' 
+                                    : 'bg-gray-200'
+                              }`}
+                              initial={{ width: 0 }}
+                              animate={{ width: isActive || isCompleted ? '100%' : '0%' }}
+                              transition={{ delay: index * 0.1 + 0.4, duration: 0.8 }}
+                            />
+                          </motion.div>
+                          
+                          {/* Connecting line */}
+                          {index < Object.keys(stepTitles).length - 1 && (
+                            <motion.div 
+                              className={`w-16 h-1 mx-4 rounded-full transition-all duration-700 ${
+                                isCompleted 
+                                  ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 shadow-lg shadow-green-500/30 animate-bg-move' 
+                                  : 'bg-gradient-to-r from-gray-200 to-gray-300'
+                              }`}
+                              initial={{ scaleX: 0 }}
+                              animate={{ scaleX: isCompleted ? 1 : 0.3 }}
+                              transition={{ delay: index * 0.1 + 0.6, duration: 1 }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Progress percentage indicator */}
+                  <motion.div 
+                    className="mt-4 text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <div className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
+                      <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-gray-700">
+                        Step {['cart', 'shipping', 'payment', 'review', 'success'].indexOf(checkoutStep) + 1} of 5
+                      </span>
+                      <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
 
-              {/* Enhanced Navigation Buttons */}
-              {checkoutStep !== 'success' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Content */}
+              <div className="lg:col-span-2">
                 <motion.div 
-                  className="flex items-center justify-between mt-8 pt-6 border-t border-white/30 relative z-10"
+                  className="relative bg-white/70 backdrop-blur-xl rounded-3xl border border-white/40 p-8 shadow-2xl shadow-purple-500/10 overflow-hidden"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9 }}
+                  transition={{ delay: 0.2 }}
                 >
-                  {checkoutStep === 'cart' ? (
-                     <Link href="/products">
+                  {/* Animated background effects */}
+                  <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-2xl animate-float"></div>
+                  <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-blue-400/20 to-cyan-400/20 rounded-full blur-xl animate-float" style={{ animationDelay: '1s' }}></div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-purple-300/10 to-pink-300/10 rounded-full blur-3xl animate-pulse"></div>
+                  
+                  {/* Enhanced header with gradient text and icons */}
+                  <div className="relative z-10 mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <motion.h2 
+                          className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 }}
+                        >
+                          {stepTitles[checkoutStep]}
+                        </motion.h2>
+                        <motion.p 
+                          className="text-gray-600 font-medium"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 }}
+                        >
+                          {checkoutStep === 'cart' && 'Review your items and quantities'}
+                          {checkoutStep === 'shipping' && 'Choose your delivery address'}
+                          {checkoutStep === 'payment' && 'Select your payment method'}
+                          {checkoutStep === 'review' && 'Review your order details'}
+                          {checkoutStep === 'success' && 'Your order has been confirmed'}
+                        </motion.p>
+                      </div>
+                      
+                      {/* Step-specific icon with animation */}
+                      <motion.div
+                        className="w-16 h-16 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30"
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                      >
+                        {checkoutStep === 'cart' && <ShoppingCartIcon className="w-8 h-8 text-purple-600" />}
+                        {checkoutStep === 'shipping' && <TruckIcon className="w-8 h-8 text-purple-600" />}
+                        {checkoutStep === 'payment' && <CreditCardIcon className="w-8 h-8 text-purple-600" />}
+                        {checkoutStep === 'review' && <CheckCircleIcon className="w-8 h-8 text-purple-600" />}
+                        {checkoutStep === 'success' && <CheckCircleIcon className="w-8 h-8 text-green-600" />}
+                      </motion.div>
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <motion.div 
+                      className="w-full bg-gray-200 rounded-full h-2 overflow-hidden"
+                      initial={{ opacity: 0, scaleX: 0 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      transition={{ delay: 0.6, duration: 0.8 }}
+                    >
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full shadow-lg"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(['cart', 'shipping', 'payment', 'review', 'success'].indexOf(checkoutStep) + 1) * 20}%` }}
+                        transition={{ delay: 0.8, duration: 1, ease: "easeOut" }}
+                      />
+                    </motion.div>
+                  </div>
+
+                  <AnimatePresence>
+                    <motion.div
+                      key={checkoutStep}
+                      initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      className="relative z-10"
+                    >
+                      {checkoutStep === 'cart' && <CartStep />}
+                      {checkoutStep === 'shipping' && <ShippingStep />}
+                      {checkoutStep === 'payment' && <PaymentStep />}
+                      {checkoutStep === 'review' && <ReviewStep />}
+                      {checkoutStep === 'success' && <SuccessStep />}
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {/* Enhanced Navigation Buttons */}
+                  {checkoutStep !== 'success' && (
+                    <motion.div 
+                      className="flex items-center justify-between mt-8 pt-6 border-t border-white/30 relative z-10"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 }}
+                    >
+                      {checkoutStep === 'cart' ? (
+                         <Link href="/products">
+                            <motion.button
+                              className="flex items-center px-8 py-4 bg-white/80 backdrop-blur-sm border border-white/40 text-gray-700 rounded-2xl hover:bg-white/90 hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 font-semibold"
+                              whileHover={{ scale: 1.02, x: -5 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <ArrowLeftIcon className="w-5 h-5 mr-3" />
+                              Continue Shopping
+                            </motion.button>
+                         </Link>
+                      ) : (
                         <motion.button
-                          className="flex items-center px-8 py-4 bg-white/80 backdrop-blur-sm border border-white/40 text-gray-700 rounded-2xl hover:bg-white/90 hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 font-semibold"
+                          onClick={handlePrevStep}
+                          className="flex items-center px-8 py-4 bg-white/80 backdrop-blur-sm border border-white/40 text-gray-700 rounded-2xl hover:bg-white/90 hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           whileHover={{ scale: 1.02, x: -5 }}
                           whileTap={{ scale: 0.98 }}
                         >
                           <ArrowLeftIcon className="w-5 h-5 mr-3" />
-                          Continue Shopping
+                          Back
                         </motion.button>
-                     </Link>
-                  ) : (
-                    <motion.button
-                      onClick={handlePrevStep}
-                      className="flex items-center px-8 py-4 bg-white/80 backdrop-blur-sm border border-white/40 text-gray-700 rounded-2xl hover:bg-white/90 hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      whileHover={{ scale: 1.02, x: -5 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <ArrowLeftIcon className="w-5 h-5 mr-3" />
-                      Back
-                    </motion.button>
-                  )}
+                      )}
 
-                  <motion.button
-                    onClick={handleNextStep}
-                    disabled={isLoading || (checkoutStep === 'cart' && !cart?.items.length)}
-                    className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
-                    whileHover={{ scale: 1.02, x: 5 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {/* Animated background */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative z-10 flex items-center">
-                      {isLoading ? (
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
-                          Processing...
+                      <motion.button
+                        onClick={handleNextStep}
+                        disabled={isLoading || (checkoutStep === 'cart' && !cart?.items.length)}
+                        className="flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {/* Animated background */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="relative z-10 flex items-center">
+                          {isLoading ? (
+                            <div className="flex items-center">
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
+                              Processing...
+                            </div>
+                          ) : checkoutStep === 'review' ? (
+                            <>
+                              <ShieldCheckIcon className="w-5 h-5 mr-3" />
+                              Place Order
+                            </>
+                          ) : (
+                            <>
+                              Continue
+                              <ArrowRightIcon className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+                            </>
+                          )}
                         </div>
-                      ) : checkoutStep === 'review' ? (
-                        <>
-                          <ShieldCheckIcon className="w-5 h-5 mr-3" />
-                          Place Order
-                        </>
-                      ) : (
-                        <>
-                          Continue
-                          <ArrowRightIcon className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
-                        </>
-                      )}
-                    </div>
-                  </motion.button>
+                      </motion.button>
+                    </motion.div>
+                  )}
                 </motion.div>
-              )}
-            </motion.div>
-          </div>
+              </div>
 
-          {/* Order Summary Sidebar */}
-          {checkoutStep !== 'success' && (
-            <div className="lg:col-span-1">
-              <motion.div 
-                className="relative bg-white/70 backdrop-blur-xl rounded-3xl border border-white/40 p-6 sticky top-6 shadow-2xl shadow-purple-500/10 overflow-hidden"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                {/* Animated background effects */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-float"></div>
-                <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-400/20 to-cyan-400/20 rounded-full blur-lg animate-float" style={{ animationDelay: '1.5s' }}></div>
-                
-                {/* Enhanced header */}
-                <div className="relative z-10 mb-6">
-                  <motion.h3 
-                    className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    Order Summary
-                  </motion.h3>
+              {/* Order Summary Sidebar */}
+              {checkoutStep !== 'success' && (
+                <div className="lg:col-span-1">
                   <motion.div 
-                    className="w-full bg-gray-200 rounded-full h-1 overflow-hidden"
-                    initial={{ opacity: 0, scaleX: 0 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                  >
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: '100%' }}
-                      transition={{ delay: 0.7, duration: 0.8 }}
-                    />
-                  </motion.div>
-                </div>
-                
-                {/* Order details with enhanced styling */}
-                <div className="relative z-10 space-y-4 mb-6">
-                  <motion.div 
-                    className="flex justify-between items-center p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30"
+                    className="relative bg-white/70 backdrop-blur-xl rounded-3xl border border-white/40 p-6 sticky top-6 shadow-2xl shadow-purple-500/10 overflow-hidden"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 }}
+                    transition={{ delay: 0.3 }}
                   >
-                    <span className="text-gray-600 font-medium">Subtotal ({cart?.items.length || 0} items)</span>
-                    <span className="font-bold text-gray-800">${subtotal.toFixed(2)}</span>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="flex justify-between items-center p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7 }}
-                  >
-                    <span className="text-gray-600 font-medium">Shipping</span>
-                    <span className="font-bold text-gray-800">
-                      {shipping === 0 ? (
-                        <span className="text-green-600 bg-green-100 px-2 py-1 rounded-full text-xs font-semibold">
-                          Free
+                    {/* Animated background effects */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-float"></div>
+                    <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-400/20 to-cyan-400/20 rounded-full blur-lg animate-float" style={{ animationDelay: '1.5s' }}></div>
+                    
+                    {/* Enhanced header */}
+                    <div className="relative z-10 mb-6">
+                      <motion.h3 
+                        className="text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        Order Summary
+                      </motion.h3>
+                      <motion.div 
+                        className="w-full bg-gray-200 rounded-full h-1 overflow-hidden"
+                        initial={{ opacity: 0, scaleX: 0 }}
+                        animate={{ opacity: 1, scaleX: 1 }}
+                        transition={{ delay: 0.5, duration: 0.6 }}
+                      >
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: '100%' }}
+                          transition={{ delay: 0.7, duration: 0.8 }}
+                        />
+                      </motion.div>
+                    </div>
+                    
+                    {/* Order details with enhanced styling */}
+                    <div className="relative z-10 space-y-4 mb-6">
+                      <motion.div 
+                        className="flex justify-between items-center p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <span className="text-gray-600 font-medium">Subtotal ({cart?.items.length || 0} items)</span>
+                        <span className="font-bold text-gray-800">${subtotal.toFixed(2)}</span>
+                      </motion.div>
+                      
+                      <motion.div 
+                        className="flex justify-between items-center p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.7 }}
+                      >
+                        <span className="text-gray-600 font-medium">Shipping</span>
+                        <span className="font-bold text-gray-800">
+                          {shipping === 0 ? (
+                            <span className="text-green-600 bg-green-100 px-2 py-1 rounded-full text-xs font-semibold">
+                              Free
+                            </span>
+                          ) : (
+                            `$${shipping.toFixed(2)}`
+                          )}
                         </span>
-                      ) : (
-                        `$${shipping.toFixed(2)}`
-                      )}
-                    </span>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="flex justify-between items-center p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 }}
-                  >
-                    <span className="text-gray-600 font-medium">Tax</span>
-                    <span className="font-bold text-gray-800">${tax.toFixed(2)}</span>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="border-t-2 border-white/40 pt-4"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 }}
-                  >
-                    <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50/80 to-pink-50/80 backdrop-blur-sm rounded-xl border border-purple-200/30">
-                      <span className="text-lg font-bold text-gray-900">Total</span>
-                      <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        ${total.toFixed(2)}
-                      </span>
+                      </motion.div>
+                      
+                      <motion.div 
+                        className="flex justify-between items-center p-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white/30"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.8 }}
+                      >
+                        <span className="text-gray-600 font-medium">Tax</span>
+                        <span className="font-bold text-gray-800">${tax.toFixed(2)}</span>
+                      </motion.div>
+                      
+                      <motion.div 
+                        className="border-t-2 border-white/40 pt-4"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.9 }}
+                      >
+                        <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50/80 to-pink-50/80 backdrop-blur-sm rounded-xl border border-purple-200/30">
+                          <span className="text-lg font-bold text-gray-900">Total</span>
+                          <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            ${total.toFixed(2)}
+                          </span>
+                        </div>
+                      </motion.div>
                     </div>
+                    
+                    {/* Enhanced promotional messages */}
+                    {subtotal < 100 && (
+                      <motion.div 
+                        className="bg-gradient-to-r from-blue-50/90 to-cyan-50/90 border border-blue-200/50 rounded-2xl p-4 mb-4 backdrop-blur-sm"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 1.0 }}
+                        whileHover={{ scale: 1.02 }}
+                      >
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mr-3 shadow-lg">
+                            <TruckIcon className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-blue-800">
+                              Free Shipping Available!
+                            </p>
+                            <p className="text-xs text-blue-600">
+                              Add ${(100 - subtotal).toFixed(2)} more for free shipping
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    <motion.div 
+                      className="bg-gradient-to-r from-green-50/90 to-emerald-50/90 border border-green-200/50 rounded-2xl p-4 backdrop-blur-sm"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 1.1 }}
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mr-3 shadow-lg">
+                          <ShieldCheckIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-green-800">
+                            Secure Checkout
+                          </p>
+                          <p className="text-xs text-green-600">
+                            256-bit SSL encryption
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
                   </motion.div>
                 </div>
-                
-                {/* Enhanced promotional messages */}
-                {subtotal < 100 && (
-                  <motion.div 
-                    className="bg-gradient-to-r from-blue-50/90 to-cyan-50/90 border border-blue-200/50 rounded-2xl p-4 mb-4 backdrop-blur-sm"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 1.0 }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mr-3 shadow-lg">
-                        <TruckIcon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-blue-800">
-                          Free Shipping Available!
-                        </p>
-                        <p className="text-xs text-blue-600">
-                          Add ${(100 - subtotal).toFixed(2)} more for free shipping
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                <motion.div 
-                  className="bg-gradient-to-r from-green-50/90 to-emerald-50/90 border border-green-200/50 rounded-2xl p-4 backdrop-blur-sm"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 1.1 }}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mr-3 shadow-lg">
-                      <ShieldCheckIcon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-green-800">
-                        Secure Checkout
-                      </p>
-                      <p className="text-xs text-green-600">
-                        256-bit SSL encryption
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
       {/* Dazzling CSS Animations */}
       <style jsx global>{`

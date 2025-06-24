@@ -12,7 +12,7 @@ interface WishlistStore {
   fetchWishlist: () => Promise<void>;
   addToWishlist: (productId: string) => Promise<void>;
   removeFromWishlist: (productId: string) => Promise<void>;
-  clearWishlist: () => Promise<void>;
+  clearWishlist: (skipApiCall?: boolean) => Promise<void>;
   isInWishlist: (productId: string) => boolean;
 }
 
@@ -120,35 +120,45 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
     }
   },
 
-  clearWishlist: async () => {
-    // Check authentication first
-    const { isAuthenticated } = useAuthStore.getState();
-    if (!isAuthenticated) {
-      customToast.auth.loginError();
-      return;
-    }
-
+  clearWishlist: async (skipApiCall = false) => {
     try {
-      set({ isLoading: true, error: null });
-      await WishlistApi.clearWishlist();
+      if (!skipApiCall) {
+        // Check authentication first (only when making API call)
+        const { isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated) {
+          customToast.auth.loginError();
+          return;
+        }
+        
+        set({ isLoading: true, error: null });
+        await WishlistApi.clearWishlist();
+      }
+      
       set({ 
         wishlist: { totalItems: 0, totalValue: 0, items: [] }, 
         isLoading: false 
       });
-      customToast.success('Wishlist cleared');
+      
+      if (!skipApiCall) {
+        customToast.success('Wishlist cleared');
+      }
     } catch (error: any) {
       console.error('Failed to clear wishlist:', error);
       
-      // If unauthorized (401), redirect to login
-      if (error.response?.status === 401) {
-        customToast.auth.loginError();
+      if (!skipApiCall) {
+        // If unauthorized (401), redirect to login
+        if (error.response?.status === 401) {
+          customToast.auth.loginError();
+          set({ isLoading: false });
+          return;
+        }
+        
+        const errorMessage = error.response?.data?.message || 'Failed to clear wishlist';
+        set({ error: errorMessage, isLoading: false });
+        customToast.error(errorMessage);
+      } else {
         set({ isLoading: false });
-        return;
       }
-      
-      const errorMessage = error.response?.data?.message || 'Failed to clear wishlist';
-      set({ error: errorMessage, isLoading: false });
-      customToast.error(errorMessage);
     }
   },
 
