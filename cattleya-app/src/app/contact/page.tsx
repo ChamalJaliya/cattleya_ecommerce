@@ -16,6 +16,7 @@ import {
   ArrowRightIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import HeroSection from '@/shared/components/HeroSection';
 
 const contactSchema = yup.object().shape({
   name: yup.string().required('Name is required').min(2, 'Name must be at least 2 characters'),
@@ -102,39 +103,22 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background to match Collection */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-white" />
+        {/* Floating Orbs (optional, for extra effect) */}
+        {/* You can copy the motion.divs from Collection if you want the full effect */}
+      </div>
+
       {/* Hero Section */}
-      <section className="relative pt-20 pb-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-white"></div>
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-6">
-                <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
-                Get in Touch
-              </div>
-              
-              <h1 className="text-5xl lg:text-7xl font-serif font-bold text-gray-900 leading-tight mb-6">
-                Let's
-                <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent">
-                  Connect
-                </span>
-              </h1>
-              
-              <p className="text-xl text-gray-600 leading-relaxed mb-8 max-w-3xl mx-auto">
-                Have questions about orchid care? Need help choosing the perfect variety? Our expert team is here to help you on your orchid journey.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      <HeroSection
+        badgeText="Get in Touch"
+        badgeIcon={<ChatBubbleLeftRightIcon className="w-5 h-5 mr-2 text-purple-500" />}
+        title={<span className="font-serif">Contact Us</span>}
+        subtitle="We'd love to hear from you! Reach out for support, partnership, or just to say hello."
+        backgroundType="gradient"
+      />
 
       {/* Contact Info */}
       <section className="py-16 bg-white">

@@ -2,8 +2,10 @@
 
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import CartSidebar from '@/shared/components/CartSidebar';
+import Header from '@/shared/components/Header';
 import { themeColors } from '@/shared/utils/toast';
 
 export default function ClientWrapper({
@@ -12,6 +14,18 @@ export default function ClientWrapper({
   children: React.ReactNode;
 }) {
   const { checkAuth } = useAuthStore();
+  const pathname = usePathname();
+  
+  // Show header only on specific public pages
+  const allowedPaths = [
+    '/',
+    '/about',
+    '/contact',
+    '/products',
+  ];
+  // Allow /products/[id] (product detail)
+  const isProductDetail = pathname.startsWith('/products/') && pathname.split('/').length === 3;
+  const showHeader = allowedPaths.includes(pathname) || isProductDetail;
 
   useEffect(() => {
     // Check authentication status on app load
@@ -20,6 +34,7 @@ export default function ClientWrapper({
 
   return (
     <>
+      {showHeader && <Header />}
       {children}
       <CartSidebar />
       <Toaster

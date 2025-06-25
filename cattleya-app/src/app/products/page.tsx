@@ -27,6 +27,7 @@ import Header from '@/shared/components/Header';
 import Link from 'next/link';
 import Image from 'next/image';
 import { customToast } from '@/shared/utils/toast';
+import HeroSection from '@/shared/components/HeroSection';
 
 const SORT_OPTIONS = [
   { value: 'name', label: 'Name A-Z', icon: '🔤' },
@@ -705,11 +706,16 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Header Component */}
-      <Header 
-        title="Exquisite Orchid Collection"
-        subtitle="Discover our carefully curated selection of premium orchids, each one a masterpiece of nature's artistry"
-      />
+      {/* Dazzling Animated Background for Header */}
+      <div className="relative">
+        <HeroSection
+          badgeText="Our Collection"
+          badgeIcon={<SparklesIcon className="w-5 h-5 mr-2 text-purple-500" />}
+          title={<span className="font-serif">Exquisite Orchid Collection</span>}
+          subtitle="Discover our carefully curated selection of premium orchids, each one a masterpiece of nature's artistry."
+          backgroundType="gradient"
+        />
+      </div>
 
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10">

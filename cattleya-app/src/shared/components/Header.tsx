@@ -286,33 +286,32 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
       </header>
 
       {/* Page Header with Breadcrumbs */}
-      {(title || subtitle || finalBreadcrumbs.length > 1) && (
+      {(title || subtitle) && (
         <div className="pt-20 pb-8 bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
+          <div className="h-8 md:h-12" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Title and Subtitle */}
-            {(title || subtitle) && (
-              <div className="text-center">
-                {title && (
-                  <motion.h1 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl font-bold text-gray-900 mb-4"
-                  >
-                    {title}
-                  </motion.h1>
-                )}
-                {subtitle && (
-                  <motion.p 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-xl text-gray-600 max-w-3xl mx-auto"
-                  >
-                    {subtitle}
-                  </motion.p>
-                )}
-              </div>
-            )}
+            <div className="text-center">
+              {title && (
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-pink-600 via-purple-600 to-violet-600 bg-clip-text text-transparent drop-shadow-lg animate-gradient-x"
+                >
+                  {title}
+                </motion.h1>
+              )}
+              {subtitle && (
+                <motion.p 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-xl text-gray-600 max-w-3xl mx-auto"
+                >
+                  {subtitle}
+                </motion.p>
+              )}
+            </div>
           </div>
         </div>
       )}

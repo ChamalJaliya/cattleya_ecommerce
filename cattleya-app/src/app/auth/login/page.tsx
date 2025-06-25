@@ -108,16 +108,6 @@ export default function LoginPage() {
           transition={{ duration: 0.8 }}
           className="w-full max-w-md"
         >
-          {/* Logo & Header */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block">
-              <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-2">
-                Cattleya
-              </h1>
-            </Link>
-            <p className="text-gray-600">Welcome back to your orchid journey</p>
-          </div>
-
           {/* Demo Accounts */}
           <div className="mb-6">
             <p className="text-sm text-gray-600 mb-3 text-center">Quick Demo Access:</p>

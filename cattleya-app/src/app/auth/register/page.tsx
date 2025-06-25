@@ -98,16 +98,6 @@ export default function RegisterPage() {
           transition={{ duration: 0.8 }}
           className="w-full max-w-md"
         >
-          {/* Logo & Header */}
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block">
-              <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-2">
-                Cattleya
-              </h1>
-            </Link>
-            <p className="text-gray-600">Join our orchid community today</p>
-          </div>
-
           {/* Registration Form */}
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8">
             <div className="mb-6">

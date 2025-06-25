@@ -366,7 +366,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       {user?.firstName} {user?.lastName}
                     </p>
                     <div className="flex items-center space-x-1">
-                      <p className="text-xs text-purple-600 font-medium capitalize">{user?.role.toLowerCase()}</p>
+                      <p className="text-xs text-purple-600 font-medium capitalize">{user?.role?.toLowerCase()}</p>
                       <BoltIcon className="w-3 h-3 text-yellow-500" />
                     </div>
                   </div>

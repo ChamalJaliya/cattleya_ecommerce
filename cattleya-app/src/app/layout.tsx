@@ -1,20 +1,17 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import ClientWrapper from './ClientWrapper';
-import Header from '@/shared/components/Header';
 import "./globals.css";
-import { Toaster } from 'react-hot-toast';
+import ClientWrapper from "./ClientWrapper";
+import Link from "next/link";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: 'swap',
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
-  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -55,20 +52,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
-      <body className="font-sans antialiased bg-white text-gray-900" suppressHydrationWarning>
+      <body className="font-sans antialiased bg-white text-gray-900 min-h-screen" suppressHydrationWarning>
         <ClientWrapper>
-          <Header />
-          <Toaster 
-            position="top-center"
-            reverseOrder={false}
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#333',
-                color: '#fff',
-              },
-            }}
-          />
           {children}
         </ClientWrapper>
         <div id="modal-portal"></div>

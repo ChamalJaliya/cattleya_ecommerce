@@ -32,6 +32,7 @@ import Link from 'next/link';
 import ProductReviews from '@/shared/components/ProductReviews';
 import Header from '@/shared/components/Header';
 import { customToast } from '@/shared/utils/toast';
+import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 
 interface MediaItem {
   id: string;
@@ -591,14 +592,29 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/30 to-pink-50/30">
-      {/* Header Component with Breadcrumbs */}
-      <Header 
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Collection', href: '/products' },
-          { label: product.name || 'Product', href: `/products/${productId}` }
-        ]}
-      />
+      {/* Hero Section with prominent breadcrumb */}
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-16 pb-8 relative z-10 mt-12">
+        <AdminBreadcrumb
+          items={[
+            { label: 'Collection', href: '/products' },
+            { label: product.name, href: `/products/${product.id}` },
+          ]}
+        />
+      </div>
+
+      {/* Dazzling Animated Background for Header (removed Header component) */}
+      {/* If you want to keep some ambient background, you can keep the next block, or remove for simplicity */}
+      {/*
+      <div className="relative">
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 opacity-80 z-0" />
+        <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-pink-400/30 via-purple-400/20 to-violet-400/10 rounded-full blur-3xl animate-pulse z-0" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tr from-purple-400/20 via-pink-400/20 to-violet-400/10 rounded-full blur-3xl animate-pulse delay-1000 z-0" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-2xl animate-pulse delay-500 z-0" />
+        <div className="absolute top-20 left-20 w-2 h-2 bg-pink-400/60 rounded-full animate-bounce opacity-40 z-0" />
+        <div className="absolute top-40 right-32 w-1.5 h-1.5 bg-purple-400/50 rounded-full animate-ping opacity-30 z-0" />
+        <div className="absolute bottom-32 left-1/3 w-1.5 h-1.5 bg-violet-400/50 rounded-full animate-pulse opacity-30 z-0" />
+      </div>
+      */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
