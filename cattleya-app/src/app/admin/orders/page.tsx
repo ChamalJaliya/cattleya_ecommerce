@@ -13,21 +13,16 @@ import {
   XCircleIcon,
   CurrencyDollarIcon,
   ShoppingBagIcon,
-  UserIcon,
   CalendarDaysIcon,
   ChevronDownIcon,
   PrinterIcon,
-  DocumentArrowDownIcon,
   SparklesIcon,
-  FireIcon,
   BoltIcon,
-  StarIcon,
   CreditCardIcon,
   MapPinIcon,
   HashtagIcon,
   Squares2X2Icon,
   TableCellsIcon,
-  ViewColumnsIcon,
   ArrowUpIcon,
   ArrowDownIcon,
 } from '@heroicons/react/24/outline';
@@ -35,38 +30,61 @@ import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import { ordersApi } from '@/core/infrastructure/api/orders.api';
 import OrderViewModal from '@/shared/components/OrderViewModal';
 
+interface Order {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  total: number;
+  customer: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  items: Array<{
+    product: {
+      name: string;
+      image: string;
+    };
+    quantity: number;
+    price: number;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  orderDate?: string;
+  deliveryDate?: string;
+  trackingNumber?: string;
+  shippingAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+}
+
 const statusOptions = ['All Status', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const paymentStatusOptions = ['All Payment', 'pending', 'paid', 'refunded'];
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('All Payment');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
-  const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
   const itemsPerPage = 12;
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [viewOrder, setViewOrder] = useState<any>(null);
+  const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
 
   // Fetch orders from backend
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
     async function fetchOrders() {
-      setLoading(true);
-      setError(null);
       try {
-        const query: any = {
+        const query: Partial<Order> & { page: number; limit: number; search?: string; status?: string; paymentStatus?: string } = {
           page: currentPage,
           limit: itemsPerPage,
         };
@@ -77,19 +95,12 @@ export default function OrdersPage() {
         setOrders(res.data.items || []);
         setTotalPages(res.data.totalPages || 1);
         setTotalOrders(res.data.total || 0);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load orders');
-      } finally {
-        setLoading(false);
+      } catch {
+        // Handle error silently or show toast
       }
     }
     fetchOrders();
   }, [searchTerm, selectedStatus, selectedPaymentStatus, currentPage]);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedStatus, selectedPaymentStatus]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -196,7 +207,7 @@ export default function OrdersPage() {
     try {
       const res = await ordersApi.getOrder(orderId);
       setViewOrder(res.data);
-    } catch (err) {
+    } catch {
       setViewOrder(null);
     } finally {
       setViewLoading(false);
@@ -514,7 +525,7 @@ export default function OrdersPage() {
                         <MapPinIcon className="w-4 h-4 text-gray-400 mt-0.5" />
                         <div>
                           <span className="text-sm font-medium text-gray-700">Shipping Address:</span>
-                          <p className="text-sm text-gray-600 mt-1">{order.shippingAddress}</p>
+                          <p className="text-sm text-gray-600 mt-1">{order.shippingAddress?.street}, {order.shippingAddress?.city}, {order.shippingAddress?.state}, {order.shippingAddress?.zipCode}, {order.shippingAddress?.country}</p>
                         </div>
                       </div>
                     </div>

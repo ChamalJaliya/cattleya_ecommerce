@@ -124,10 +124,10 @@ export default function AboutPage() {
                   Founded in 2014 by a group of passionate botanists, Cattleya began as a small greenhouse operation with a simple mission: to share the extraordinary beauty of orchids with the world.
                 </p>
                 <p>
-                  What started with just 50 varieties has grown into one of the world's most respected orchid collections, featuring over 500 rare and exotic species from every corner of the globe.
+                  What started with just 50 varieties has grown into one of the world&apos;s most respected orchid collections, featuring over 500 rare and exotic species from every corner of the globe.
                 </p>
                 <p>
-                  Today, we're proud to serve over 15,000 customers worldwide, from beginners taking their first steps into orchid care to seasoned collectors seeking the rarest specimens.
+                  Today, we&apos;re proud to serve over 15,000 customers worldwide, from beginners taking their first steps into orchid care to seasoned collectors seeking the rarest specimens.
                 </p>
               </div>
             </motion.div>
@@ -209,7 +209,7 @@ export default function AboutPage() {
               Meet Our Experts
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              The passionate team behind Cattleya's success, bringing decades of combined expertise.
+              The passionate team behind Cattleya&apos;s success, bringing decades of combined expertise.
             </p>
           </motion.div>
 
@@ -334,7 +334,7 @@ export default function AboutPage() {
                 Cattleya
               </h3>
               <p className="text-gray-400 mb-6 max-w-md">
-                Cultivating beauty through premium orchids. We bring you the world's finest orchid varieties with expert care and unmatched service.
+                Cultivating beauty through premium orchids. We bring you the world&apos;s finest orchid varieties with expert care and unmatched service.
               </p>
             </div>
             <div>

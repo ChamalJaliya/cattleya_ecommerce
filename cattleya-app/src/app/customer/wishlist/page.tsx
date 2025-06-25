@@ -450,7 +450,7 @@ export default function CustomerWishlistPage() {
                     <div className="relative">Move All to Cart</div>
                   </button>
                   <button 
-                    onClick={clearWishlistStore}
+                    onClick={() => clearWishlistStore()}
                     className="group/btn relative overflow-hidden px-4 py-2 bg-gradient-to-r from-red-100 to-pink-100 text-red-700 rounded-xl hover:from-red-200 hover:to-pink-200 transition-all duration-200"
                   >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl blur opacity-0 group-hover/btn:opacity-20 transition duration-300"></div>

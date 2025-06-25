@@ -13,11 +13,10 @@ import {
   CalendarDaysIcon,
   GlobeAltIcon,
   SparklesIcon,
-  UserGroupIcon,
-  CheckIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
-import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
+// import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 
 // Mock analytics data
 const salesData = [
@@ -53,10 +52,10 @@ const trafficSources = [
 export default function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 6 Months');
 
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Analytics', href: '/admin/analytics' }
-  ];
+  // const breadcrumbItems = [
+  //   { label: 'Dashboard', href: '/admin/dashboard' },
+  //   { label: 'Analytics', href: '/admin/analytics' }
+  // ];
 
   const totalRevenue = salesData.reduce((sum, month) => sum + month.revenue, 0);
   const totalOrders = salesData.reduce((sum, month) => sum + month.orders, 0);

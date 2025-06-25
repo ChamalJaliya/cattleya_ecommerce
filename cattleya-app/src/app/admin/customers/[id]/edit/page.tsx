@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -13,7 +14,6 @@ import {
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import { usersApi } from '@/core/infrastructure/api/users.api';
-import { User } from '@/core/domain/entities/User';
 
 interface ApiUser {
   id: string;
@@ -57,13 +57,7 @@ export default function EditCustomerPage() {
     role: 'CUSTOMER'
   });
 
-  useEffect(() => {
-    if (userId) {
-      fetchUser();
-    }
-  }, [userId]);
-
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -72,43 +66,58 @@ export default function EditCustomerPage() {
       console.log('API Response:', response); // Debug log
       
       // Handle nested response structure
-      let userData: any;
+      let userData: unknown;
       if (response.success && response.data) {
         // Check if data is nested (response.data.data) or direct (response.data)
-        const responseData = response.data as any;
-        userData = responseData.data || responseData;
+        const responseData = response.data as unknown;
+        userData = (responseData as { data?: unknown }).data || responseData;
       } else {
         throw new Error('Invalid response structure');
       }
       
-      const apiUser: ApiUser = {
-        id: userData.id,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        role: userData.role,
-        createdAt: userData.createdAt,
-        updatedAt: userData.updatedAt,
-        isBlocked: userData.isBlocked,
-        blockReason: userData.blockReason,
-        profile: userData.profile
-      };
-      
-      setUser(apiUser);
-      setFormData({
-        firstName: apiUser.firstName || '',
-        lastName: apiUser.lastName || '',
-        email: apiUser.email || '',
-        phone: apiUser.profile?.phone || '',
-        role: apiUser.role || 'CUSTOMER'
-      });
-    } catch (err: any) {
+      if (typeof userData === 'object' && userData !== null) {
+        const userObj = userData as Record<string, unknown>;
+        const apiUser: ApiUser = {
+          id: String(userObj.id || ''),
+          email: String(userObj.email || ''),
+          firstName: userObj.firstName ? String(userObj.firstName) : undefined,
+          lastName: userObj.lastName ? String(userObj.lastName) : undefined,
+          role: (userObj.role as 'CUSTOMER' | 'ADMIN' | 'STAFF') || 'CUSTOMER',
+          createdAt: userObj.createdAt ? String(userObj.createdAt) : undefined,
+          updatedAt: userObj.updatedAt ? String(userObj.updatedAt) : undefined,
+          isBlocked: Boolean(userObj.isBlocked),
+          blockReason: userObj.blockReason ? String(userObj.blockReason) : undefined,
+          profile: userObj.profile as { phone?: string; avatar?: string } | undefined
+        };
+        
+        setUser(apiUser);
+        setFormData({
+          firstName: apiUser.firstName || '',
+          lastName: apiUser.lastName || '',
+          email: apiUser.email || '',
+          phone: apiUser.profile?.phone || '',
+          role: apiUser.role || 'CUSTOMER'
+        });
+      } else {
+        throw new Error('Invalid user data structure');
+      }
+    } catch (err: unknown) {
       console.error('Error fetching user:', err);
-      setError(err.message || 'Failed to fetch user details');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to fetch user details');
+      } else {
+        setError('Failed to fetch user details');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchUser();
+    }
+  }, [userId, fetchUser]);
 
   const handleInputChange = (field: keyof EditCustomerForm, value: string) => {
     setFormData(prev => ({
@@ -141,9 +150,13 @@ export default function EditCustomerPage() {
       } else {
         setError('Failed to update customer');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating customer:', err);
-      setError(err.message || 'Failed to update customer');
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to update customer');
+      } else {
+        setError('Failed to update customer');
+      }
     } finally {
       setSaving(false);
     }
@@ -257,10 +270,12 @@ export default function EditCustomerPage() {
               <div className="text-center">
                 <div className="mx-auto mb-4">
                   {user?.profile?.avatar ? (
-                    <img 
+                    <Image 
                       className="h-20 w-20 rounded-full object-cover mx-auto" 
                       src={user.profile.avatar} 
-                      alt="" 
+                      alt="User avatar"
+                      width={80}
+                      height={80}
                     />
                   ) : (
                     <div className="h-20 w-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">

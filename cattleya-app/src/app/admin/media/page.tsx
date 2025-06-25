@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   PhotoIcon,
   CloudArrowUpIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   TrashIcon,
   EyeIcon,
   DocumentIcon,
@@ -52,7 +52,6 @@ export default function MediaPage() {
     setSelectedFiles,
   } = useMediaStore();
 
-  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -122,7 +121,6 @@ export default function MediaPage() {
   // Handle file upload
   const handleFileUpload = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
-    setUploadingFiles(fileArray);
     setShowUploadModal(false);
 
     try {
@@ -131,10 +129,8 @@ export default function MediaPage() {
       } else {
         await uploadMultipleFiles(fileArray, currentFolder);
       }
-      setUploadingFiles([]);
     } catch (error) {
       console.error('Upload failed:', error);
-      setUploadingFiles([]);
     }
   }, [uploadFile, uploadMultipleFiles, currentFolder]);
 
@@ -549,7 +545,7 @@ export default function MediaPage() {
                     <div className="relative">
                       <div className="h-40 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center text-5xl">
                         {item.type === 'image' ? (
-                          <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                          <Image src={item.url} alt={item.name} className="w-full h-full object-cover" width={160} height={240} />
                         ) : (
                           <span>{mediaApi.getFileIcon(item.type)}</span>
                         )}
@@ -651,7 +647,7 @@ export default function MediaPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center text-2xl">
                               {item.type === 'image' ? (
-                                <img src={item.url} alt={item.name} className="w-full h-full object-cover rounded-lg" />
+                                <Image src={item.url} alt={item.name} className="w-full h-full object-cover rounded-lg" width={48} height={48} />
                               ) : (
                                 <span>{mediaApi.getFileIcon(item.type)}</span>
                               )}
@@ -751,7 +747,7 @@ export default function MediaPage() {
                           setCurrentFolder(folderName);
                           alert('Folder created!');
                         }
-                      } catch (err) {
+                      } catch {
                         alert('Failed to create folder.');
                       }
                     }}

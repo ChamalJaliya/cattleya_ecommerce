@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlusIcon,
@@ -28,8 +28,7 @@ import {
   CubeIcon,
   BeakerIcon,
   Squares2X2Icon,
-  TableCellsIcon,
-  ViewColumnsIcon
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import { useProductStore } from '@/core/application/stores/useProductStore';
@@ -71,7 +70,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, productName, loading }: Delet
           </div>
           
           <p className="text-gray-700 mb-6">
-            Are you sure you want to delete <span className="font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">"{productName}"</span>? 
+            Are you sure you want to delete <span className="font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">&quot;{productName}&quot;</span>? 
             This will permanently remove the product from your catalog.
           </p>
           
@@ -110,12 +109,12 @@ export default function AdminProductsPage() {
     products, 
     loading, 
     error, 
-    pagination,
     fetchProducts,
     deleteProduct: removeProduct
   } = useProductStore();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [showFilters, setShowFilters] = useState(false);
@@ -129,21 +128,39 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
+  const loadProducts = useCallback(async (page = 1, search?: string) => {
+    await fetchProducts({
+      page,
+      limit: 20,
+      search: search || undefined,
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    });
+  }, [fetchProducts]);
+
   useEffect(() => {
     setMounted(true);
     // Load products when component mounts
     loadProducts();
   }, []);
 
-  const loadProducts = async (page = 1) => {
-    await fetchProducts({
-      page,
-      limit: 20,
-      search: searchTerm || undefined,
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
-    });
-  };
+  // Debounced search effect
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const timeoutId = setTimeout(() => {
+      setSearchQuery(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, mounted]);
+
+  // Effect to reload products when search query changes
+  useEffect(() => {
+    if (mounted) {
+      loadProducts(1, searchQuery);
+    }
+  }, [searchQuery, loadProducts, mounted]);
 
   // Filter products based on search and filters
   const filteredProducts = products.filter(product => {
@@ -194,7 +211,7 @@ export default function AdminProductsPage() {
       toast.success('Product deleted successfully');
       setDeleteModal({ isOpen: false, product: null });
       // Reload products
-      await loadProducts();
+      await loadProducts(1, searchQuery);
     } catch (error) {
       toast.error('Failed to delete product');
       console.error('Delete error:', error);
@@ -204,11 +221,7 @@ export default function AdminProductsPage() {
   };
 
   const handleSearch = async () => {
-    await loadProducts(1);
-  };
-
-  const handlePageChange = async (page: number) => {
-    await loadProducts(page);
+    await loadProducts(1, searchQuery);
   };
 
   const handleViewProduct = (productId: string) => {
@@ -395,7 +408,6 @@ export default function AdminProductsPage() {
                       placeholder="Search products, SKU..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-200"
                     />
                   </div>

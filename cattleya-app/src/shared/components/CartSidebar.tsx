@@ -224,12 +224,12 @@ export default function CartSidebar() {
                                     className="relative overflow-hidden rounded-xl shadow-lg"
                                   >
                                     <img
-                                      src={item.product.images[0]?.url || '/placeholder-product.jpg'}
+                                      src={item.product.images[0]?.url || '/placeholder-product.svg'}
                                       alt={item.product.name}
                                       className="w-20 h-20 object-cover"
                                       onError={(e) => {
                                         const target = e.target as HTMLImageElement;
-                                        target.src = '/placeholder-product.jpg';
+                                        target.src = '/placeholder-product.svg';
                                       }}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -15,6 +15,7 @@ import {
   EyeSlashIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import IconUpload from '@/shared/components/IconUpload';
@@ -28,7 +29,7 @@ type CategoryFormData = Omit<CreateCategoryDto, 'icon'> & {
   icon: File | null;
 };
 
-export default function AddCategoryPage() {
+function AddCategoryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -73,7 +74,7 @@ export default function AddCategoryPage() {
       try {
         const allCategories = await categoriesApi.getAllCategories();
         setParentCategories(allCategories);
-      } catch (error) {
+      } catch {
         toast.error('Failed to load parent categories.');
       }
     };
@@ -120,8 +121,12 @@ export default function AddCategoryPage() {
         const errorMsg = response.error?.response?.data?.message || 'Failed to create category.';
         toast.error(errorMsg);
       }
-    } catch (error: any) {
-      toast.error(error.message || 'An unexpected error occurred.');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'An unexpected error occurred.');
+      } else {
+        toast.error('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -213,7 +218,7 @@ export default function AddCategoryPage() {
                           <div className="flex flex-col items-center mb-4">
                             {iconUrl ? (
                               <div className="w-24 h-24 flex items-center justify-center bg-white border-2 border-purple-300 rounded-xl shadow-md mb-2 relative">
-                                <img src={iconUrl} alt="Category Icon" className="w-16 h-16 object-contain" />
+                                <Image src={iconUrl} alt="Category Icon" className="w-16 h-16 object-contain" width={64} height={64} />
                                 <button
                                   type="button"
                                   className="absolute top-1 right-1 bg-white border border-gray-300 rounded-full p-1 shadow hover:bg-red-100 transition"
@@ -366,5 +371,13 @@ export default function AddCategoryPage() {
         </motion.div>
       </div>
     </AdminLayout>
+  );
+}
+
+export default function AddCategoryPageWrapper() {
+  return (
+    <Suspense>
+      <AddCategoryPage />
+    </Suspense>
   );
 } 

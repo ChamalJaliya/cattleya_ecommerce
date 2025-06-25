@@ -29,19 +29,20 @@ import {
   GlobeAltIcon,
   ShoppingBagIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 import { useProductStore } from '@/core/application/stores/useProductStore';
 import { Product } from '@/core/domain/entities/Product';
 import toast from 'react-hot-toast';
 
-interface ProductViewPageProps {
+interface ProductViewClientProps {
   params: {
     id: string;
   };
 }
 
-export default function ProductViewPage({ params }: ProductViewPageProps) {
+function ProductViewClient({ params }: ProductViewClientProps) {
   const router = useRouter();
   const { products, loading, fetchProducts } = useProductStore();
   const [product, setProduct] = useState<Product | null>(null);
@@ -539,4 +540,14 @@ export default function ProductViewPage({ params }: ProductViewPageProps) {
       </div>
     </AdminLayout>
   );
+}
+
+// Server component wrapper
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function Page({ params }: PageProps) {
+  const resolvedParams = await params;
+  return <ProductViewClient params={resolvedParams} />;
 } 

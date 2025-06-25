@@ -3,43 +3,23 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChatBubbleLeftRightIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   ChatBubbleLeftEllipsisIcon,
   CheckIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-  Squares2X2Icon,
-  TableCellsIcon,
-  XMarkIcon,
-  PaperAirplaneIcon,
   UserIcon,
-  EnvelopeIcon,
-  CalendarIcon,
   ArrowUturnLeftIcon,
-  ArchiveBoxIcon,
   FlagIcon,
   InboxIcon,
-  DocumentTextIcon,
   ShoppingBagIcon,
   ExclamationCircleIcon,
   StarIcon,
-  TrashIcon,
-  EyeIcon,
-  EyeSlashIcon,
   PlusIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ChartBarIcon,
-  FireIcon,
-  SparklesIcon,
-  ListBulletIcon,
   ArrowUpIcon,
   ArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
-import RichTextEditor from '@/shared/components/RichTextEditor';
 import ComposeMessageModal from '@/shared/components/ComposeMessageModal';
 import MessageDetail from '@/shared/components/MessageDetail';
 import MessageNavigation from '@/shared/components/MessageNavigation';
@@ -145,7 +125,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState(mockMessages);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [selectedMessage, setSelectedMessage] = useState<typeof mockMessages[0] | null>(null);
   const [showCompose, setShowCompose] = useState(false);
 
   const filteredMessages = messages.filter(message => {
@@ -156,45 +136,16 @@ export default function MessagesPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'unread': return 'bg-blue-100 text-blue-800 font-semibold';
-      case 'read': return 'text-gray-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getCategoryColor = (category: string) => {
     const cat = categories.find(c => c.id === category);
     return cat ? cat.color : 'from-gray-500 to-gray-600';
   };
 
-  const handleSendMessage = (message: any) => {
+  const handleSendMessage = (message: unknown) => {
     console.log('Sending message:', message);
     // Here you would typically add the new message to your state
     // For example: setMessages([ { id: Date.now().toString(), ...message }, ...messages]);
     setShowCompose(false);
-  };
-
-  const toggleStar = (messageId: string) => {
-    setMessages(messages.map(msg => 
-      msg.id === messageId ? { ...msg, isStarred: !msg.isStarred } : msg
-    ));
-  };
-
-  const toggleFlag = (messageId: string) => {
-    setMessages(messages.map(msg => 
-      msg.id === messageId ? { ...msg, isFlagged: !msg.isFlagged } : msg
-    ));
   };
 
   const markAsRead = (messageId: string) => {
@@ -203,15 +154,12 @@ export default function MessagesPage() {
     ));
   };
 
-  const unreadCount = messages.filter(m => m.status === 'unread').length;
-  const starredCount = messages.filter(m => m.isStarred).length;
-  const flaggedCount = messages.filter(m => m.isFlagged).length;
   const urgentMessages = messages.filter(m => m.priority === 'high').length;
 
   const statsData = [
     {
       name: 'Unread Messages',
-      value: unreadCount.toString(),
+      value: messages.filter(m => m.status === 'unread').length.toString(),
       change: '+3',
       changeType: 'increase' as const,
       icon: ChatBubbleLeftEllipsisIcon,
@@ -334,7 +282,6 @@ export default function MessagesPage() {
               </div>
               <div className="flex items-center space-x-4">
                 <div className="hidden md:flex items-center space-x-2">
-                  <SparklesIcon className="w-6 h-6 text-purple-500 animate-pulse" />
                   <span className="text-sm font-medium text-purple-700 bg-purple-100 px-3 py-1 rounded-full">
                     Messages Dashboard Overview
                   </span>
@@ -369,7 +316,6 @@ export default function MessagesPage() {
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
                         <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{stat.name}</p>
-                        <div className="ml-2 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
                       </div>
                       <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
                         {stat.value}
@@ -391,12 +337,6 @@ export default function MessagesPage() {
                         <span className="text-xs text-gray-500">vs last month</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-                    </div>
-                    <div className="relative">
-                      <div className={`w-16 h-16 bg-gradient-to-r ${stat.iconBg} rounded-2xl flex items-center justify-center shadow-lg ${stat.glowColor} group-hover:shadow-xl transition-all duration-300`}>
-                        <stat.icon className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
                     </div>
                   </div>
                 </div>

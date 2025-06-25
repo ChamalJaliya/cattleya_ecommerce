@@ -56,7 +56,7 @@ export class BaseApiService {
     }
   }
 
-  private getHeaders(): HeadersInit {
+  protected getHeaders(): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };

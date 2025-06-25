@@ -8,8 +8,6 @@ import {
   EyeIcon,
   PencilIcon,
   NoSymbolIcon,
-  UserIcon,
-  EnvelopeIcon,
   PhoneIcon,
   ShoppingBagIcon,
   CurrencyDollarIcon,
@@ -26,7 +24,6 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
-import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 
 // Mock customers data
 const mockCustomers = [
@@ -148,11 +145,6 @@ export default function CustomersPage() {
     
     return matchesSearch && matchesStatus && matchesType;
   });
-
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Customers', href: '/admin/customers' }
-  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {

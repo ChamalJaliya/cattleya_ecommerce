@@ -44,19 +44,18 @@ export default function CustomerProfilePage() {
     lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    dateOfBirth: user?.dateOfBirth || '',
+    dateOfBirth: user?.dateOfBirth ? (typeof user.dateOfBirth === 'string' ? user.dateOfBirth : user.dateOfBirth.toISOString().slice(0, 10)) : '',
     address: {
-      street: user?.address?.street || '',
-      city: user?.address?.city || '',
-      state: user?.address?.state || '',
-      zipCode: user?.address?.zipCode || '',
-      country: user?.address?.country || 'United States'
+      addressLine1: user?.addresses?.[0]?.addressLine1 || '',
+      addressLine2: user?.addresses?.[0]?.addressLine2 || '',
+      city: user?.addresses?.[0]?.city || '',
+      state: user?.addresses?.[0]?.state || '',
+      postalCode: user?.addresses?.[0]?.postalCode || '',
+      country: user?.addresses?.[0]?.country || 'United States'
     },
     preferences: {
       emailNotifications: user?.preferences?.emailNotifications ?? true,
       smsNotifications: user?.preferences?.smsNotifications ?? false,
-      marketingEmails: user?.preferences?.marketingEmails ?? true,
-      orderUpdates: user?.preferences?.orderUpdates ?? true,
       newsletter: user?.preferences?.newsletter ?? true,
       language: user?.preferences?.language || 'en',
       currency: user?.preferences?.currency || 'USD',
@@ -262,8 +261,8 @@ export default function CustomerProfilePage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Street Address</label>
             <input
               type="text"
-              value={formData.address.street}
-              onChange={(e) => handleInputChange('address.street', e.target.value)}
+              value={formData.address.addressLine1}
+              onChange={(e) => handleInputChange('address.addressLine1', e.target.value)}
               disabled={!isEditing}
               className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
                 !isEditing ? 'bg-gray-50' : 'hover:border-purple-300'
@@ -301,8 +300,8 @@ export default function CustomerProfilePage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">ZIP Code</label>
             <input
               type="text"
-              value={formData.address.zipCode}
-              onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
+              value={formData.address.postalCode}
+              onChange={(e) => handleInputChange('address.postalCode', e.target.value)}
               disabled={!isEditing}
               className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 ${
                 !isEditing ? 'bg-gray-50' : 'hover:border-purple-300'
@@ -343,8 +342,6 @@ export default function CustomerProfilePage() {
           {[
             { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive updates via email' },
             { key: 'smsNotifications', label: 'SMS Notifications', description: 'Receive updates via SMS' },
-            { key: 'marketingEmails', label: 'Marketing Emails', description: 'Receive promotional content' },
-            { key: 'orderUpdates', label: 'Order Updates', description: 'Get notified about order status changes' },
             { key: 'newsletter', label: 'Newsletter', description: 'Subscribe to our newsletter' }
           ].map((pref) => (
             <div key={pref.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">

@@ -10,7 +10,6 @@ import {
   ChartBarIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  EyeIcon,
   PlusIcon,
   ClipboardDocumentListIcon,
   SparklesIcon,
@@ -224,7 +223,7 @@ export default function AdminDashboard() {
                   <span className="ml-2 text-3xl">👋</span>
                 </h1>
                 <p className="text-gray-600 text-lg">
-                  Here's what's happening with your orchid business today.
+                  Here&apos;s what&apos;s happening with your orchid business today.
                 </p>
               </div>
               <div className="hidden md:flex items-center space-x-2">

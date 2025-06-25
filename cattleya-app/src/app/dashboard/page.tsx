@@ -38,7 +38,7 @@ export default function CustomerDashboard() {
   // Stats from wishlist
   const wishlistCount = wishlist?.totalItems || 0;
   const wishlistValue = wishlist?.totalValue || 0;
-  const wishlistInStock = wishlist?.items?.filter(item => item.productInStock).length || 0;
+  const wishlistInStock = wishlist?.items?.filter(item => item.product.isInStock).length || 0;
 
   // Fetch wishlist data on component mount
   useEffect(() => {

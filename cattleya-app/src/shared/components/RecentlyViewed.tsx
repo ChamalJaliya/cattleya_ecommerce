@@ -98,7 +98,7 @@ export default function RecentlyViewed({
             <div className="relative aspect-square overflow-hidden">
               <Link href={`/products/${product.id}`}>
                 <img
-                  src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.jpg'}
+                  src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || '/placeholder-product.svg'}
                   alt={product.name || 'Unnamed Product'}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />

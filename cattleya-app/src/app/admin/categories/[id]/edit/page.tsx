@@ -16,6 +16,7 @@ import {
   PencilIcon,
   CloudIcon
 } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
 import IconUpload from '@/shared/components/IconUpload';
@@ -90,7 +91,7 @@ export default function EditCategoryPage() {
           toast.error('Could not find the category to edit.');
           router.push('/admin/categories');
         }
-      } catch (error) {
+      } catch {
         toast.error('Failed to load category data.');
       } finally {
         setLoading(false);
@@ -146,8 +147,12 @@ export default function EditCategoryPage() {
         const errorMsg = response.error?.response?.data?.message || 'Failed to update category.';
         toast.error(errorMsg);
       }
-    } catch (error: any) {
-      toast.error(error.message || 'An unexpected error occurred.');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'An unexpected error occurred.');
+      } else {
+        toast.error('An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -249,7 +254,7 @@ export default function EditCategoryPage() {
                           <div className="flex flex-col items-center mb-4">
                             {iconUrl ? (
                               <div className="w-24 h-24 flex items-center justify-center bg-white border-2 border-purple-300 rounded-xl shadow-md mb-2 relative">
-                                <img src={iconUrl} alt="Category Icon" className="w-16 h-16 object-contain" />
+                                <Image src={iconUrl} alt="Category Icon" className="w-16 h-16 object-contain" width={64} height={64} />
                                 <button
                                   type="button"
                                   className="absolute top-1 right-1 bg-white border border-gray-300 rounded-full p-1 shadow hover:bg-red-100 transition"

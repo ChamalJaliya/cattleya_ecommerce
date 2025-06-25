@@ -401,7 +401,7 @@ export default function ProductDetailPage() {
                 onClick={toggleZoom}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/placeholder-product.jpg';
+                  target.src = '/placeholder-product.svg';
                 }}
               />
               
@@ -468,7 +468,7 @@ export default function ProductDetailPage() {
                 style={{ transform: `rotate(${rotation}deg)` }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/placeholder-product.jpg';
+                  target.src = '/placeholder-product.svg';
                 }}
               />
               
@@ -701,7 +701,7 @@ export default function ProductDetailPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder-product.jpg';
+                          target.src = '/placeholder-product.svg';
                         }}
                       />
                       
@@ -1081,7 +1081,7 @@ export default function ProductDetailPage() {
                 >
                   <div className="aspect-square overflow-hidden">
                     <img
-                      src={relatedProduct.images?.find(img => img.isMain)?.url || relatedProduct.images?.[0]?.url || '/placeholder-product.jpg'}
+                      src={relatedProduct.images?.find(img => img.isMain)?.url || relatedProduct.images?.[0]?.url || '/placeholder-product.svg'}
                       alt={relatedProduct.name || 'Related Product'}
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                     />

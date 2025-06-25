@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -11,19 +12,15 @@ import {
   FolderIcon,
   EyeIcon,
   Squares2X2Icon,
-  TableCellsIcon,
   FunnelIcon,
   ChevronDownIcon,
   ArrowUpIcon,
   CheckIcon,
   SparklesIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import AdminLayout from '@/shared/components/layouts/AdminLayout';
-import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 import CategoryTreeView from '@/shared/components/CategoryTreeView';
-import CategoryForm from '@/shared/components/CategoryForm';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { categoriesApi, Category } from '@/core/infrastructure/api/categories.api';
 
@@ -63,7 +60,7 @@ const categoryIcons = {
 
 const statusOptions = ['All Status', 'active', 'inactive'];
 
-export default function CategoriesPage() {
+function CategoriesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -206,11 +203,6 @@ export default function CategoriesPage() {
                          (selectedStatus === 'inactive' && !category.isActive);
     return matchesSearch && matchesStatus;
   });
-
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/admin/dashboard' },
-    { label: 'Categories', href: '/admin/categories' }
-  ];
 
   const stats = {
     total: categories.length,
@@ -519,10 +511,12 @@ export default function CategoriesPage() {
                 <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl transition-all duration-300 group-hover:scale-105 flex flex-col md:flex-row w-full min-h-[180px] md:min-h-[220px]">
                   <div className="h-32 md:h-full w-full md:w-48 bg-gradient-to-br from-purple-100 to-pink-100 flex-1 flex items-center justify-center text-5xl flex-shrink-0">
                     {category.icon ? (
-                      <img
+                      <Image
                         src={category.icon}
                         alt={category.name + ' icon'}
                         className="h-24 md:h-32 max-h-full w-auto mx-auto object-contain text-purple-600"
+                        width={128}
+                        height={128}
                       />
                     ) : (
                       getCategoryIcon(category)
@@ -574,5 +568,13 @@ export default function CategoriesPage() {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+export default function CategoriesPageWrapper() {
+  return (
+    <Suspense>
+      <CategoriesPage />
+    </Suspense>
   );
 } 
