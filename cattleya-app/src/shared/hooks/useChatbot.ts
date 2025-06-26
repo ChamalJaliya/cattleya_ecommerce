@@ -1,173 +1,251 @@
-import { useState, useEffect, useCallback } from 'react';
-import { chatbotApi, ChatMessage, SendMessageRequest, ChatResponse } from '../../core/infrastructure/api/chatbotApi';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { chatbotApi, ChatbotResponse, ChatMessage, ProductSearchResult, ProductRecommendation } from '../../core/infrastructure/api/chatbotApi';
 import { useAuthStore } from '../../core/application/stores/useAuthStore';
 
-export const useChatbot = (sessionId?: string) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export interface ChatMessageWithId extends ChatMessage {
+  tempId?: string;
+}
+
+export interface UseChatbotReturn {
+  messages: ChatMessageWithId[];
+  isLoading: boolean;
+  error: string | null;
+  sendMessage: (message: string) => Promise<void>;
+  quickReplies: string[];
+  unreadCount: number;
+  markAsRead: () => Promise<void>;
+  loadHistory: () => Promise<void>;
+  clearError: () => void;
+  sessionId: string;
+  products: ProductSearchResult[];
+  recommendations: ProductRecommendation | null;
+  currentIntent: string | null;
+  // Product-related methods
+  searchProducts: (query: string, limit?: number) => Promise<ProductSearchResult[]>;
+  getRecommendations: (type: 'beginner' | 'rare' | 'featured' | 'best_seller' | 'new_arrival') => Promise<ProductRecommendation | null>;
+  getProductDetails: (productId: string) => Promise<ProductSearchResult | null>;
+  getStockStatus: (productId: string) => Promise<{ inStock: boolean; quantity: number; status: string } | null>;
+}
+
+export const useChatbot = (): UseChatbotReturn => {
+  const [messages, setMessages] = useState<ChatMessageWithId[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [products, setProducts] = useState<ProductSearchResult[]>([]);
+  const [recommendations, setRecommendations] = useState<ProductRecommendation | null>(null);
+  const [currentIntent, setCurrentIntent] = useState<string | null>(null);
+  
+  const sessionIdRef = useRef<string>(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const { user } = useAuthStore();
-
-  // Ensure messages is always an array
-  const safeMessages = messages || [];
-
-  // Debug logging
-  console.log('useChatbot debug:', { 
-    user: user?.id, 
-    isAuthenticated: !!user, 
-    messagesLength: safeMessages.length,
-    isOpen,
-    sessionId 
-  });
 
   // Load chat history on mount
   useEffect(() => {
-    console.log('useChatbot useEffect: user =', user?.id, 'isOpen =', isOpen);
-    if (user && isOpen) {
-      console.log('useChatbot: Loading chat history');
-      loadChatHistory();
-    } else {
-      console.log('useChatbot: Skipping chat history load - user:', !!user, 'isOpen:', isOpen);
-    }
-  }, [user, isOpen, sessionId]);
+    loadHistory();
+    loadQuickReplies();
+  }, []);
 
-  const loadChatHistory = useCallback(async () => {
-    if (!user) {
-      console.log('loadChatHistory: No user, skipping');
-      return;
-    }
-    
+  // Load unread count periodically
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      try {
+        const count = await chatbotApi.getUnreadCount(sessionIdRef.current);
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Failed to load unread count:', error);
+      }
+    };
+
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadHistory = useCallback(async () => {
     try {
-      console.log('loadChatHistory: Loading chat history for user:', user.id);
-      setIsLoading(true);
-      setError(null);
-      const response = await chatbotApi.getChatHistory(sessionId, 50);
-      console.log('loadChatHistory: Response received:', response);
-      setMessages(response.messages || []);
-    } catch (err) {
-      console.error('loadChatHistory: Error loading chat history:', err);
+      const history = await chatbotApi.getChatHistory(sessionIdRef.current, 50);
+      setMessages(Array.isArray(history) ? history : []);
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
       setError('Failed to load chat history');
-    } finally {
-      setIsLoading(false);
     }
-  }, [user, sessionId]);
+  }, []);
+
+  const loadQuickReplies = useCallback(async (context?: string) => {
+    try {
+      const replies = await chatbotApi.getQuickReplies(context);
+      setQuickReplies(replies);
+    } catch (error) {
+      console.error('Failed to load quick replies:', error);
+      // Fallback to default quick replies
+      setQuickReplies(['Help', 'Contact Support', 'Browse Products']);
+    }
+  }, []);
 
   const sendMessage = useCallback(async (message: string) => {
-    if (!user) return;
-    
+    if (!message.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    // Add user message immediately
+    const userMessage: ChatMessageWithId = {
+      id: `temp_${Date.now()}`,
+      userId: user?.id || 'anonymous',
+      message: message.trim(),
+      sender: 'USER',
+      sessionId: sessionIdRef.current,
+      isRead: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      tempId: `temp_${Date.now()}`,
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
     try {
-      setIsLoading(true);
-      setError(null);
+      const response = await chatbotApi.sendMessage({
+        message: message.trim(),
+        sessionId: sessionIdRef.current,
+      });
 
-      // Add user message to UI immediately
-      const userMessage: ChatMessage = {
-        id: `temp-${Date.now()}`,
-        userId: user.id,
-        message,
-        sender: 'USER',
-        isRead: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      setMessages(prev => [...prev, userMessage]);
-
-      // Send to API
-      const request: SendMessageRequest = {
-        message,
-        sessionId,
-      };
-      
-      const response: ChatResponse = await chatbotApi.sendMessage(request);
-
-      // Add bot response to UI
-      const botMessage: ChatMessage = {
-        id: `bot-${Date.now()}`,
-        userId: user.id,
+      // Add bot response
+      const botMessage: ChatMessageWithId = {
+        id: `bot_${Date.now()}`,
+        userId: 'bot',
         message: response.message,
         sender: 'BOT',
-        metadata: response.metadata,
+        sessionId: sessionIdRef.current,
         isRead: false,
-        sessionId,
+        metadata: response.metadata,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       setMessages(prev => [...prev, botMessage]);
 
-      return response;
-    } catch (err) {
-      setError('Failed to send message');
-      console.error('Error sending message:', err);
+      // Update quick replies if provided
+      if (response.quickReplies && response.quickReplies.length > 0) {
+        setQuickReplies(response.quickReplies);
+      }
+
+      // Update products if provided
+      if (response.metadata?.products) {
+        setProducts(response.metadata.products);
+      }
+
+      // Update recommendations if provided
+      if (response.metadata?.recommendations) {
+        setRecommendations(response.metadata.recommendations);
+      }
+
+      // Update current intent
+      if (response.metadata?.intent) {
+        setCurrentIntent(response.metadata.intent);
+      }
+
+      // Mark messages as read
+      await markAsRead();
+
+      // Reload history to get the actual saved messages
+      await loadHistory();
+
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setError('Failed to send message. Please try again.');
       
       // Remove the temporary user message on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')));
+      setMessages(prev => prev.filter(msg => msg.tempId !== userMessage.tempId));
     } finally {
       setIsLoading(false);
     }
-  }, [user, sessionId]);
+  }, [user?.id, loadHistory]);
 
-  const escalateToHuman = useCallback(async (reason?: string) => {
-    if (!user) return;
-    
+  const markAsRead = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
+      await chatbotApi.markMessagesAsRead(sessionIdRef.current);
+      setUnreadCount(0);
       
-      const response = await chatbotApi.escalateToHuman({ sessionId, reason });
-      
-      // Add escalation message
-      const escalationMessage: ChatMessage = {
-        id: `escalation-${Date.now()}`,
-        userId: user.id,
-        message: response.message,
-        sender: 'BOT',
-        metadata: { escalated: true },
-        isRead: false,
-        sessionId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      setMessages(prev => [...prev, escalationMessage]);
-      
-      return response;
-    } catch (err) {
-      setError('Failed to escalate chat');
-      console.error('Error escalating chat:', err);
-    } finally {
-      setIsLoading(false);
+      // Update messages to mark them as read
+      setMessages(prev => prev.map(msg => 
+        msg.sender === 'BOT' ? { ...msg, isRead: true } : msg
+      ));
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
     }
-  }, [user, sessionId]);
-
-  const clearMessages = useCallback(() => {
-    setMessages([]);
   }, []);
 
-  const toggleChat = useCallback(() => {
-    setIsOpen(prev => !prev);
+  const clearError = useCallback(() => {
+    setError(null);
   }, []);
 
-  const openChat = useCallback(() => {
-    setIsOpen(true);
+  // Product-related methods
+  const searchProducts = useCallback(async (query: string, limit?: number) => {
+    try {
+      const results = await chatbotApi.searchProducts(query, limit);
+      setProducts(results);
+      return results;
+    } catch (error) {
+      console.error('Failed to search products:', error);
+      setError('Failed to search products');
+      return [];
+    }
   }, []);
 
-  const closeChat = useCallback(() => {
-    setIsOpen(false);
+  const getRecommendations = useCallback(async (type: 'beginner' | 'rare' | 'featured' | 'best_seller' | 'new_arrival') => {
+    try {
+      const recs = await chatbotApi.getProductRecommendations(type);
+      setRecommendations(recs);
+      return recs;
+    } catch (error) {
+      console.error('Failed to get recommendations:', error);
+      setError('Failed to get recommendations');
+      return null;
+    }
+  }, []);
+
+  const getProductDetails = useCallback(async (productId: string) => {
+    try {
+      const product = await chatbotApi.getProductDetails(productId);
+      return product;
+    } catch (error) {
+      console.error('Failed to get product details:', error);
+      setError('Failed to get product details');
+      return null;
+    }
+  }, []);
+
+  const getStockStatus = useCallback(async (productId: string) => {
+    try {
+      const status = await chatbotApi.getProductStockStatus(productId);
+      return status;
+    } catch (error) {
+      console.error('Failed to get stock status:', error);
+      setError('Failed to get stock status');
+      return null;
+    }
   }, []);
 
   return {
-    messages: safeMessages,
+    messages,
     isLoading,
     error,
-    isOpen,
     sendMessage,
-    escalateToHuman,
-    clearMessages,
-    toggleChat,
-    openChat,
-    closeChat,
-    loadChatHistory,
+    quickReplies,
+    unreadCount,
+    markAsRead,
+    loadHistory,
+    clearError,
+    sessionId: sessionIdRef.current,
+    products,
+    recommendations,
+    currentIntent,
+    // Product-related methods
+    searchProducts,
+    getRecommendations,
+    getProductDetails,
+    getStockStatus,
   };
 }; 

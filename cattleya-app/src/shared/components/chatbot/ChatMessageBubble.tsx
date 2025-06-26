@@ -8,10 +8,28 @@ interface ChatMessageBubbleProps {
   createdAt: Date | string;
 }
 
+// Utility function to format message with enhanced styling
+const formatMessage = (message: string) => {
+  if (typeof message !== 'string') return '';
+  // Convert markdown-like formatting to HTML
+  let formattedMessage = message
+    // Bold text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic text
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Strikethrough
+    .replace(/~~(.*?)~~/g, '<del>$1</del>')
+    // Line breaks
+    .replace(/\n/g, '<br />');
+
+  return formattedMessage;
+};
+
 export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, sender, createdAt }) => {
   const isUser = sender === 'USER';
   const isBot = sender === 'BOT' || sender === 'HUMAN';
   const time = new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formattedMessage = formatMessage(message);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -28,7 +46,10 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, s
             ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-br-md'
             : 'bg-white/90 text-gray-800 rounded-bl-md border border-gray-100/50'
         }`}>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message}</p>
+          <div 
+            className="text-sm leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: formattedMessage }}
+          />
           <span className="text-xs opacity-70 mt-2 block text-right">{time}</span>
         </div>
       </div>

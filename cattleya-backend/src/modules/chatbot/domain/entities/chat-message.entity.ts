@@ -3,32 +3,24 @@ export interface ChatMessage {
   userId: string;
   message: string;
   sender: 'USER' | 'BOT' | 'HUMAN';
-  metadata?: {
-    intent?: string;
-    confidence?: number;
-    escalated?: boolean;
-    sessionId?: string;
-    productId?: string;
-    orderId?: string;
-  };
+  metadata?: any;
   isRead: boolean;
   sessionId?: string;
   createdAt: Date;
   updatedAt: Date;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 }
 
 export interface CreateChatMessageDto {
   userId: string;
   message: string;
   sender: 'USER' | 'BOT' | 'HUMAN';
-  metadata?: {
-    intent?: string;
-    confidence?: number;
-    escalated?: boolean;
-    sessionId?: string;
-    productId?: string;
-    orderId?: string;
-  };
+  metadata?: any;
   sessionId?: string;
 }
 

@@ -20,28 +20,28 @@ export interface SetupIntent {
 
 export class PaymentMethodsApi {
   static async getPaymentMethods(): Promise<PaymentMethod[]> {
-    const response = await apiClient.get('/api/payment-methods');
+    const response = await apiClient.get('/payment-methods');
     return response.data;
   }
 
   static async createSetupIntent(): Promise<SetupIntent> {
-    const response = await apiClient.post('/api/payment-methods/setup-intent');
+    const response = await apiClient.post('/payment-methods/setup-intent');
     return response.data;
   }
 
   static async addPaymentMethod(setupIntentId: string): Promise<PaymentMethod> {
-    const response = await apiClient.post('/api/payment-methods/add', {
+    const response = await apiClient.post('/payment-methods/add', {
       setupIntentId,
     });
     return response.data;
   }
 
   static async deletePaymentMethod(id: string): Promise<void> {
-    await apiClient.delete(`/api/payment-methods/${id}`);
+    await apiClient.delete(`/payment-methods/${id}`);
   }
 
   static async setDefaultPaymentMethod(id: string): Promise<PaymentMethod> {
-    const response = await apiClient.put(`/api/payment-methods/${id}/default`);
+    const response = await apiClient.put(`/payment-methods/${id}/default`);
     return response.data;
   }
 } 

@@ -12,25 +12,37 @@ export const ChatbotWidgetContainer: React.FC<{ sessionId?: string; className?: 
     messages,
     isLoading,
     error,
-    isOpen,
+    quickReplies,
     sendMessage,
-    toggleChat,
-    closeChat,
-  } = useChatbot(sessionId);
+    loadHistory,
+    clearError,
+    sessionId: hookSessionId,
+  } = useChatbot();
 
   const [inputMessage, setInputMessage] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [hasGreeted, setHasGreeted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Find suggested actions from the latest bot message
-  const quickSuggestions = [
+  // Auto-greet when chat opens for the first time
+  useEffect(() => {
+    if (isOpen && !hasGreeted && messages.length === 0) {
+      setHasGreeted(true);
+      // Send a greeting message
+      sendMessage("Hello! I'm looking for orchids");
+    }
+  }, [isOpen, hasGreeted, messages.length, sendMessage]);
+
+  // Fallback quick replies if backend doesn't provide any
+  const fallbackQuickReplies = [
     '🌸 What orchids do you recommend for beginners?',
     '💧 How do I care for my orchid?',
     '🚚 What\'s your shipping policy?',
     '📦 I need help with my order',
   ];
-  const latestBotMessage = [...(messages || [])].reverse().find(m => m.sender === 'BOT' && m.metadata?.suggestedActions?.length);
-  const dynamicSuggestions = latestBotMessage?.metadata?.suggestedActions || quickSuggestions;
+
+  const displayQuickReplies = quickReplies.length > 0 ? quickReplies : fallbackQuickReplies;
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -49,6 +61,18 @@ export const ChatbotWidgetContainer: React.FC<{ sessionId?: string; className?: 
   const handleSuggestionClick = async (suggestion: string) => {
     setInputMessage('');
     await sendMessage(suggestion);
+  };
+
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      setMinimized(false);
+    }
+  };
+
+  const closeChat = () => {
+    setIsOpen(false);
+    setMinimized(false);
   };
 
   if (!isOpen && !minimized) {
@@ -78,15 +102,15 @@ export const ChatbotWidgetContainer: React.FC<{ sessionId?: string; className?: 
                   </div>
                   <h3 className="font-semibold text-lg mb-3 text-gray-800">Welcome to Cattleya!</h3>
                   <p className="text-sm mb-6 text-gray-600 max-w-xs mx-auto">
-                    I'm here to help you discover the perfect orchids and answer all your questions.
+                    I'm here to help you discover the perfect orchids and answer all your questions about care, ordering, and our beautiful collection.
                   </p>
-                  <QuickReplies suggestions={quickSuggestions} onClick={handleSuggestionClick} />
+                  <QuickReplies suggestions={displayQuickReplies} onClick={handleSuggestionClick} />
                 </div>
               ) : (
                 <>
                   <ChatMessages messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
-                  {!isLoading && dynamicSuggestions?.length > 0 && (
-                    <QuickReplies suggestions={dynamicSuggestions} onClick={handleSuggestionClick} />
+                  {!isLoading && displayQuickReplies?.length > 0 && (
+                    <QuickReplies suggestions={displayQuickReplies} onClick={handleSuggestionClick} />
                   )}
                 </>
               )}
@@ -95,6 +119,12 @@ export const ChatbotWidgetContainer: React.FC<{ sessionId?: string; className?: 
               {error && (
                 <div className="mb-3 p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100">
                   ⚠️ {error}
+                  <button 
+                    onClick={clearError}
+                    className="ml-2 text-red-400 hover:text-red-600"
+                  >
+                    ✕
+                  </button>
                 </div>
               )}
               <ChatInput

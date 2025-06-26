@@ -18,9 +18,14 @@ import { ProductRepository } from './repositories/product.repository';
       provide: 'IProductRepository',
       useClass: ProductRepository,
     },
+    {
+      provide: 'ICategoryRepository',
+      useClass: CategoryRepository,
+    },
   ],
   exports: [
     'IProductRepository',
+    'ICategoryRepository',
   ],
 })
 export class ProductsInfrastructureModule {} 

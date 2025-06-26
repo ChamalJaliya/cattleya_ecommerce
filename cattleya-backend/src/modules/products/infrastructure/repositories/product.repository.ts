@@ -418,4 +418,12 @@ export class ProductRepository implements IProductRepository {
   async existsBySku(sku: string, excludeId?: string): Promise<boolean> {
     return false;
   }
+
+  async getAllProductNames(): Promise<string[]> {
+    const products = await this.prisma.product.findMany({
+      where: { isActive: true },
+      select: { name: true }
+    });
+    return products.map(p => p.name);
+  }
 } 
