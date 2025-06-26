@@ -24,26 +24,32 @@ import { TypingIndicator } from './chatbot/TypingIndicator';
 interface ChatbotWidgetProps {
   sessionId?: string;
   className?: string;
+  isOpen: boolean;
+  toggleChat: () => void;
+  closeChat: () => void;
+  minimized: boolean;
+  setMinimized: (min: boolean) => void;
 }
 
 export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   sessionId,
   className = '',
+  isOpen,
+  toggleChat,
+  closeChat,
+  minimized,
+  setMinimized,
 }) => {
   const { user } = useAuthStore();
   const {
     messages,
     isLoading,
     error,
-    isOpen,
     sendMessage,
-    toggleChat,
-    closeChat,
-  } = useChatbot(sessionId);
+  } = useChatbot();
 
   const [inputMessage, setInputMessage] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [minimized, setMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +60,6 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   console.log('ChatbotWidget render:', { 
     user: user?.id,
     messagesLength: safeMessages.length,
-    isOpen,
     isLoading,
     error 
   });
@@ -167,7 +172,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
         } ${className}`}
       >
         {isOpen && !minimized && (
-          <div className="mb-4 w-96 h-[600px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
+          <div className="mb-4 w-full max-w-[98vw] sm:w-[420px] h-[600px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
             <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white p-6 flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl">
@@ -215,31 +220,37 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                   <QuickReplies suggestions={quickSuggestions} onClick={handleSuggestionClick} />
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {safeMessages?.map((msg) => (
-                    <ChatMessageBubble
-                      key={msg.id}
-                      message={msg.message}
-                      sender={msg.sender}
-                      createdAt={msg.createdAt}
-                    />
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start mb-4">
-                      <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm px-4 py-3 rounded-2xl rounded-bl-md border border-gray-100/50 shadow-sm">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                          <Bot size={16} className="text-white" />
+                (() => {
+                  // console.log('[ChatbotWidget] safeMessages:', JSON.stringify(safeMessages, null, 2));
+                  return (
+                    <div className="space-y-4">
+                      {safeMessages?.map((msg) => (
+                        <ChatMessageBubble
+                          key={msg.id}
+                          message={msg.message}
+                          sender={msg.sender}
+                          createdAt={msg.createdAt}
+                          metadata={msg.metadata}
+                        />
+                      ))}
+                      {isLoading && (
+                        <div className="flex justify-start mb-4">
+                          <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm px-4 py-3 rounded-2xl rounded-bl-md border border-gray-100/50 shadow-sm">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                              <Bot size={16} className="text-white" />
+                            </div>
+                            <TypingIndicator />
+                          </div>
                         </div>
-                        <TypingIndicator />
-                      </div>
+                      )}
+                      {/* Show dynamic quick replies only if available and not loading */}
+                      {!isLoading && dynamicSuggestions?.length > 0 && (
+                        <QuickReplies suggestions={dynamicSuggestions} onClick={handleSuggestionClick} />
+                      )}
+                      <div ref={messagesEndRef} />
                     </div>
-                  )}
-                  {/* Show dynamic quick replies only if available and not loading */}
-                  {!isLoading && dynamicSuggestions?.length > 0 && (
-                    <QuickReplies suggestions={dynamicSuggestions} onClick={handleSuggestionClick} />
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
+                  );
+                })()
               )}
             </div>
 

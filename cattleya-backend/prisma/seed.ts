@@ -745,6 +745,7 @@ async function main() {
   // Create products
   const products: any[] = [];
   for (const orchid of orchidData) {
+    const placeholderImage = 'https://via.placeholder.com/400x400/4F46E5/FFFFFF?text=Orchid';
     const product = await prisma.product.create({
       data: {
         name: orchid.name,
@@ -756,16 +757,15 @@ async function main() {
         salePrice: orchid.salePrice,
         isOnSale: orchid.isOnSale || false,
         stockQuantity: orchid.stockQuantity,
-                 defaultSize: orchid.defaultSize as OrchidSize,
-         availableSizes: orchid.availableSizes as OrchidSize[],
-         primaryColors: orchid.primaryColors,
-         colorPattern: orchid.colorPattern as ColorPattern,
+        defaultSize: orchid.defaultSize as OrchidSize,
+        availableSizes: orchid.availableSizes as OrchidSize[],
+        primaryColors: orchid.primaryColors,
+        colorPattern: orchid.colorPattern as ColorPattern,
         categoryId: categories[orchid.category].id,
         tags: orchid.tags,
         isActive: true,
         isFeatured: orchid.isFeatured,
         publishedAt: new Date(),
-        // We'll calculate these after adding reviews
         averageRating: 0,
         totalReviews: 0,
       }
@@ -774,16 +774,28 @@ async function main() {
     products.push(product);
 
     // Create product images
-    for (let i = 0; i < orchid.images.length; i++) {
+    if (orchid.images.length === 0) {
       await prisma.productImage.create({
         data: {
           productId: product.id,
-          url: orchid.images[i],
-          altText: `${orchid.name} - Image ${i + 1}`,
-          isMain: i === 0,
-          sortOrder: i + 1
+          url: placeholderImage,
+          altText: `${orchid.name} - Placeholder Image`,
+          isMain: true,
+          sortOrder: 1
         }
       });
+    } else {
+      for (let i = 0; i < orchid.images.length; i++) {
+        await prisma.productImage.create({
+          data: {
+            productId: product.id,
+            url: orchid.images[i],
+            altText: `${orchid.name} - Image ${i + 1}`,
+            isMain: i === 0,
+            sortOrder: i + 1
+          }
+        });
+      }
     }
 
     // Create product attributes

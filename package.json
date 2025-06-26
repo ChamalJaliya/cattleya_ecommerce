@@ -24,6 +24,7 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "@next/bundle-analyzer": "^15.3.4"
+    "@next/bundle-analyzer": "^15.3.4",
+    "swiper": "^11.2.8"
   }
 }

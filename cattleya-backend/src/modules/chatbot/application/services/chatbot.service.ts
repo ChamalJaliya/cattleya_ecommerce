@@ -6,6 +6,8 @@ import { KnowledgeGraphService } from './knowledge-graph.service';
 import { ChatMessageRepository } from '../../infrastructure/repositories/chat-message.repository';
 import { ProductIntelligenceService, ProductSearchResult } from './product-intelligence.service';
 import { getCategoryFromQuery } from './nlp-utils';
+import { analyzeMessage } from './analyze-nlp.service';
+import { getElaborativeDescription } from './elaborate-nlp.service';
 
 export interface ChatbotResponse {
   message: string;
@@ -17,6 +19,19 @@ export interface ChatbotResponse {
     confidence?: number;
     escalated?: boolean;
     suggestedActions?: string[];
+    entities?: string[];
+    productCards?: {
+      type: 'product_card';
+      data: {
+        products: ProductSearchResult[];
+        layout: 'grid' | 'list' | 'single' | 'carousel';
+        showActions: boolean;
+        showPricing: boolean;
+        showStock: boolean;
+        showRating: boolean;
+        showTags: boolean;
+      };
+    };
   };
 }
 
@@ -51,7 +66,22 @@ export class ChatbotService {
           return {
             message: this.formatProductSearchResults(results),
             quickReplies: ['Search products', 'Get recommendations', 'Browse categories'],
-            metadata: { products: results, intent: 'product_search' },
+            metadata: {
+              products: results,
+              intent: 'product_search',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: results,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            },
           };
         },
         'search products': async () => {
@@ -68,7 +98,22 @@ export class ChatbotService {
           return {
             message: this.formatRecommendations(recommendations),
             quickReplies: ['Show more recommendations', 'Search products', 'Browse categories'],
-            metadata: { recommendations, intent: 'product_recommendation' },
+            metadata: {
+              recommendations,
+              intent: 'product_recommendation',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: recommendations.products,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            },
           };
         },
         'beginner orchids': async () => {
@@ -77,7 +122,22 @@ export class ChatbotService {
           return {
             message: this.formatRecommendations(recommendations),
             quickReplies: ['Show more recommendations', 'Search products', 'Browse categories'],
-            metadata: { recommendations, intent: 'product_recommendation' },
+            metadata: {
+              recommendations,
+              intent: 'product_recommendation',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: recommendations.products,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            },
           };
         },
         'rare orchids': async () => {
@@ -86,7 +146,22 @@ export class ChatbotService {
           return {
             message: this.formatRecommendations(recommendations),
             quickReplies: ['Show more recommendations', 'Search products', 'Browse categories'],
-            metadata: { recommendations, intent: 'product_recommendation' },
+            metadata: {
+              recommendations,
+              intent: 'product_recommendation',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: recommendations.products,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            },
           };
         },
         'featured orchids': async () => {
@@ -95,7 +170,22 @@ export class ChatbotService {
           return {
             message: this.formatRecommendations(recommendations),
             quickReplies: ['Show more recommendations', 'Search products', 'Browse categories'],
-            metadata: { recommendations, intent: 'product_recommendation' },
+            metadata: {
+              recommendations,
+              intent: 'product_recommendation',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: recommendations.products,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            },
           };
         },
       };
@@ -103,7 +193,18 @@ export class ChatbotService {
         return await quickReplyActions[quickReplyKey]();
       }
 
-      // 2. Category/type queries using synonyms
+      // 2. HYBRID NLP ANALYSIS (spaCy + OpenAI)
+      this.logger.debug(`[NLP] Starting hybrid analysis for: "${message}"`);
+      const nlpAnalysis = await analyzeMessage(message, context?.conversationHistory);
+      this.logger.debug(`[NLP] Analysis result: ${JSON.stringify(nlpAnalysis)}`);
+      
+      const intent = nlpAnalysis.final_intent;
+      const confidence = nlpAnalysis.confidence;
+      const entities = nlpAnalysis.final_entities;
+      
+      this.logger.debug(`[NLP] Final intent: ${intent}, confidence: ${confidence}, entities: ${JSON.stringify(entities)}`);
+
+      // 3. Category/type queries using synonyms
       const categoryType = getCategoryFromQuery(message);
       if (categoryType) {
         this.logger.debug(`[INTENT] Detected category/type: ${categoryType} for message: "${message}"`);
@@ -115,17 +216,21 @@ export class ChatbotService {
         };
       }
 
-      // 3. PRODUCT/ENTITY EXTRACTION (robust)
+      // 4. PRODUCT/ENTITY EXTRACTION (robust)
       // Get all product names for entity extraction
       const allProductsResult = await this.productIntelligenceService.productRepository.findAll({}, {}, { page: 1, limit: 1000 });
       const allProductNames = allProductsResult.products.map(p => p.name);
       const { extractProductNames } = await import('./nlp-utils');
       const extractedNames = extractProductNames(message, allProductNames);
       this.logger.debug(`[NLP-ENTITY] Extracted product names: ${JSON.stringify(extractedNames)}`);
-      if (extractedNames.length > 0) {
-        this.logger.debug(`[NLP-ENTITY] Message contains product/entity: ${JSON.stringify(extractedNames)}. Treating as product inquiry.`);
+      
+      // Combine NLP entities with extracted product names
+      const allEntities = [...new Set([...extractedNames, ...entities])];
+      this.logger.debug(`[NLP-ENTITY] Combined entities: ${JSON.stringify(allEntities)}`);
+      
+      if (allEntities.length > 0) {
+        this.logger.debug(`[NLP-ENTITY] Message contains product/entity: ${JSON.stringify(allEntities)}. Treating as product inquiry.`);
         // Treat as product inquiry
-        const intent = 'product_inquiry';
         const productResponse = await this.handleProductQuery(message, intent, userId, sessionId);
         // Save the conversation
         await this.chatMessageRepository.create({
@@ -133,134 +238,84 @@ export class ChatbotService {
           sessionId: sessionId || 'default',
           message,
           sender: 'USER',
-          metadata: { intent, products: productResponse.metadata?.products },
+          metadata: { intent, products: productResponse.metadata?.products, entities: allEntities },
         });
         await this.chatMessageRepository.create({
           userId,
           sessionId: sessionId || 'default',
           message: productResponse.message,
           sender: 'BOT',
-          metadata: { intent, products: productResponse.metadata?.products },
+          metadata: productResponse.metadata,
         });
         return productResponse;
       }
 
-      // 4. Product-related query by keywords
-      if (this.isProductQuery(message)) {
-        const intent = this.analyzeProductIntent(message);
-        this.logger.debug(`[INTENT] Detected product intent: ${intent} for message: "${message}"`);
-        const productResponse = await this.handleProductQuery(message, intent, userId, sessionId);
-        this.logger.debug(`[PRODUCT] Product response: ${JSON.stringify(productResponse)}`);
-        // Save the conversation
-        await this.chatMessageRepository.create({
-          userId,
-          sessionId: sessionId || 'default',
-          message,
-          sender: 'USER',
-          metadata: { intent, products: productResponse.metadata?.products },
-        });
-        await this.chatMessageRepository.create({
-          userId,
-          sessionId: sessionId || 'default',
-          message: productResponse.message,
-          sender: 'BOT',
-          metadata: { intent, products: productResponse.metadata?.products },
-        });
-        return productResponse;
+      // 5. Handle different intents based on NLP analysis
+      switch (intent) {
+        case 'product_inquiry':
+        case 'product_search':
+          this.logger.debug(`[INTENT] Handling product inquiry with confidence: ${confidence}`);
+          const productResponse = await this.handleProductQuery(message, intent, userId, sessionId);
+          // Save conversation
+          await this.chatMessageRepository.create({
+            userId,
+            sessionId: sessionId || 'default',
+            message,
+            sender: 'USER',
+            metadata: { intent, confidence, entities },
+          });
+          await this.chatMessageRepository.create({
+            userId,
+            sessionId: sessionId || 'default',
+            message: productResponse.message,
+            sender: 'BOT',
+            metadata: productResponse.metadata,
+          });
+          return productResponse;
+          
+        case 'order_support':
+          this.logger.debug(`[INTENT] Handling order support with confidence: ${confidence}`);
+          return {
+            message: 'I can help you with your order! Please provide your order number or tell me what you need assistance with.',
+            quickReplies: ['Track my order', 'Return an item', 'Shipping info', 'Contact support'],
+            metadata: { intent, confidence, entities },
+          };
+          
+        case 'care_advice':
+          this.logger.debug(`[INTENT] Handling care advice with confidence: ${confidence}`);
+          return {
+            message: 'I\'d be happy to help with orchid care! What specific care question do you have?',
+            quickReplies: ['Watering tips', 'Light requirements', 'Fertilizing', 'Repotting'],
+            metadata: { intent, confidence, entities },
+          };
+          
+        case 'greeting':
+          this.logger.debug(`[INTENT] Handling greeting with confidence: ${confidence}`);
+          return {
+            message: 'Hello! Welcome to Cattleya Orchids. I\'m here to help you discover our beautiful orchid collection. How can I assist you today?',
+            quickReplies: ['Browse orchids', 'Get recommendations', 'Care tips', 'Track order'],
+            metadata: { intent, confidence, entities },
+          };
+          
+        case 'add_to_cart':
+          this.logger.debug(`[INTENT] Handling add to cart with confidence: ${confidence}`);
+          // TODO: Implement cart functionality
+          return {
+            message: 'I can help you add items to your cart! Which orchid would you like to add?',
+            quickReplies: ['Browse orchids', 'View cart', 'Checkout'],
+            metadata: { intent, confidence, entities },
+          };
+          
+        default:
+          this.logger.debug(`[INTENT] Unknown intent: ${intent}, falling back to LLM analysis`);
+          // Fallback to existing LLM-based analysis
+          const llmAnalysis = await this.analyzeIntent(message);
+          return {
+            message: 'I\'m here to help with orchids and Cattleya Orchids services. How can I assist you with our beautiful orchid collection?',
+            quickReplies: ['Browse orchids', 'Get recommendations', 'Care tips', 'Track order'],
+            metadata: { intent: llmAnalysis.intent, confidence: llmAnalysis.confidence, entities },
+          };
       }
-
-      // Check if message is out of scope
-      if (this.knowledgeGraphService.isOutOfScope(message)) {
-        const outOfScopeTemplate = this.knowledgeGraphService.getConversationTemplates()
-          .find(t => t.id === 'out-of-scope');
-        
-        return {
-          message: outOfScopeTemplate?.response || 'I\'m here to help with orchids and Cattleya Orchids services. How can I assist you with our beautiful orchid collection?',
-          metadata: {
-            intent: 'out_of_scope',
-            confidence: 0.9,
-            escalated: false,
-            suggestedActions: outOfScopeTemplate?.quickReplies || []
-          },
-        };
-      }
-
-      // Check for conversation templates first
-      const matchingTemplate = this.knowledgeGraphService.findMatchingTemplate(message);
-      if (matchingTemplate) {
-        return {
-          message: matchingTemplate.response,
-          metadata: {
-            intent: matchingTemplate.type,
-            confidence: 0.8,
-            escalated: false,
-            suggestedActions: matchingTemplate.quickReplies || []
-          },
-        };
-      }
-
-      // Get conversation history for context
-      const conversationHistory = await this.getConversationHistory(userId, sessionId);
-      
-      // Find relevant knowledge nodes
-      const relevantNodes = this.knowledgeGraphService.findRelevantNodes(message);
-      
-      // Create enhanced system prompt
-      const systemPrompt = this.createEnhancedSystemPrompt(relevantNodes);
-      
-      // Prepare messages for OpenAI
-      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory.map(msg => ({
-          role: (msg.sender === 'USER' ? 'user' : 'assistant') as 'user' | 'assistant',
-          content: msg.message
-        })),
-        { role: 'user', content: message }
-      ];
-
-      // Get response from OpenAI
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages,
-        max_tokens: 500,
-        temperature: 0.7,
-      });
-
-      const botResponse = completion.choices[0]?.message?.content || 'I apologize, but I\'m having trouble processing your request right now.';
-
-      // Analyze intent and determine if escalation is needed
-      const intent = await this.analyzeIntent(message);
-      const shouldEscalate = this.shouldEscalateToHuman(intent, botResponse);
-
-      // Get context-appropriate quick replies
-      const quickReplies = this.knowledgeGraphService.getQuickRepliesForContext(intent.intent);
-
-      // Save the conversation
-      await this.chatMessageRepository.create({
-        userId,
-        sessionId: sessionId || 'default',
-        message,
-        sender: 'USER',
-        metadata: { intent: intent.intent, confidence: intent.confidence },
-      });
-
-      await this.chatMessageRepository.create({
-        userId,
-        sessionId: sessionId || 'default',
-        message: botResponse,
-        sender: 'BOT',
-        metadata: { intent: intent.intent, confidence: intent.confidence },
-      });
-
-      return {
-        message: botResponse,
-        metadata: {
-          intent: intent.intent,
-          confidence: intent.confidence,
-          escalated: shouldEscalate,
-          suggestedActions: quickReplies,
-        },
-      };
     } catch (error) {
       this.logger.error('Error processing chat message:', error);
       return {
@@ -338,9 +393,24 @@ export class ChatbotService {
           const searchResults = await this.productIntelligenceService.searchProducts(searchQuery, 3);
           this.logger.debug(`[PRODUCT] Search results: ${JSON.stringify(searchResults.map(p => p.name))}`);
           if (searchResults.length > 0) {
-            response = this.formatProductSearchResults(searchResults);
+            response = this.formatProductCards(searchResults, 'carousel');
             quickReplies = ['Show more products', 'Search by category', 'Get recommendations'];
-            metadata = { products: searchResults, intent: 'product_search' };
+            metadata = { 
+              products: searchResults, 
+              intent: 'product_search',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: searchResults,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            };
           } else {
             response = '🌸 I couldn\'t find any orchids matching your search. Try searching by color, size, or category!';
             quickReplies = ['Browse categories', 'Get recommendations', 'Contact support'];
@@ -351,9 +421,24 @@ export class ChatbotService {
           const recommendations = await this.productIntelligenceService.getRecommendations(recommendationType);
           this.logger.debug(`[PRODUCT] Recommendations: ${JSON.stringify(recommendations.products.map(p => p.name))}`);
           if (recommendations.products.length > 0) {
-            response = this.formatRecommendations(recommendations);
+            response = this.formatProductCards(recommendations.products, 'carousel');
             quickReplies = ['Show more recommendations', 'Search products', 'Browse categories'];
-            metadata = { recommendations, intent: 'product_recommendation' };
+            metadata = { 
+              recommendations, 
+              intent: 'product_recommendation',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: recommendations.products,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            };
           } else {
             response = '🌸 I\'m having trouble loading recommendations right now, but I\'d love to help you discover our featured orchids!';
             quickReplies = ['Featured products', 'Search products', 'Browse categories'];
@@ -363,9 +448,24 @@ export class ChatbotService {
           let priceProducts = productsFromContext.length > 0 ? productsFromContext : await this.productIntelligenceService.searchProducts(searchQuery, 3);
           this.logger.debug(`[PRODUCT] Price search results: ${JSON.stringify(priceProducts.map(p => p.name))}`);
           if (priceProducts.length > 0) {
-            response = this.formatProductPrices(priceProducts);
+            response = this.formatProductCards(priceProducts, 'carousel');
             quickReplies = ['Show more products', 'Search by price range', 'Get recommendations'];
-            metadata = { products: priceProducts, intent: 'product_price' };
+            metadata = { 
+              products: priceProducts, 
+              intent: 'product_price',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: priceProducts,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: false,
+                  showRating: false,
+                  showTags: false
+                }
+              }
+            };
           } else {
             response = '🌸 I couldn\'t find specific pricing information, but I\'d be happy to help you explore our orchid collection!';
             quickReplies = ['Price ranges', 'Search products', 'Contact sales'];
@@ -375,9 +475,24 @@ export class ChatbotService {
           let stockProducts = productsFromContext.length > 0 ? productsFromContext : await this.productIntelligenceService.searchProducts(searchQuery, 3);
           this.logger.debug(`[PRODUCT] Stock search results: ${JSON.stringify(stockProducts.map(p => p.name))}`);
           if (stockProducts.length > 0) {
-            response = this.formatStockStatus(stockProducts);
+            response = this.formatProductCards(stockProducts, 'carousel');
             quickReplies = ['Check other products', 'Search products', 'Get notifications'];
-            metadata = { products: stockProducts, intent: 'product_stock' };
+            metadata = { 
+              products: stockProducts, 
+              intent: 'product_stock',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: stockProducts,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: false,
+                  showStock: true,
+                  showRating: false,
+                  showTags: false
+                }
+              }
+            };
           } else {
             response = '🌸 I couldn\'t find stock information for that orchid, but I\'d love to help you find similar beauties!';
             quickReplies = ['Search products', 'Contact sales', 'Get recommendations'];
@@ -387,12 +502,81 @@ export class ChatbotService {
           const categoryProducts = await this.productIntelligenceService.searchProducts(searchQuery, 5);
           this.logger.debug(`[PRODUCT] Category search results: ${JSON.stringify(categoryProducts.map(p => p.name))}`);
           if (categoryProducts.length > 0) {
-            response = this.formatCategoryProducts(categoryProducts);
+            response = this.formatProductCards(categoryProducts, 'carousel');
             quickReplies = ['Show more in this category', 'Browse other categories', 'Get recommendations'];
-            metadata = { products: categoryProducts, intent: 'product_category' };
+            metadata = { 
+              products: categoryProducts, 
+              intent: 'product_category',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: categoryProducts,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            };
           } else {
             response = '🌸 I couldn\'t find products in that category, but I\'d love to show you our other beautiful orchid collections!';
             quickReplies = ['Browse categories', 'Search products', 'Get recommendations'];
+          }
+          break;
+        case 'product_elaboration':
+          // Use Python NLP service for creative, elaborative descriptions
+          if (productsFromContext.length > 0) {
+            const product = productsFromContext[0];
+            this.logger.debug(`[PRODUCT] Generating elaborative description for: ${product.name}`);
+            try {
+              const elaborativeDescription = await getElaborativeDescription(
+                product.name, 
+                `User is asking for more details about ${product.name}. Context: ${message}`
+              );
+              response = `🌸 **${product.name}** 🌸\n\n${elaborativeDescription}\n\n💰 **Price**: $${product.basePrice}\n📦 **Stock**: ${product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}\n🌿 **Category**: ${product.category.name}`;
+              quickReplies = ['Add to cart', 'Show similar', 'Care tips', 'View details'];
+              metadata = { 
+                products: [product], 
+                intent: 'product_elaboration',
+                productCards: {
+                  type: 'product_card',
+                  data: {
+                    products: [product],
+                    layout: 'single',
+                    showActions: true,
+                    showPricing: true,
+                    showStock: true,
+                    showRating: true,
+                    showTags: true
+                  }
+                }
+              };
+            } catch (error) {
+              this.logger.error('Error generating elaborative description:', error);
+              response = this.formatProductCards([product], 'single');
+              quickReplies = ['Show more products', 'Search products', 'Get recommendations'];
+              metadata = { 
+                products: [product], 
+                intent: 'product_general',
+                productCards: {
+                  type: 'product_card',
+                  data: {
+                    products: [product],
+                    layout: 'single',
+                    showActions: true,
+                    showPricing: true,
+                    showStock: true,
+                    showRating: true,
+                    showTags: true
+                  }
+                }
+              };
+            }
+          } else {
+            response = '🌸 I\'d be happy to provide detailed information about any orchid! Which one would you like to learn more about?';
+            quickReplies = ['Browse orchids', 'Search products', 'Get recommendations'];
           }
           break;
         default:
@@ -400,9 +584,24 @@ export class ChatbotService {
           let generalProducts = productsFromContext.length > 0 ? productsFromContext : await this.productIntelligenceService.searchProducts(searchQuery, 3);
           this.logger.debug(`[PRODUCT] General product search results: ${JSON.stringify(generalProducts.map(p => p.name))}`);
           if (generalProducts.length > 0) {
-            response = this.formatGeneralProductInfo(generalProducts);
+            response = this.formatProductCards(generalProducts, 'carousel');
             quickReplies = ['Show more products', 'Search products', 'Get recommendations'];
-            metadata = { products: generalProducts, intent: 'product_general' };
+            metadata = { 
+              products: generalProducts, 
+              intent: 'product_general',
+              productCards: {
+                type: 'product_card',
+                data: {
+                  products: generalProducts,
+                  layout: 'carousel',
+                  showActions: true,
+                  showPricing: true,
+                  showStock: true,
+                  showRating: true,
+                  showTags: true
+                }
+              }
+            };
           } else {
             response = '🌸 I\'d be happy to help you find the perfect orchid! Try asking about a specific type, color, or care need.';
             quickReplies = ['Beginner orchids', 'Rare orchids', 'Featured orchids', 'Search products'];
@@ -443,36 +642,21 @@ export class ChatbotService {
   private formatProductSearchResults(products: ProductSearchResult[]): string {
     if (products.length === 0) return '🌸 I couldn\'t find any orchids matching your search. Let me help you discover something beautiful instead!';
     
-    let response = `✨ I found ${products.length} stunning orchid${products.length > 1 ? 's' : ''} that might be perfect for you:\n\n`;
+    let response = `✨ I found ${products.length} stunning orchid${products.length > 1 ? 's' : ''} that might be perfect for you!`;
     
-    products.forEach((product, index) => {
-      const price = product.isOnSale && product.salePrice 
-        ? `💚 **$${product.salePrice}** ~~$${product.basePrice}~~ *On Sale!*`
-        : `💚 **$${product.basePrice}**`;
-      
-      const stockStatus = product.stockQuantity > 0 
-        ? product.stockQuantity <= 5 
-          ? '🔥 *Limited Stock*' 
-          : '✅ *In Stock*'
-        : '❌ *Out of Stock*';
-      
-      const emoji = this.getProductEmoji(product.name, product.category.name);
-      
-      response += `${index + 1}. ${emoji} **${product.name}**\n`;
-      response += `   💰 ${price}\n`;
-      response += `   📦 ${stockStatus}\n`;
-      response += `   🌿 ${product.category.name}\n`;
-      if (product.shortDescription) {
-        response += `   💭 *"${product.shortDescription}"*\n`;
-      }
-      if (product.averageRating > 0) {
-        const stars = '⭐'.repeat(Math.round(product.averageRating));
-        response += `   ${stars} (${product.averageRating.toFixed(1)}/5)\n`;
-      }
-      response += '\n';
-    });
+    return response;
+  }
+
+  private formatProductCards(products: ProductSearchResult[], layout: 'grid' | 'list' | 'single' | 'carousel' = 'grid'): string {
+    if (products.length === 0) return '🌸 I couldn\'t find any orchids matching your search. Let me help you discover something beautiful instead!';
     
-    response += '💡 *Would you like me to show you more details about any of these beauties?*';
+    const count = products.length;
+    const layoutText = layout === 'single' ? 'this beautiful orchid' : 
+                      layout === 'list' ? 'these stunning orchids' : 
+                      layout === 'carousel' ? 'these gorgeous orchids' :
+                      'these gorgeous orchids';
+    
+    let response = `✨ I found ${count} ${layoutText} that might be perfect for you!`;
     
     return response;
   }

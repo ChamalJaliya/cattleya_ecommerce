@@ -100,7 +100,14 @@ export class ProductIntelligenceService {
       }
 
       const category = await this.categoryRepository.findById(product.categoryId);
-      const productImages = await this.s3Service.listFilesByFolder(`products/${product.id}/images`);
+      
+      // Use images that are already included in the product object from the database
+      const imageUrls = product.images ? product.images.map((img: any) => img.url) : [];
+      
+      // Add placeholder if no images
+      if (imageUrls.length === 0) {
+        imageUrls.push('https://via.placeholder.com/400x400/4F46E5/FFFFFF?text=Orchid');
+      }
 
       return {
         id: product.id,
@@ -128,7 +135,7 @@ export class ProductIntelligenceService {
           name: 'Uncategorized',
           slug: 'uncategorized',
         },
-        images: productImages.map(img => img.url),
+        images: imageUrls,
         tags: product.tags,
         isActive: product.isActive,
         isFeatured: product.isFeatured,
@@ -286,7 +293,14 @@ export class ProductIntelligenceService {
 
     for (const product of products) {
       const category = await this.categoryRepository.findById(product.categoryId);
-      const productImages = await this.s3Service.listFilesByFolder(`products/${product.id}/images`);
+      
+      // Use images that are already included in the product object from the database
+      const imageUrls = product.images ? product.images.map((img: any) => img.url) : [];
+      
+      // Add placeholder if no images
+      if (imageUrls.length === 0) {
+        imageUrls.push('https://via.placeholder.com/400x400/4F46E5/FFFFFF?text=Orchid');
+      }
 
       results.push({
         id: product.id,
@@ -314,7 +328,7 @@ export class ProductIntelligenceService {
           name: 'Uncategorized',
           slug: 'uncategorized',
         },
-        images: productImages.map(img => img.url),
+        images: imageUrls,
         tags: product.tags,
         isActive: product.isActive,
         isFeatured: product.isFeatured,
