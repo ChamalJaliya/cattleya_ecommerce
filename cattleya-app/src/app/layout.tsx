@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import ClientWrapper from "./ClientWrapper";
+import { ChatbotWidget } from "../shared/components/ChatbotWidget";
 import Link from "next/link";
 
 const inter = Inter({

@@ -451,15 +451,16 @@ const CATEGORY_ICON_URL = "https://cattleyaorchids.s3.eu-north-1.amazonaws.com/m
 async function main() {
   console.log('🌺 Starting to seed Cattleya E-commerce database...');
 
-  // Create demo users first
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  // Create demo users with correct passwords
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const customerPassword = await bcrypt.hash('customer123', 10);
   
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@cattleya.com' },
-    update: {},
+    update: { password: adminPassword },
     create: {
       email: 'admin@cattleya.com',
-      password: hashedPassword,
+      password: adminPassword,
       firstName: 'Admin',
       lastName: 'User',
       role: 'ADMIN',
@@ -468,10 +469,10 @@ async function main() {
 
   const customerUser = await prisma.user.upsert({
     where: { email: 'customer@example.com' },
-    update: {},
+    update: { password: customerPassword },
     create: {
       email: 'customer@example.com',
-      password: hashedPassword,
+      password: customerPassword,
       firstName: 'Customer',
       lastName: 'User',
       role: 'CUSTOMER',
@@ -486,7 +487,7 @@ async function main() {
       update: {},
       create: {
         email: `customer${i}@example.com`,
-        password: hashedPassword,
+        password: customerPassword,
         firstName: `Customer${i}`,
         lastName: 'User',
         role: 'CUSTOMER',
@@ -496,9 +497,9 @@ async function main() {
   }
 
   console.log('✅ Created demo users');
-  console.log('   - Admin: admin@cattleya.com / password123');
-  console.log('   - Customer: customer@example.com / password123');
-  console.log(`   - Additional customers: customer1-10@example.com / password123`);
+  console.log('   - Admin: admin@cattleya.com / admin123');
+  console.log('   - Customer: customer@example.com / customer123');
+  console.log(`   - Additional customers: customer1-10@example.com / customer123`);
 
   // Clean existing data - for MongoDB we can delete all at once
   try {
@@ -936,10 +937,121 @@ async function main() {
   console.log(`   📂 ${totalCategories} categories`);
   console.log(`   ⭐ ${totalReviews} reviews`);
   console.log(`   👥 ${customers.length + 2} users`);
-  console.log('');
+
   console.log('🔑 Login credentials:');
-  console.log('   Admin: admin@cattleya.com / password123');
-  console.log('   Customer: customer@example.com / password123');
+  console.log('   Admin: admin@cattleya.com / admin123');
+  console.log('   Customer: customer@example.com / customer123');
+
+  // --- Clean old notifications for both users ---
+  await prisma.notification.deleteMany({ 
+    where: { 
+      userId: { in: [customerUser.id, adminUser.id] } 
+    } 
+  });
+
+  // --- Seed notifications for customer user ---
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: customerUser.id,
+        type: 'ORDER_CONFIRMATION',
+        title: 'Order Confirmed!',
+        message: 'Your order #1234 has been confirmed and is being processed.',
+        priority: 'HIGH',
+        isRead: false,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        userId: customerUser.id,
+        type: 'PROMOTION',
+        title: 'Special Offer - 20% Off!',
+        message: 'Get 20% off your next order with code SPRING20. Valid until end of month.',
+        priority: 'MEDIUM',
+        isRead: false,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        userId: customerUser.id,
+        type: 'ORDER_SHIPPED',
+        title: 'Order Shipped!',
+        message: 'Your order #1234 has been shipped and is on its way to you.',
+        priority: 'LOW',
+        isRead: false,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        userId: customerUser.id,
+        type: 'PAYMENT_SUCCESS',
+        title: 'Payment Successful',
+        message: 'Your payment for order #1234 has been processed successfully.',
+        priority: 'MEDIUM',
+        isRead: true,
+        isArchived: false,
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      },
+    ]
+  });
+
+  // --- Seed notifications for admin user ---
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: adminUser.id,
+        type: 'SYSTEM_ALERT',
+        title: 'System Maintenance',
+        message: 'Scheduled maintenance will occur tonight at 2 AM. System will be down for 30 minutes.',
+        priority: 'URGENT',
+        isRead: false,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        userId: adminUser.id,
+        type: 'LOW_STOCK',
+        title: 'Low Stock Alert',
+        message: 'Cattleya Purple Majesty is running low on stock. Only 3 items remaining.',
+        priority: 'HIGH',
+        isRead: false,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        userId: adminUser.id,
+        type: 'SUPPORT_REPLY',
+        title: 'New Support Ticket',
+        message: 'New support ticket #4567 from customer@example.com requires attention.',
+        priority: 'MEDIUM',
+        isRead: false,
+        isArchived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        userId: adminUser.id,
+        type: 'PAYMENT_FAILED',
+        title: 'Payment Processing Error',
+        message: 'Payment processing error detected for order #5678. Manual review required.',
+        priority: 'HIGH',
+        isRead: true,
+        isArchived: false,
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+    ]
+  });
+
+  console.log('✅ Seeded notifications for both admin and customer users');
+  console.log('   - Customer notifications: 4 (3 unread, 1 read)');
+  console.log('   - Admin notifications: 4 (3 unread, 1 read)');
 }
 
 main()

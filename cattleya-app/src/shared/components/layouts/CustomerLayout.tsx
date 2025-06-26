@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,9 +21,15 @@ import {
   SparklesIcon,
   FireIcon,
   BoltIcon,
-  StarIcon
+  StarIcon,
+  CogIcon,
+  TruckIcon
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
+import NotificationBell from '@/shared/components/NotificationBell';
+import NotificationDropdown from '@/shared/components/NotificationDropdown';
+import { useNotifications } from '@/shared/hooks/useNotifications';
+import { ChatbotWidgetContainer } from '../chatbot/ChatbotWidgetContainer';
 
 interface CustomerLayoutProps {
   children: ReactNode;
@@ -41,6 +47,12 @@ const navigationItems = [
     href: '/customer/orders',
     icon: ClipboardDocumentListIcon,
     description: 'Order History'
+  },
+  {
+    name: 'Notifications',
+    href: '/dashboard/notifications',
+    icon: BellIcon,
+    description: 'Alerts & Updates'
   },
   {
     name: 'Wishlist',
@@ -88,17 +100,54 @@ const navigationItems = [
 
 export default function CustomerLayout({ children }: CustomerLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const { user, logout } = useAuthStore();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const router = useRouter();
   const pathname = usePathname();
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+        setIsNotificationDropdownOpen(false);
+      }
+    };
+
+    if (isNotificationDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationDropdownOpen]);
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
+  const handleNotificationClick = () => {
+    setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
+  };
+
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(id);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  const handleViewAll = () => {
+    setIsNotificationDropdownOpen(false);
+    router.push('/dashboard/notifications');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex relative">
       {/* Ambient background effects */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full blur-3xl -z-10"></div>
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-r from-pink-400/10 to-cyan-400/10 rounded-full blur-3xl -z-10"></div>
@@ -151,7 +200,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
       {/* Main content */}
       <div className="flex-1 lg:pl-80 flex flex-col h-screen">
         {/* Enhanced Top bar */}
-        <header className="bg-white/95 backdrop-blur-md shadow-xl border-b border-purple-200/50 sticky top-0 z-50 relative overflow-hidden flex-shrink-0">
+        <header className="bg-white/95 backdrop-blur-md shadow-xl border-b border-purple-200/50 sticky top-0 z-50 relative flex-shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5"></div>
           <div className="px-4 sm:px-6 lg:px-8 relative">
             <div className="flex justify-between items-center h-16">
@@ -174,11 +223,22 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
               </div>
 
               <div className="flex items-center space-x-4">
-                <button className="group relative overflow-hidden p-3 text-gray-400 hover:text-purple-600 rounded-xl hover:bg-purple-100/50 transition-all duration-200">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-                  <BellIcon className="h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-200" />
-                  <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-gradient-to-r from-red-400 to-pink-400 animate-pulse"></span>
-                </button>
+                <div className="relative" ref={notificationDropdownRef}>
+                  <NotificationBell 
+                    unreadCount={unreadCount}
+                    onClick={handleNotificationClick} 
+                  />
+                  
+                  <NotificationDropdown
+                    isOpen={isNotificationDropdownOpen}
+                    onClose={() => setIsNotificationDropdownOpen(false)}
+                    notifications={notifications.slice(0, 5)} // Show only first 5 notifications
+                    unreadCount={unreadCount}
+                    onMarkAsRead={handleMarkAsRead}
+                    onMarkAllAsRead={handleMarkAllAsRead}
+                    onViewAll={handleViewAll}
+                  />
+                </div>
                 
                 <div className="flex items-center space-x-3 group">
                   <div className="relative">
@@ -216,6 +276,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
           </div>
         </main>
       </div>
+      {user && <ChatbotWidgetContainer />}
     </div>
   );
 }
@@ -238,7 +299,7 @@ function SidebarContent({
   isMobile 
 }: SidebarContentProps) {
   return (
-    <div className="flex flex-col h-full bg-white/95 backdrop-blur-sm border-r border-purple-200/50 shadow-2xl relative overflow-hidden">
+    <div className="flex flex-col h-full bg-white/95 backdrop-blur-sm border-r border-purple-200/50 shadow-2xl relative">
       {/* Ambient sidebar effects */}
       <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-l from-purple-400/5 to-pink-400/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-r from-blue-400/5 to-cyan-400/5 rounded-full blur-2xl"></div>

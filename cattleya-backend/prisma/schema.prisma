@@ -3,6 +3,7 @@
 
 generator client {
   provider      = "prisma-client-js"
+  output        = "../node_modules/@prisma/client"
   binaryTargets = ["native", "linux-musl"]
 }
 
@@ -45,6 +46,12 @@ model User {
 
   // Payment methods
   paymentMethods PaymentMethod[]
+
+  // Notifications
+  notifications Notification[]
+
+  // Chat messages
+  chatMessages ChatMessage[]
 
   @@index([role])
   @@index([isBlocked])
@@ -452,6 +459,49 @@ model PaymentMethod {
   updatedAt DateTime @updatedAt
 }
 
+model Notification {
+  id        String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String             @db.ObjectId
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  priority  NotificationPriority @default(MEDIUM)
+  isRead    Boolean            @default(false)
+  isArchived Boolean           @default(false)
+  metadata  Json?
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([priority])
+  @@index([isRead])
+  @@index([isArchived])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model ChatMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  sender    ChatSender
+  metadata  Json?
+  isRead    Boolean  @default(false)
+  sessionId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sender])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
 // Enums
 enum UserRole {
   CUSTOMER
@@ -499,4 +549,30 @@ enum AttributeType {
   BOOLEAN
   COLOR
   SIZE
+}
+
+enum NotificationType {
+  ORDER_CONFIRMATION
+  ORDER_STATUS_UPDATE
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  LOW_STOCK
+  PROMOTION
+  SYSTEM_ALERT
+  SUPPORT_REPLY
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ChatSender {
+  USER
+  BOT
+  HUMAN
 }

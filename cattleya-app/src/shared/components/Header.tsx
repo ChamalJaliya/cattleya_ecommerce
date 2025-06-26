@@ -14,6 +14,9 @@ import {
 import { useAuthStore } from '@/core/application/stores/useAuthStore';
 import { useCartStore } from '@/core/application/stores/useCartStore';
 import { useState } from 'react';
+import NotificationBell from './NotificationBell';
+import NotificationDropdown from './NotificationDropdown';
+import { useNotifications } from '@/shared/hooks/useNotifications';
 
 interface BreadcrumbItem {
   label: string;
@@ -32,6 +35,16 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
   const { user, logout } = useAuthStore();
   const { cart, toggleCart, getItemCount } = useCartStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  
+  // Notification hooks
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead,
+    fetchNotifications
+  } = useNotifications();
 
   // Use the getItemCount method from cart store for accurate count
   const cartCount = getItemCount();
@@ -66,6 +79,24 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
   const handleLogout = async () => {
     await logout();
     router.push('/');
+  };
+
+  const handleNotificationClick = () => {
+    setIsNotificationDropdownOpen(!isNotificationDropdownOpen);
+    fetchNotifications();
+  };
+
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(id);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  const handleViewAllNotifications = () => {
+    setIsNotificationDropdownOpen(false);
+    router.push('/dashboard/notifications');
   };
 
   return (
@@ -145,6 +176,12 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
                   </motion.span>
                 )}
               </motion.button>
+
+              {/* Notification Bell */}
+              <NotificationBell
+                unreadCount={unreadCount}
+                onClick={handleNotificationClick}
+              />
 
               {/* User Actions */}
               {user ? (
@@ -284,6 +321,17 @@ export default function Header({ breadcrumbs = [], title, subtitle }: HeaderProp
           </div>
         </motion.div>
       </header>
+
+      {/* Notification Dropdown */}
+      <NotificationDropdown
+        isOpen={isNotificationDropdownOpen}
+        onClose={() => setIsNotificationDropdownOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
+        onViewAll={handleViewAllNotifications}
+      />
 
       {/* Page Header with Breadcrumbs */}
       {(title || subtitle) && (

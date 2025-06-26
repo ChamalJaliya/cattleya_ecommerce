@@ -13,6 +13,8 @@ import { AddressesModule } from './modules/addresses/addresses.module';
 import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { CartModule } from './modules/cart/cart.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import databaseConfig from './shared/config/database.config';
 import appConfig from './shared/config/app.config';
 import awsConfig from './shared/config/aws.config';
@@ -47,6 +49,8 @@ import awsConfig from './shared/config/aws.config';
     PaymentMethodsModule,
     WishlistModule,
     CartModule,
+    NotificationsModule,
+    ChatbotModule,
   ],
   controllers: [AppController],
   providers: [AppService],

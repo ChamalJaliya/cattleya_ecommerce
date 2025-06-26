@@ -23,7 +23,7 @@ export class OrderRepository implements IOrderRepository {
         discount: order.discount,
         total: order.total,
         paymentStatus: order.paymentStatus,
-        paymentMethod: order.paymentMethod,
+        paymentMethod: order.paymentMethod as any,
         paidAt: order.paidAt,
         shippingMethod: order.shippingMethod,
         trackingNumber: order.trackingNumber,
@@ -40,7 +40,7 @@ export class OrderRepository implements IOrderRepository {
             variantName: item.variantName,
           }))
         }
-      },
+      } as any,
       include: {
         items: {
           include: {
@@ -99,8 +99,8 @@ export class OrderRepository implements IOrderRepository {
   }
 
   async findByNumber(number: string): Promise<Order | null> {
-    const order = await this.prisma.order.findUnique({
-      where: { number },
+    const order = await this.prisma.order.findFirst({
+      where: { number } as any,
       include: {
         items: {
           include: {
@@ -228,7 +228,7 @@ export class OrderRepository implements IOrderRepository {
       data: {
         status: order.status,
         paymentStatus: order.paymentStatus,
-        paymentMethod: order.paymentMethod,
+        paymentMethod: order.paymentMethod as any,
         paidAt: order.paidAt,
         shippingMethod: order.shippingMethod,
         trackingNumber: order.trackingNumber,
@@ -237,7 +237,7 @@ export class OrderRepository implements IOrderRepository {
         notes: order.notes,
         customerNotes: order.customerNotes,
         updatedAt: new Date(),
-      },
+      } as any,
       include: {
         items: {
           include: {
@@ -308,7 +308,7 @@ export class OrderRepository implements IOrderRepository {
       data: { 
         paymentStatus,
         paidAt: paymentStatus === PaymentStatus.PAID ? new Date() : null
-      },
+      } as any,
       include: {
         items: {
           include: {
@@ -442,7 +442,7 @@ export class OrderRepository implements IOrderRepository {
       data: { 
         paymentStatus: PaymentStatus.PAID,
         paidAt: new Date()
-      },
+      } as any,
       include: {
         items: {
           include: {
@@ -476,7 +476,7 @@ export class OrderRepository implements IOrderRepository {
       data: { 
         status: OrderStatus.CANCELLED,
         notes: reason ? `${reason}\n${new Date().toISOString()}` : undefined
-      },
+      } as any,
       include: {
         items: {
           include: {

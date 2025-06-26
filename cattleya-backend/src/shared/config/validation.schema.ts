@@ -89,4 +89,8 @@ export const validationSchema = Joi.object({
   GOOGLE_ANALYTICS_ID: Joi.string().optional(),
   FACEBOOK_PIXEL_ID: Joi.string().optional(),
   GOOGLE_TAG_MANAGER_ID: Joi.string().optional(),
+  
+  // Brevo (optional)
+  BREVO_API_KEY: Joi.string().optional(),
+  BREVO_FROM_EMAIL: Joi.string().email().optional(),
 }); 

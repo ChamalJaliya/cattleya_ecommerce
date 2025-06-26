@@ -8,6 +8,25 @@ const apiClient = axios.create({
   withCredentials: true,
 });
 
+// Add request interceptor to include auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage or sessionStorage
+    const token = typeof window !== 'undefined' 
+      ? localStorage.getItem('access_token') || sessionStorage.getItem('access_token')
+      : null;
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor to handle auth errors
 apiClient.interceptors.response.use(
   (response) => response,
@@ -16,8 +35,10 @@ apiClient.interceptors.response.use(
       // Handle unauthorized access - log as warning instead of error
       console.warn('Unauthorized access. Please log in again.');
       // You can redirect to login page or clear auth state here
-      localStorage.removeItem('access_token');
-      sessionStorage.removeItem('access_token');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token');
+      }
     }
     return Promise.reject(error);
   }
