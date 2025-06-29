@@ -1,7 +1,4 @@
 import type { NextConfig } from "next";
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
 
 const nextConfig: NextConfig = {
   // Disable ESLint during build to avoid build failures
@@ -164,31 +161,6 @@ const nextConfig: NextConfig = {
   // Enable static optimization (only in production)
   ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
 
-  // Optimize bundle size (only in production)
-  ...(process.env.NODE_ENV === 'production' && {
-    webpack: (config, { dev, isServer }) => {
-      if (!dev && !isServer) {
-        config.optimization.splitChunks = {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              enforce: true,
-            },
-          },
-        };
-      }
-      return config;
-    },
-  }),
-
   // Enable HTTP/2 Server Push
   poweredByHeader: false,
 
@@ -246,4 +218,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default nextConfig;

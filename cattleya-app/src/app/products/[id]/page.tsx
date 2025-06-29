@@ -34,6 +34,17 @@ import Header from '@/shared/components/Header';
 import { customToast } from '@/shared/utils/toast';
 import AdminBreadcrumb from '@/shared/components/AdminBreadcrumb';
 
+interface ProductVariant {
+  id: string;
+  sku: string;
+  price: number;
+  stock: number;
+  isActive: boolean;
+  attributes: Record<string, string>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface MediaItem {
   id: string;
   type: 'image' | 'video' | '360';
@@ -78,9 +89,10 @@ export default function ProductDetailPage() {
   } = useWishlistStore();
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<OrchidSize | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -105,6 +117,35 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetchWishlist();
   }, [fetchWishlist]);
+
+  // Fetch variants for the product
+  useEffect(() => {
+    const fetchVariants = async () => {
+      try {
+        const response = await fetch(`/api/products/variants?productId=${productId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setVariants(data);
+          
+          // Auto-select first available variant
+          if (data.length > 0) {
+            const firstActiveVariant = data.find((v: ProductVariant) => v.isActive && v.stock > 0);
+            if (firstActiveVariant) {
+              setSelectedVariant(firstActiveVariant);
+              setSelectedSize(firstActiveVariant.attributes.size as OrchidSize);
+              setSelectedColor(firstActiveVariant.attributes.color);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch variants:', error);
+      }
+    };
+
+    if (productId) {
+      fetchVariants();
+    }
+  }, [productId]);
 
   useEffect(() => {
     // Ensure products are loaded first
@@ -199,40 +240,127 @@ export default function ProductDetailPage() {
     }
   }, [productId, products, addToRecentlyViewed]);
 
+  // Update selected variant when size or color changes
+  useEffect(() => {
+    if (selectedSize && selectedColor && variants.length > 0) {
+      const matchingVariant = variants.find(v => 
+        v.isActive && 
+        v.attributes.size === selectedSize && 
+        v.attributes.color === selectedColor
+      );
+      setSelectedVariant(matchingVariant || null);
+    }
+  }, [selectedSize, selectedColor, variants]);
+
   const getColorName = (hex: string): string => {
-    const colorMap: { [key: string]: string } = {
+    const colorMap: Record<string, string> = {
       '#8B5CF6': 'Purple',
       '#EC4899': 'Pink', 
       '#FFFFFF': 'White',
       '#F59E0B': 'Yellow',
-      '#F97316': 'Orange',
       '#EF4444': 'Red',
       '#10B981': 'Green',
       '#3B82F6': 'Blue',
-      '#A78BFA': 'Lavender',
-      '#FB7185': 'Coral'
+      '#000000': 'Black'
     };
     return colorMap[hex] || 'Custom';
   };
 
   const getSizePriceAdjustment = (size: OrchidSize): number => {
-    // Price adjustments based on size
     const adjustments = {
-      [OrchidSize.SEEDLING]: -0.3,    // 30% less
-      [OrchidSize.SAPLING]: -0.15,    // 15% less
-      [OrchidSize.YOUNG_PLANT]: 0,    // Base price
-      [OrchidSize.MATURE]: 0.25,      // 25% more
-      [OrchidSize.BLOOMING_SIZE]: 0.5, // 50% more
-      [OrchidSize.SPECIMEN]: 1.0      // 100% more
+      [OrchidSize.SEEDLING]: 0,
+      [OrchidSize.SAPLING]: 5,
+      [OrchidSize.YOUNG_PLANT]: 15,
+      [OrchidSize.MATURE]: 30,
+      [OrchidSize.BLOOMING_SIZE]: 50,
+      [OrchidSize.SPECIMEN]: 100
     };
     return adjustments[size] || 0;
   };
 
   const getCurrentPrice = () => {
-    if (!product || !selectedSize) return 0;
-    const basePrice = product.isOnSale && product.salePrice ? product.salePrice : product.basePrice;
-    const adjustment = getSizePriceAdjustment(selectedSize);
-    return basePrice * (1 + adjustment);
+    if (selectedVariant) {
+      return selectedVariant.price;
+    }
+    
+    if (!product) return 0;
+    
+    const basePrice = product.salePrice || product.basePrice;
+    const sizeAdjustment = selectedSize ? getSizePriceAdjustment(selectedSize) : 0;
+    return basePrice + sizeAdjustment;
+  };
+
+  const getCurrentStock = () => {
+    if (selectedVariant) {
+      return selectedVariant.stock;
+    }
+    return product?.stockQuantity || 0;
+  };
+
+  const isVariantAvailable = () => {
+    if (selectedVariant) {
+      return selectedVariant.isActive && selectedVariant.stock > 0;
+    }
+    return getCurrentStock() > 0;
+  };
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    if (!selectedVariant) {
+      toast.error('Please select a size and color');
+      return;
+    }
+
+    if (!isVariantAvailable()) {
+      toast.error('This variant is out of stock');
+      return;
+    }
+
+    try {
+      await addItem({
+        productId: product.id,
+        variantId: selectedVariant.id,
+        quantity,
+        selectedAttributes: selectedVariant.attributes
+      });
+      
+      toast.success('Added to cart!');
+    } catch (error) {
+      toast.error('Failed to add to cart');
+    }
+  };
+
+  const handleWishlistToggle = () => {
+    if (!product) return;
+    
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+      toast.success('Removed from wishlist');
+    } else {
+      addToWishlist(product.id);
+      toast.success('Added to wishlist');
+    }
+  };
+
+  const handleColorSelect = (color: ProductColor) => {
+    setSelectedColor(color.value);
+    // Find media item for this color
+    const colorMediaIndex = mediaItems.findIndex(item => item.color === color.value);
+    if (colorMediaIndex !== -1) {
+      setSelectedMediaIndex(colorMediaIndex);
+    }
+  };
+
+  const handleSizeSelect = (size: OrchidSize) => {
+    setSelectedSize(size);
+  };
+
+  const getCurrentMedia = () => {
+    if (selectedVariant) {
+      return mediaItems.find(item => item.id === `img-${selectedVariant.id}-${selectedColor?.toLowerCase()}`);
+    }
+    return mediaItems[selectedMediaIndex];
   };
 
   if (loading) {
@@ -283,74 +411,7 @@ export default function ProductDetailPage() {
     relatedProducts = [];
   }
 
-  const currentMedia = mediaItems[selectedMediaIndex];
-
-  const handleAddToCart = async () => {
-    if (!selectedSize) {
-      customToast.warning('Please select a size');
-      return;
-    }
-
-    try {
-      await addItem({
-        productId: product.id,
-        quantity: quantity,
-        selectedAttributes: { size: selectedSize }
-      });
-      // Toast is handled by the cart store
-    } catch (error) {
-      console.error('Failed to add item to cart:', error);
-      // Error toast is handled by the cart store
-    }
-  };
-
-  const handleWishlistToggle = () => {
-    if (inWishlist) {
-      removeFromWishlist(product.id);
-      // Toast is handled by the wishlist store
-    } else {
-      addToWishlist(product.id);
-      // Toast is handled by the wishlist store
-    }
-  };
-
-  const handleColorSelect = (color: ProductColor) => {
-    setSelectedColor(color.value);
-    setSelectedMediaIndex(color.imageIndex);
-    setIsZoomed(false);
-    setRotation(0);
-  };
-
-  const nextMedia = () => {
-    setSelectedMediaIndex((prev) => 
-      prev === mediaItems.length - 1 ? 0 : prev + 1
-    );
-    setIsZoomed(false);
-    setRotation(0);
-  };
-
-  const prevMedia = () => {
-    setSelectedMediaIndex((prev) => 
-      prev === 0 ? mediaItems.length - 1 : prev - 1
-    );
-    setIsZoomed(false);
-    setRotation(0);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isZoomed || !imageRef.current) return;
-    
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
-    setZoomPosition({ x, y });
-  };
-
-  const toggleZoom = () => {
-    setIsZoomed(!isZoomed);
-    setRotation(0);
-  };
+  const currentMedia = getCurrentMedia();
 
   const handleRotate = () => {
     setRotation(prev => (prev + 90) % 360);
@@ -384,7 +445,6 @@ export default function ProductDetailPage() {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
           className="w-full h-full relative"
-          onMouseMove={handleMouseMove}
         >
           {currentMedia?.type === 'image' && (
             <div className="relative w-full h-full overflow-hidden">
@@ -398,7 +458,7 @@ export default function ProductDetailPage() {
                   transformOrigin: isZoomed ? `${zoomPosition.x}% ${zoomPosition.y}%` : 'center',
                   filter: selectedColor && currentMedia.color ? `hue-rotate(${getHueRotation(currentMedia.color, selectedColor)}deg)` : 'none'
                 }}
-                onClick={toggleZoom}
+                onClick={() => setIsZoomed(!isZoomed)}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = '/placeholder-product.svg';
@@ -485,13 +545,13 @@ export default function ProductDetailPage() {
       {mediaItems.length > 1 && (
         <>
           <button
-            onClick={prevMedia}
+            onClick={() => setSelectedMediaIndex((prev) => prev === 0 ? mediaItems.length - 1 : prev - 1)}
             className="absolute left-6 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white hover:scale-105 transition-all duration-200 z-10 shadow-lg"
           >
             <ChevronLeftIcon className="w-6 h-6 text-gray-700" />
           </button>
           <button
-            onClick={nextMedia}
+            onClick={() => setSelectedMediaIndex((prev) => prev === mediaItems.length - 1 ? 0 : prev + 1)}
             className="absolute right-6 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white hover:scale-105 transition-all duration-200 z-10 shadow-lg"
           >
             <ChevronRightIcon className="w-6 h-6 text-gray-700" />
@@ -504,7 +564,7 @@ export default function ProductDetailPage() {
         {currentMedia?.type === 'image' && (
           <>
             <button
-              onClick={toggleZoom}
+              onClick={() => setIsZoomed(!isZoomed)}
               className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white hover:scale-105 transition-all duration-200 shadow-lg"
               title={isZoomed ? 'Zoom Out' : 'Zoom In'}
             >
@@ -601,20 +661,6 @@ export default function ProductDetailPage() {
           ]}
         />
       </div>
-
-      {/* Dazzling Animated Background for Header (removed Header component) */}
-      {/* If you want to keep some ambient background, you can keep the next block, or remove for simplicity */}
-      {/*
-      <div className="relative">
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 opacity-80 z-0" />
-        <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-pink-400/30 via-purple-400/20 to-violet-400/10 rounded-full blur-3xl animate-pulse z-0" />
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tr from-purple-400/20 via-pink-400/20 to-violet-400/10 rounded-full blur-3xl animate-pulse delay-1000 z-0" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-2xl animate-pulse delay-500 z-0" />
-        <div className="absolute top-20 left-20 w-2 h-2 bg-pink-400/60 rounded-full animate-bounce opacity-40 z-0" />
-        <div className="absolute top-40 right-32 w-1.5 h-1.5 bg-purple-400/50 rounded-full animate-ping opacity-30 z-0" />
-        <div className="absolute bottom-32 left-1/3 w-1.5 h-1.5 bg-violet-400/50 rounded-full animate-pulse opacity-30 z-0" />
-      </div>
-      */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -851,7 +897,7 @@ export default function ProductDetailPage() {
                             name="size"
                             value={size}
                             checked={selectedSize === size}
-                            onChange={() => setSelectedSize(size)}
+                            onChange={() => handleSizeSelect(size)}
                             className="sr-only"
                           />
                           <div className={`p-4 border-2 rounded-xl transition-all duration-200 ${

@@ -704,6 +704,7 @@ export default function AdminProductsPage() {
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Category</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Price</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Stock</th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Variants</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
                           <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -781,6 +782,16 @@ export default function AdminProductsPage() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-medium text-blue-600">
+                                    24
+                                  </span>
+                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                    Active
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full border ${statusInfo.color}`}>
                                   <statusInfo.icon className="w-3 h-3 mr-1" />
                                   {statusInfo.status}
@@ -805,6 +816,17 @@ export default function AdminProductsPage() {
                                     <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
                                     <div className="relative p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
                                       <PencilIcon className="w-4 h-4" />
+                                    </div>
+                                  </button>
+
+                                  <button 
+                                    onClick={() => router.push(`/admin/products/${product.id}/variants`)}
+                                    className="group/action relative overflow-hidden"
+                                    title="Manage Variants"
+                                  >
+                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg blur opacity-20 group-hover/action:opacity-40 transition duration-300"></div>
+                                    <div className="relative p-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 group-hover/action:scale-110">
+                                      <ShoppingBagIcon className="w-4 h-4" />
                                     </div>
                                   </button>
 

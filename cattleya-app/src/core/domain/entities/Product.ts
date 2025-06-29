@@ -7,18 +7,22 @@ export interface Product {
   description: string;
   basePrice: number;
   salePrice?: number;
+  costPrice?: number;
   isOnSale: boolean;
   stockQuantity: number;
   lowStockThreshold: number;
+  trackQuantity: boolean;
   weight?: number;
+  dimensions?: string;
   
   // Orchid-specific properties
   defaultSize: OrchidSize;
   availableSizes: OrchidSize[];
   primaryColors: string[]; // Main colors (for bicolor/multicolor)
-  colorPattern: 'solid' | 'bicolor' | 'multicolor' | 'variegated';
+  colorPattern: ColorPattern;
   
   category: ProductCategory;
+  categoryId?: string;
   images: ProductImage[];
   variants?: ProductVariant[]; // Different size/color combinations
   attributes: ProductAttribute[];
@@ -129,4 +133,11 @@ export enum OrchidSize {
   MATURE = 'mature',            // 2-3 years, strong growth
   BLOOMING_SIZE = 'blooming_size', // 3+ years, ready to bloom
   SPECIMEN = 'specimen'         // 5+ years, large mature plant
+}
+
+export enum ColorPattern {
+  SOLID = 'solid',
+  BICOLOR = 'bicolor',
+  MULTICOLOR = 'multicolor',
+  VARIEGATED = 'variegated'
 } 

@@ -2,6 +2,7 @@ import spacy
 from textblob import TextBlob
 from typing import Dict, List, Tuple
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -9,11 +10,17 @@ class SentimentAnalysisService:
     def __init__(self):
         self.nlp = spacy.load("en_core_web_md")
         
+    def _sanitize_text(self, text: str) -> str:
+        # Remove surrogate pairs and invalid unicode
+        return text.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+
     def analyze_sentiment(self, text: str) -> Dict:
         """
         Comprehensive sentiment analysis using multiple approaches
         """
         try:
+            # Sanitize input text
+            text = self._sanitize_text(text)
             # TextBlob sentiment analysis
             blob = TextBlob(text)
             polarity = blob.sentiment.polarity  # -1 to 1

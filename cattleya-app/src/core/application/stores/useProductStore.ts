@@ -598,12 +598,28 @@ export const useProductStore = create<ProductState>()(
         set({ products: [...products, product] });
       },
 
-      updateProduct: (id, updatedProduct) => {
-        const { products } = get();
-        const updatedProducts = products.map(p => 
-          p.id === id ? { ...p, ...updatedProduct } : p
-        );
-        set({ products: updatedProducts });
+      updateProduct: async (id, updatedProduct) => {
+        try {
+          set({ loading: true, error: null });
+          
+          const response = await productsApi.updateProduct(id, updatedProduct);
+          
+          if (response.success) {
+            const { products } = get();
+            const updatedProducts = products.map(p => 
+              p.id === id ? { ...p, ...response.data } : p
+            );
+            set({ products: updatedProducts, loading: false });
+          } else {
+            throw new Error('Failed to update product');
+          }
+        } catch (error) {
+          const errorMessage = error instanceof ApiError 
+            ? error.message 
+            : 'Failed to update product';
+          set({ error: errorMessage, loading: false });
+          throw new Error(errorMessage);
+        }
       },
 
       deleteProduct: async (id) => {

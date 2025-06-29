@@ -75,6 +75,18 @@ const navigationItems = [
     description: 'Product Categories'
   },
   {
+    name: 'Attributes',
+    href: '/admin/attributes',
+    icon: CogIcon,
+    description: 'Product Attributes'
+  },
+  {
+    name: 'Attribute Sets',
+    href: '/admin/attribute-sets',
+    icon: CommandLineIcon,
+    description: 'Attribute Grouping'
+  },
+  {
     name: 'Media',
     href: '/admin/media',
     icon: PhotoIcon,

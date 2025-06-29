@@ -15,6 +15,8 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { CartModule } from './modules/cart/cart.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
+import { AttributeSetsModule } from './modules/attribute-sets/attribute-sets.module';
+import { AttributesModule } from './modules/attributes/attributes.module';
 import databaseConfig from './shared/config/database.config';
 import appConfig from './shared/config/app.config';
 import awsConfig from './shared/config/aws.config';
@@ -51,6 +53,8 @@ import awsConfig from './shared/config/aws.config';
     CartModule,
     NotificationsModule,
     ChatbotModule,
+    AttributeSetsModule,
+    AttributesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,7 +5,7 @@ import os
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 from services.enhanced_entity_service import EnhancedEntityService
-from services.cattleya_knowledge_service import DynamicCattleyaKnowledgeService
+from services.cattleya_knowledge_service import DynamicCattleyaKnowledgeService, OrchidInfo
 from services.openai_service import generate_elaborative_description
 from services.sentiment_analysis_service import SentimentAnalysisService
 from services.conversation_memory_service import ConversationMemoryService
