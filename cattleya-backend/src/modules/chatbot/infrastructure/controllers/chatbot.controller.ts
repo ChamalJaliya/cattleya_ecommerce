@@ -10,6 +10,8 @@ import {
   HttpException,
   UseGuards,
   Request,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,14 +20,46 @@ import {
   ApiBody,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard';
-import { ChatbotService } from '../../application/services/chatbot.service';
-import { ProductIntelligenceService } from '../../application/services/product-intelligence.service';
+import { EnhancedChatbotService, ChatbotRequest, EnhancedChatbotResponse, ProductCard, ExtractedEntity } from '../../application/services/enhanced-chatbot.service';
 import { CreateChatMessageDto, ChatMessage } from '../../domain/entities/chat-message.entity';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ChatResponseDto } from './dto/chat-response.dto';
+
+export class ProductCardDto {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  sale_price?: number;
+  image: string;
+  stock: number;
+  category: string;
+  rating: number;
+  reviews: number;
+  tags: string[];
+}
+
+export class ExtractedEntityDto {
+  text: string;
+  type: string;
+  confidence: number;
+  source: string;
+}
+
+export class EnhancedChatResponseDto {
+  message: string;
+  products: ProductCardDto[];
+  quick_replies: string[];
+  intent: string;
+  confidence: number;
+  entities: ExtractedEntityDto[];
+  metadata: any;
+}
 
 export class ChatHistoryResponseDto {
   messages: ChatMessage[];
@@ -43,30 +77,66 @@ export class UnreadCountResponseDto {
 
 @ApiTags('Chatbot')
 @Controller('chatbot')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class ChatbotController {
   constructor(
-    private readonly chatbotService: ChatbotService,
-    private readonly productIntelligenceService: ProductIntelligenceService,
+    private readonly enhancedChatbotService: EnhancedChatbotService,
   ) {}
 
-  @Post('send')
-  @ApiOperation({ summary: 'Send a message to the chatbot' })
+  @Post('test')
+  @ApiOperation({ summary: 'Test chatbot without authentication (for debugging)' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Message processed successfully',
-    type: ChatResponseDto
+    description: 'Test message processed successfully',
+    type: EnhancedChatResponseDto
+  })
+  @ApiBody({ type: SendMessageDto })
+  async testMessage(@Body() sendMessageDto: SendMessageDto) {
+    try {
+      const userId = 'test-user';
+      
+      const request: ChatbotRequest = {
+        message: sendMessageDto.message,
+        session_id: sendMessageDto.sessionId || 'test-session',
+        user_experience: sendMessageDto.userExperience || 'beginner',
+        context: sendMessageDto.context
+      };
+
+      const response = await this.enhancedChatbotService.processMessage(request, userId);
+
+      return {
+        success: true,
+        data: response,
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to process test message', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('send')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send a message to the enhanced AI-powered chatbot with product cards' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Message processed successfully with dynamic AI response and product cards',
+    type: EnhancedChatResponseDto
   })
   @ApiBody({ type: SendMessageDto })
   async sendMessage(@Body() sendMessageDto: SendMessageDto, @Request() req: any) {
     try {
       const userId = req.user?.id || 'anonymous';
-      const response = await this.chatbotService.processMessage(
-        userId,
-        sendMessageDto.message,
-        sendMessageDto.sessionId
-      );
+      
+      const request: ChatbotRequest = {
+        message: sendMessageDto.message,
+        session_id: sendMessageDto.sessionId || userId,
+        user_experience: sendMessageDto.userExperience || 'beginner',
+        context: sendMessageDto.context
+      };
+
+      const response = await this.enhancedChatbotService.processMessage(request, userId);
 
       return {
         success: true,
@@ -80,244 +150,133 @@ export class ChatbotController {
     }
   }
 
-  @Get('quick-replies')
-  @ApiOperation({ summary: 'Get quick reply suggestions' })
-  @ApiQuery({ name: 'context', required: false, description: 'Context for quick replies' })
+  @Post('send/legacy')
+  @ApiOperation({ summary: 'Send a message to the legacy chatbot (backward compatibility)' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Quick replies retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { 
-          type: 'array', 
-          items: { type: 'string' } 
-        }
-      }
-    }
+    description: 'Message processed successfully with legacy response format',
+    type: ChatResponseDto
   })
-  async getQuickReplies(@Query('context') context?: string) {
+  @ApiBody({ type: SendMessageDto })
+  async sendMessageLegacy(@Body() sendMessageDto: SendMessageDto, @Request() req: any) {
     try {
-      const quickReplies = await this.chatbotService.getQuickReplies(context);
+      const userId = req.user?.id || 'anonymous';
       
+      const request: ChatbotRequest = {
+        message: sendMessageDto.message,
+        session_id: sendMessageDto.sessionId || userId,
+        user_experience: sendMessageDto.userExperience || 'beginner',
+        context: sendMessageDto.context
+      };
+
+      const response = await this.enhancedChatbotService.processMessageLegacy(request);
+
       return {
         success: true,
-        data: quickReplies,
+        data: response,
       };
     } catch (error) {
       throw new HttpException(
-        { success: false, message: 'Failed to get quick replies', error: error.message },
+        { success: false, message: 'Failed to process message', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Get('history')
-  @ApiOperation({ summary: 'Get chat history' })
-  @ApiQuery({ name: 'sessionId', required: false, description: 'Session ID' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of messages to retrieve', type: Number })
+  @Post('voice')
+  @ApiOperation({ summary: 'Send voice message to enhanced chatbot' })
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({ 
     status: 200, 
-    description: 'Chat history retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { 
-          type: 'array', 
-          items: { $ref: '#/components/schemas/ChatMessage' } 
-        }
-      }
-    }
+    description: 'Voice message processed successfully with product cards'
   })
-  async getChatHistory(
-    @Request() req: any,
-    @Query('sessionId') sessionId?: string,
-    @Query('limit') limit?: number,
+  @UseInterceptors(FileInterceptor('audio'))
+  async sendVoiceMessage(
+    @UploadedFile() audioFile: Express.Multer.File,
+    @Body() body: { sessionId?: string; language?: string },
+    @Request() req: any
   ) {
     try {
-      const userId = req.user.id;
-      const history = await this.chatbotService.getChatHistory(userId, sessionId, limit);
-      
+      const userId = req.user?.id || 'anonymous';
+      const sessionId = body.sessionId || userId;
+      const language = body.language || 'en-US';
+
+      // First transcribe the voice
+      const transcription = await this.enhancedChatbotService.transcribeVoice(
+        audioFile.buffer,
+        sessionId,
+        language
+      );
+
+      if (!transcription.success) {
+        throw new HttpException(
+          { success: false, message: 'Voice transcription failed', error: transcription.error },
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      // Then process the transcribed text with enhanced chatbot
+      const request: ChatbotRequest = {
+        message: transcription.text,
+        session_id: sessionId,
+        user_experience: 'beginner',
+        context: 'voice_message'
+      };
+
+      const response = await this.enhancedChatbotService.processMessage(request, userId);
+
       return {
         success: true,
-        data: history,
+        data: {
+          transcription,
+          response
+        },
       };
     } catch (error) {
       throw new HttpException(
-        { success: false, message: 'Failed to get chat history', error: error.message },
+        { success: false, message: 'Failed to process voice message', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Put('mark-read')
-  @ApiOperation({ summary: 'Mark messages as read' })
-  @ApiQuery({ name: 'sessionId', required: false, description: 'Session ID' })
+  @Get('orchid/search')
+  @ApiOperation({ summary: 'Search for orchid information dynamically' })
+  @ApiQuery({ name: 'query', required: true, description: 'Search query for orchid information' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Messages marked as read successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' }
-      }
-    }
+    description: 'Orchid information search results'
   })
-  async markMessagesAsRead(
-    @Request() req: any,
-    @Query('sessionId') sessionId?: string,
+  async searchOrchidInfo(@Query('query') query: string) {
+    try {
+      const results = await this.enhancedChatbotService.searchOrchidInfo(query);
+      
+      return {
+        success: true,
+        data: results,
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to search orchid info', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('orchid/recommendations')
+  @ApiOperation({ summary: 'Get AI-generated orchid recommendations' })
+  @ApiQuery({ name: 'experience', required: false, description: 'User experience level' })
+  @ApiQuery({ name: 'budget', required: false, description: 'Budget range' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'AI-generated recommendations retrieved successfully'
+  })
+  async getOrchidRecommendations(
+    @Query('experience') experience: string = 'beginner',
+    @Query('budget') budget: string = 'medium'
   ) {
     try {
-      const userId = req.user.id;
-      await this.chatbotService.markMessagesAsRead(userId, sessionId);
-      
-      return {
-        success: true,
-        message: 'Messages marked as read successfully',
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to mark messages as read', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('unread-count')
-  @ApiOperation({ summary: 'Get unread message count' })
-  @ApiQuery({ name: 'sessionId', required: false, description: 'Session ID' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Unread count retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { type: 'number' }
-      }
-    }
-  })
-  async getUnreadCount(
-    @Request() req: any,
-    @Query('sessionId') sessionId?: string,
-  ) {
-    try {
-      const userId = req.user.id;
-      const count = await this.chatbotService.getUnreadCount(userId, sessionId);
-      
-      return {
-        success: true,
-        data: count,
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to get unread count', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Post('escalate')
-  @ApiOperation({ summary: 'Escalate conversation to human support' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        sessionId: { type: 'string' },
-        reason: { type: 'string' }
-      }
-    }
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Conversation escalated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' }
-      }
-    }
-  })
-  async escalateToHuman(@Body() body: { sessionId: string; reason: string }) {
-    try {
-      await this.chatbotService.escalateToHuman(body.sessionId, body.reason);
-      
-      return {
-        success: true,
-        message: 'Conversation escalated to human support',
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to escalate conversation', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  // Product-related endpoints
-  @Get('products/search')
-  @ApiOperation({ summary: 'Search products through chatbot' })
-  @ApiQuery({ name: 'query', required: true, description: 'Search query' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Number of results', type: Number })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Products found successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { 
-          type: 'array', 
-          items: { $ref: '#/components/schemas/ProductSearchResult' } 
-        }
-      }
-    }
-  })
-  async searchProducts(
-    @Query('query') query: string,
-    @Query('limit') limit?: number
-  ) {
-    try {
-      const products = await this.productIntelligenceService.searchProducts(query, limit || 5);
-      
-      return {
-        success: true,
-        data: products,
-      };
-    } catch (error) {
-      throw new HttpException(
-        { success: false, message: 'Failed to search products', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
-
-  @Get('products/recommendations')
-  @ApiOperation({ summary: 'Get product recommendations' })
-  @ApiQuery({ 
-    name: 'type', 
-    required: true, 
-    description: 'Recommendation type',
-    enum: ['beginner', 'rare', 'featured', 'best_seller', 'new_arrival']
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Recommendations retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { $ref: '#/components/schemas/ProductRecommendation' }
-      }
-    }
-  })
-  async getRecommendations(@Query('type') type: 'beginner' | 'rare' | 'featured' | 'best_seller' | 'new_arrival') {
-    try {
-      const recommendations = await this.productIntelligenceService.getRecommendations(type);
+      const recommendations = await this.enhancedChatbotService.getOrchidRecommendations(experience, budget);
       
       return {
         success: true,
@@ -331,73 +290,201 @@ export class ChatbotController {
     }
   }
 
-  @Get('products/:id')
-  @ApiOperation({ summary: 'Get product details' })
+  @Post('orchid/generate-response')
+  @ApiOperation({ summary: 'Generate AI-powered orchid response' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Product details retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: { $ref: '#/components/schemas/ProductSearchResult' }
-      }
-    }
+    description: 'AI response generated successfully'
   })
-  async getProduct(@Param('id') id: string) {
+  async generateOrchidResponse(@Body() request: ChatbotRequest) {
     try {
-      const product = await this.productIntelligenceService.getProductById(id);
-      
-      if (!product) {
-        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
-      }
+      const response = await this.enhancedChatbotService.generateOrchidResponse(request);
       
       return {
         success: true,
-        data: product,
+        data: response,
       };
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
       throw new HttpException(
-        { success: false, message: 'Failed to get product details', error: error.message },
+        { success: false, message: 'Failed to generate response', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Get('products/stock/:id')
-  @ApiOperation({ summary: 'Get product stock status' })
+  @Post('sentiment')
+  @ApiOperation({ summary: 'Analyze sentiment of text' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Stock status retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        data: {
-          type: 'object',
-          properties: {
-            inStock: { type: 'boolean' },
-            quantity: { type: 'number' },
-            status: { type: 'string' }
-          }
-        }
-      }
-    }
+    description: 'Sentiment analysis completed successfully'
   })
-  async getStockStatus(@Param('id') id: string) {
+  async analyzeSentiment(
+    @Body() body: { text: string; sessionId?: string },
+    @Request() req: any
+  ) {
     try {
-      const stockStatus = await this.productIntelligenceService.getStockStatus(id);
+      const userId = req.user?.id || 'anonymous';
+      const sessionId = body.sessionId || userId;
+
+      const sentiment = await this.enhancedChatbotService.analyzeSentiment(body.text, sessionId);
       
       return {
         success: true,
-        data: stockStatus,
+        data: sentiment,
       };
     } catch (error) {
       throw new HttpException(
-        { success: false, message: 'Failed to get stock status', error: error.message },
+        { success: false, message: 'Failed to analyze sentiment', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('conversation-context/:sessionId')
+  @ApiOperation({ summary: 'Get conversation context and history' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Conversation context retrieved successfully'
+  })
+  async getConversationContext(@Param('sessionId') sessionId: string) {
+    try {
+      const context = await this.enhancedChatbotService.getConversationContext(sessionId);
+      
+      return {
+        success: true,
+        data: context,
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to get conversation context', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('health')
+  @ApiOperation({ summary: 'Check chatbot service health' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Service health status'
+  })
+  async healthCheck() {
+    try {
+      const health = await this.enhancedChatbotService.healthCheck();
+      
+      return {
+        success: true,
+        data: health,
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Health check failed', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('quick-replies')
+  @ApiOperation({ summary: 'Get contextual quick replies' })
+  @ApiQuery({ name: 'context', required: false, description: 'Context for generating quick replies' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Quick replies generated successfully',
+    type: QuickRepliesResponseDto
+  })
+  async getQuickReplies(@Query('context') context?: string) {
+    try {
+      // Generate contextual quick replies based on context
+      let quickReplies: string[];
+      
+      if (context?.includes('product') || context?.includes('orchid')) {
+        quickReplies = ['View Details', 'Add to Cart', 'Show Similar', 'Care Guide'];
+      } else if (context?.includes('care') || context?.includes('help')) {
+        quickReplies = ['Watering Tips', 'Light Requirements', 'Fertilizing Guide', 'Repotting Help'];
+      } else if (context?.includes('recommend')) {
+        quickReplies = ['Beginner Orchids', 'Rare Varieties', 'Popular Choices', 'Budget-Friendly'];
+      } else {
+        quickReplies = ['Browse Products', 'Care Guide', 'Get Recommendations', 'Ask Expert'];
+      }
+      
+      return {
+        success: true,
+        data: {
+          quickReplies,
+          context
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to get quick replies', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get chat history for user' })
+  @ApiQuery({ name: 'sessionId', required: false, description: 'Session ID for filtering' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of messages to retrieve' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Chat history retrieved successfully',
+    type: ChatHistoryResponseDto
+  })
+  async getChatHistory(
+    @Request() req: any,
+    @Query('sessionId') sessionId?: string,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+      const userId = req.user?.id || 'anonymous';
+      const targetSessionId = sessionId || userId;
+      const messageLimit = limit || 50;
+      
+      // Fetch messages from MongoDB using ChatMessageRepository
+      const messages = await this.enhancedChatbotService.getChatHistory(userId, targetSessionId, messageLimit);
+      
+      return {
+        success: true,
+        data: {
+          messages,
+          total: messages.length,
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to get chat history', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Get unread message count (dummy)' })
+  @ApiResponse({ status: 200, description: 'Unread count (always 0 in local/dev)' })
+  async getUnreadCount(@Query('sessionId') sessionId: string) {
+    return { success: true, data: { count: 0 } };
+  }
+
+  @Put('mark-read')
+  @ApiOperation({ summary: 'Mark messages as read' })
+  @ApiQuery({ name: 'sessionId', required: false, description: 'Session ID for filtering' })
+  @ApiResponse({ status: 200, description: 'Messages marked as read successfully' })
+  async markMessagesAsRead(
+    @Request() req: any,
+    @Query('sessionId') sessionId?: string
+  ) {
+    try {
+      const userId = req.user?.id || 'anonymous';
+      await this.enhancedChatbotService.markMessagesAsRead(userId, sessionId);
+      
+      return {
+        success: true,
+        message: 'Messages marked as read successfully',
+      };
+    } catch (error) {
+      throw new HttpException(
+        { success: false, message: 'Failed to mark messages as read', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }

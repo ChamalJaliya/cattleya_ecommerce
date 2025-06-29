@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ChatbotController } from './infrastructure/controllers/chatbot.controller';
-import { ChatbotService } from './application/services/chatbot.service';
-import { KnowledgeGraphService } from './application/services/knowledge-graph.service';
-import { ProductIntelligenceService } from './application/services/product-intelligence.service';
+import { EnhancedChatbotService } from './application/services/enhanced-chatbot.service';
 import { ChatMessageRepository } from './infrastructure/repositories/chat-message.repository';
 import { PrismaService } from '../../shared/database/prisma/prisma.service';
 import { ProductsModule } from '../products/products.module';
@@ -15,16 +13,12 @@ import { SharedModule } from '../../shared/shared.module';
   ],
   controllers: [ChatbotController],
   providers: [
-    ChatbotService,
-    KnowledgeGraphService,
-    ProductIntelligenceService,
+    EnhancedChatbotService,
     ChatMessageRepository,
     PrismaService,
   ],
   exports: [
-    ChatbotService,
-    KnowledgeGraphService,
-    ProductIntelligenceService,
+    EnhancedChatbotService,
   ],
 })
 export class ChatbotModule {} 

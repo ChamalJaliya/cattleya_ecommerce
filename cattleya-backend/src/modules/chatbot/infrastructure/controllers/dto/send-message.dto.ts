@@ -10,4 +10,14 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
+
+  @ApiProperty({ description: 'User experience level', required: false, enum: ['beginner', 'intermediate', 'expert'] })
+  @IsOptional()
+  @IsString()
+  userExperience?: string;
+
+  @ApiProperty({ description: 'Additional context for the message', required: false })
+  @IsOptional()
+  @IsString()
+  context?: string;
 } 

@@ -116,6 +116,51 @@ export class ProductsController {
     }
   }
 
+  @Get('all')
+  @ApiOperation({ summary: 'Get all products as flat array (no pagination)' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'All products retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        data: { type: 'array', items: { $ref: '#/components/schemas/ProductResponseDto' } }
+      }
+    }
+  })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: 'Filter by active status' })
+  @ApiQuery({ name: 'isFeatured', required: false, type: Boolean, description: 'Filter by featured status' })
+  async findAllFlat(@Query('isActive') isActive?: boolean, @Query('isFeatured') isFeatured?: boolean) {
+    const start = Date.now();
+    try {
+      // Create a query that gets all products without pagination
+      const query = {
+        page: 1,
+        limit: 1000, // Large limit to get all products
+        isActive: isActive,
+        isFeatured: isFeatured,
+      };
+      
+      const result = await this.getProductsUseCase.findMany(query);
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/products/all - ${elapsed}ms`);
+      
+      // Return flat array of products
+      return {
+        success: true,
+        data: result.data.items || []
+      };
+    } catch (error) {
+      const elapsed = Date.now() - start;
+      console.log(`[PERF] GET /api/products/all - ERROR after ${elapsed}ms`);
+      throw new HttpException(
+        { success: false, message: 'Failed to retrieve all products', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
   @Get('media')
   @ApiOperation({ summary: 'List all media files (scalable, supports any top-level folder)' })
   @ApiQuery({ name: 'type', required: false, description: 'Filter by file type' })

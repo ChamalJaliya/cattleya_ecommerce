@@ -1,7 +1,15 @@
 import spacy
 from spacy.matcher import Matcher
 import os
-from typing import Dict, List
+import re
+import logging
+from typing import Dict, List, Any, Tuple
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_md")
@@ -49,10 +57,12 @@ def extract_entities(text):
 
 # OpenAI fallback for ambiguous/complex cases
 def openai_intent_entity(message, context=None):
-    import openai
+    from openai import OpenAI
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return None
+    
+    client = OpenAI(api_key=api_key)
     prompt = (
         "Classify the following message into one of these intents: "
         "greeting, product_inquiry, order_support, care_advice, company_info, technical_support, out_of_scope. "
@@ -60,7 +70,7 @@ def openai_intent_entity(message, context=None):
         f"Message: '{message}'\nContext: '{context or ''}'\n"
         "Respond as JSON: {\"intent\":..., \"confidence\":..., \"entities\": [...]}"
     )
-    completion = openai.ChatCompletion.create(
+    completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": "You are an expert intent and entity classifier for an orchid e-commerce chatbot."},
                  {"role": "user", "content": prompt}],
@@ -69,7 +79,6 @@ def openai_intent_entity(message, context=None):
     )
     import json
     try:
-        # Try to parse the first JSON object in the response
         text = completion.choices[0].message.content
         start = text.find('{')
         end = text.rfind('}') + 1

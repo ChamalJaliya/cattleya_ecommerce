@@ -33,29 +33,51 @@ export interface ChatMessage {
 export interface ProductSearchResult {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   description: string;
   shortDescription?: string;
   basePrice: number;
   salePrice?: number;
   isOnSale: boolean;
   stockQuantity: number;
-  sku: string;
-  defaultSize: string;
+  sku?: string;
+  defaultSize?: string;
   availableSizes: string[];
   primaryColors: string[];
-  colorPattern: string;
-  averageRating: number;
-  totalReviews: number;
-  category: {
+  colorPattern?: string;
+  averageRating?: number;
+  totalReviews?: number;
+  category?: {
     id: string;
     name: string;
     slug: string;
-  };
-  images: string[];
+  } | string;
+  images: Array<{
+    id: string;
+    url: string;
+    altText: string;
+    isMain: boolean;
+    sortOrder: number;
+    color?: string;
+    size?: string;
+    createdAt: string;
+  }> | string[];
   tags: string[];
-  isActive: boolean;
-  isFeatured: boolean;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  // Additional fields from backend response
+  aiResponse?: string;
+  careInstructions?: string;
+  fertilizerInfo?: string;
+  wateringGuide?: string;
+  lightingGuide?: string;
+  temperatureGuide?: string;
+  humidityGuide?: string;
+  repottingGuide?: string;
+  bloomingTips?: string;
+  commonIssues?: string;
+  expertTips?: string;
+  hasDetailedInfo?: boolean;
 }
 
 export interface ProductRecommendation {
@@ -65,7 +87,49 @@ export interface ProductRecommendation {
 }
 
 function unwrapApiResponse(response: any) {
-  return response?.data?.data?.data ?? response?.data?.data ?? response?.data ?? response;
+  console.log('Raw API response:', response);
+  
+  // Handle the new nested structure: { data: { success: true, data: { ... } } }
+  if (response?.data?.success && response?.data?.data) {
+    console.log('Detected nested response structure, extracting from data.data');
+    return response.data.data;
+  }
+  
+  // Handle different response structures
+  if (response?.data?.data?.messages) {
+    // Chat history response: { data: { data: { messages: [...] } } }
+    console.log('Detected chat history response with messages array');
+    return response.data.data.messages;
+  }
+  
+  if (response?.data?.data?.count !== undefined) {
+    // Unread count response: { data: { data: { count: number } } }
+    return response.data.data.count;
+  }
+  
+  if (response?.data?.data?.quickReplies) {
+    // Quick replies response: { data: { data: { quickReplies: [...] } } }
+    return response.data.data.quickReplies;
+  }
+  
+  // Handle direct array response for chat history
+  if (Array.isArray(response?.data?.data)) {
+    console.log('Detected direct array response for chat history');
+    return response.data.data;
+  }
+  
+  // Handle direct array response
+  if (Array.isArray(response?.data)) {
+    console.log('Detected direct array response in data');
+    return response.data;
+  }
+  
+  // Fallback to original structure
+  if (response?.data) {
+    return response.data;
+  }
+  
+  return response;
 }
 
 class ChatbotApi {

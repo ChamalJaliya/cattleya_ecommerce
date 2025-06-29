@@ -41,12 +41,15 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   setMinimized,
 }) => {
   const { user } = useAuthStore();
+  // Only poll unread count when chat is closed or minimized
+  const shouldPollUnread = !isOpen || minimized;
   const {
     messages,
     isLoading,
     error,
     sendMessage,
-  } = useChatbot();
+    quickReplies,
+  } = useChatbot(shouldPollUnread);
 
   const [inputMessage, setInputMessage] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -61,13 +64,13 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     user: user?.id,
     messagesLength: safeMessages.length,
     isLoading,
-    error 
+    error,
+    sessionId: sessionId
   });
 
-  // Don't render if no user
-  if (!user) {
-    console.log('ChatbotWidget: No user, not rendering');
-    return null;
+  // Safeguard: If we have an error but no messages, log it for debugging
+  if (error && safeMessages.length === 0) {
+    console.warn('⚠️ ChatbotWidget: Error state with no messages - potential state loss detected');
   }
 
   useEffect(() => {
@@ -86,10 +89,6 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     '🚚 What\'s your shipping policy?',
     '📦 I need help with my order',
   ];
-
-  // Find suggested actions from the latest bot message
-  const latestBotMessage = [...(safeMessages || [])].reverse().find(m => m.sender === 'BOT' && m.metadata?.suggestedActions?.length);
-  const dynamicSuggestions = latestBotMessage?.metadata?.suggestedActions || quickSuggestions;
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -162,6 +161,19 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     );
   };
 
+  // Debug logging for state tracking
+  useEffect(() => {
+    console.log('🔄 ChatbotWidget state update:', {
+      messagesLength: messages.length,
+      isLoading,
+      error,
+      sessionId,
+      user: user?.id,
+      hasProductCards: messages.some(msg => msg.metadata?.productCards),
+      hasQuickReplies: quickReplies.length > 0
+    });
+  }, [messages, isLoading, error, sessionId, user, quickReplies]);
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <div 
@@ -172,8 +184,8 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
         } ${className}`}
       >
         {isOpen && !minimized && (
-          <div className="mb-4 w-full max-w-[98vw] sm:w-[420px] h-[600px] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
-            <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white p-6 flex items-center justify-between">
+          <div className="mb-4 w-full max-w-[98vw] sm:w-[450px] h-[700px] bg-white/70 backdrop-blur-2xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] border-2 border-gradient-to-r from-blue-400 via-purple-400 to-pink-400/60 flex flex-col overflow-hidden transition-all duration-500 ease-in-out animate-glass-pop">
+            <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white p-6 flex items-center justify-between shadow-lg shadow-purple-300/30 border-b-2 border-white/20">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl">
                   <div className="relative">
@@ -207,7 +219,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
               </div>
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
+            <div className="flex-1 p-6 overflow-y-auto bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 scrollbar-thin scrollbar-thumb-purple-200/60 scrollbar-track-transparent">
               {!safeMessages || safeMessages.length === 0 ? (
                 <div className="text-center text-gray-600 py-12">
                   <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
@@ -221,7 +233,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                 </div>
               ) : (
                 (() => {
-                  // console.log('[ChatbotWidget] safeMessages:', JSON.stringify(safeMessages, null, 2));
+                  console.log('[ChatbotWidget] safeMessages:', JSON.stringify(safeMessages, null, 2));
                   return (
                     <div className="space-y-4">
                       {safeMessages?.map((msg) => (
@@ -243,9 +255,9 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                           </div>
                         </div>
                       )}
-                      {/* Show dynamic quick replies only if available and not loading */}
-                      {!isLoading && dynamicSuggestions?.length > 0 && (
-                        <QuickReplies suggestions={dynamicSuggestions} onClick={handleSuggestionClick} />
+                      {/* Show backend quick replies if available, else fallback to quickSuggestions */}
+                      {!isLoading && (quickReplies.length > 0 || quickSuggestions.length > 0) && (
+                        <QuickReplies suggestions={quickReplies.length > 0 ? quickReplies : quickSuggestions} onClick={handleSuggestionClick} />
                       )}
                       <div ref={messagesEndRef} />
                     </div>
@@ -254,7 +266,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
               )}
             </div>
 
-            <div className="p-6 bg-white/90 backdrop-blur-sm border-t border-gray-100/50">
+            <div className="p-6 bg-white/80 backdrop-blur-md border-t-2 border-purple-100/40 shadow-inner">
               {error && (
                 <div className="mb-3 p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100">
                   ⚠️ {error}
@@ -270,7 +282,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Ask me about orchids..."
-                    className="w-full px-4 py-3 border border-gray-200/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-200"
+                    className="w-full px-4 py-3 border border-purple-200/60 rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-400/60 focus:border-transparent bg-white/70 backdrop-blur-md shadow-lg transition-all duration-200 text-purple-900 placeholder:text-purple-400"
                     disabled={isLoading}
                   />
                 </div>
@@ -278,9 +290,10 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || isLoading}
-                  className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="p-3 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 text-white rounded-2xl hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl hover:shadow-2xl ring-2 ring-pink-200/40"
+                  style={{ boxShadow: '0 0 16px 4px rgba(168,85,247,0.15), 0 2px 8px 0 rgba(59,130,246,0.10)' }}
                 >
-                  <Send size={18} />
+                  <Send size={18} className="drop-shadow-glow animate-pulse" />
                 </button>
               </div>
             </div>

@@ -8,12 +8,29 @@ export class ChatMessageRepository {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private sanitizeMessage(message: string): string {
+    try {
+      // Remove invalid Unicode characters and emojis that might cause database issues
+      return message
+        .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '') // Remove surrogate pairs (emojis)
+        .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII characters
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    } catch (error) {
+      this.logger.warn('Error sanitizing message, using fallback:', error);
+      return 'Message content unavailable';
+    }
+  }
+
   async create(createMessageDto: CreateChatMessageDto): Promise<ChatMessage> {
     try {
+      // Sanitize the message to prevent database encoding issues
+      const sanitizedMessage = this.sanitizeMessage(createMessageDto.message);
+      
       const chatMessage = await this.prisma.chatMessage.create({
         data: {
           userId: createMessageDto.userId,
-          message: createMessageDto.message,
+          message: sanitizedMessage,
           sender: createMessageDto.sender,
           metadata: createMessageDto.metadata || {},
           sessionId: createMessageDto.sessionId,

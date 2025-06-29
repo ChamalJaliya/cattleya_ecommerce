@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@next/bundle-analyzer": "^15.3.4",
+    "openai": "^5.8.2",
     "swiper": "^11.2.8"
   }
 }
