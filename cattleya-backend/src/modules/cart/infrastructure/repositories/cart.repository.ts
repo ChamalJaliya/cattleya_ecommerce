@@ -31,17 +31,13 @@ export class CartRepository implements CartRepositoryInterface {
   }
 
   async addItem(userId: string, data: any): Promise<any> {
-    const { productId, quantity, variantId, selectedAttributes } = data;
+    const { productId, quantity, selectedAttributes } = data;
 
-    // Normalize variantId to null if undefined or empty string
-    const normalizedVariantId = variantId && variantId.trim() !== '' ? variantId : null;
-
-    // Check if item already exists in cart with the same productId and variantId
+    // Check if item already exists in cart with the same productId
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
         userId,
         productId,
-        variantId: normalizedVariantId,
       },
     });
 
@@ -64,7 +60,6 @@ export class CartRepository implements CartRepositoryInterface {
         userId,
         productId,
         quantity,
-        variantId: normalizedVariantId,
         selectedAttributes,
       },
     });
@@ -73,7 +68,7 @@ export class CartRepository implements CartRepositoryInterface {
   }
 
   async updateItem(userId: string, itemId: string, data: any): Promise<any> {
-    const { quantity, variantId, selectedAttributes } = data;
+    const { quantity, selectedAttributes } = data;
 
     await this.prisma.cartItem.update({
       where: {
@@ -82,7 +77,6 @@ export class CartRepository implements CartRepositoryInterface {
       },
       data: {
         quantity,
-        variantId,
         selectedAttributes,
       },
     });
