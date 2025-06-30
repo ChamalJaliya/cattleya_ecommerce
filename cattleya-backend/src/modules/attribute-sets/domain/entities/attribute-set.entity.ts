@@ -4,6 +4,7 @@ export class Attribute {
   id: string;
   attributeSetId: string;
   name: string;
+  code: string;
   type: AttributeType;
   isRequired: boolean;
   isSearchable: boolean;

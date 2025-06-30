@@ -145,14 +145,19 @@ model Attribute {
   attributeSet   AttributeSet @relation(fields: [attributeSetId], references: [id], onDelete: Cascade)
   
   name        String
+  code        String        @unique
   type        AttributeType
   isRequired  Boolean       @default(false)
   isSearchable Boolean      @default(false)
   isFilterable Boolean      @default(false)
+  isComparable Boolean      @default(false)
+  isVisible   Boolean       @default(true)
+  isVariantDefining Boolean @default(false)
+  isVariantOverridable Boolean @default(false)
   sortOrder   Int           @default(0)
   
-  // For select/radio/checkbox types
-  options     String[]      @default([])
+  // For select/radio/checkbox types - now supports default values
+  options     Json          @default("[]") // Array of objects: [{ "value": "red", "label": "Red", "isDefault": false }, { "value": "blue", "label": "Blue", "isDefault": true }]
   
   // For number types
   minValue    Float?

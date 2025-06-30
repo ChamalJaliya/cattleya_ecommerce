@@ -1,3 +1,5 @@
+import { AttributeType } from '@prisma/client';
+
 export enum OrchidSize {
   SEEDLING = 'seedling',
   SAPLING = 'sapling',
@@ -12,14 +14,6 @@ export enum ColorPattern {
   BICOLOR = 'bicolor',
   MULTICOLOR = 'multicolor',
   VARIEGATED = 'variegated'
-}
-
-export enum AttributeType {
-  TEXT = 'TEXT',
-  NUMBER = 'NUMBER',
-  BOOLEAN = 'BOOLEAN',
-  COLOR = 'COLOR',
-  SIZE = 'SIZE'
 }
 
 export interface ProductImage {
@@ -48,7 +42,7 @@ export interface ProductVariant {
   sku: string;
   price: number;
   salePrice?: number;
-  stockQuantity: number;
+  stock: number;
   size: OrchidSize;
   colors: string[];
   isDefault: boolean;
@@ -67,7 +61,7 @@ export interface CreateProductProps {
   salePrice?: number;
   isOnSale?: boolean;
   sku: string;
-  stockQuantity: number;
+  stock: number;
   lowStockThreshold?: number;
   trackQuantity?: boolean;
   weight?: number;
@@ -134,7 +128,7 @@ export class Product {
     public readonly salePrice: number | null,
     public readonly isOnSale: boolean,
     public readonly sku: string,
-    public readonly stockQuantity: number,
+    public readonly stock: number,
     public readonly lowStockThreshold: number,
     public readonly trackQuantity: boolean,
     public readonly weight: number | null,
@@ -176,7 +170,7 @@ export class Product {
       props.salePrice || null,
       props.isOnSale || false,
       props.sku,
-      props.stockQuantity,
+      props.stock,
       props.lowStockThreshold || 5,
       props.trackQuantity !== false,
       props.weight || null,
@@ -216,11 +210,11 @@ export class Product {
   }
 
   get isInStock(): boolean {
-    return this.stockQuantity > 0;
+    return this.stock > 0;
   }
 
   get isLowStock(): boolean {
-    return this.stockQuantity <= this.lowStockThreshold;
+    return this.stock <= this.lowStockThreshold;
   }
 
   get mainImage(): ProductImage | null {
@@ -295,7 +289,7 @@ export class Product {
       this.salePrice,
       this.isOnSale,
       this.sku,
-      this.stockQuantity,
+      this.stock,
       this.lowStockThreshold,
       this.trackQuantity,
       this.weight,

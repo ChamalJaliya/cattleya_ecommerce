@@ -8,7 +8,8 @@ export class ListAttributesUseCase {
     private readonly attributesRepository: IAttributesRepository,
   ) {}
 
-  async execute() {
-    return this.attributesRepository.findAll();
+  async execute(page = 1, limit = 12, search?: string, filterType?: string, advancedFilters?: any, sortBy?: string, sortOrder?: 'asc' | 'desc') {
+    const skip = (page - 1) * limit;
+    return this.attributesRepository.findAndCountAll(skip, limit, search, filterType, advancedFilters, sortBy, sortOrder);
   }
 } 

@@ -19,6 +19,7 @@ export class AttributeSetsRepository implements IAttributeSetsRepository {
         attributes: {
           create: attributes?.map((attr, index) => ({
             ...attr,
+            code: attr.code,
             type: attr.type as AttributeType,
             sortOrder: index,
           })) || [],
@@ -48,6 +49,7 @@ export class AttributeSetsRepository implements IAttributeSetsRepository {
       await this.prisma.attribute.createMany({
         data: attributes.map((attr, index) => ({
           ...attr,
+          code: attr.code,
           attributeSetId: id,
           type: attr.type as AttributeType,
           sortOrder: index,
@@ -126,6 +128,7 @@ export class AttributeSetsRepository implements IAttributeSetsRepository {
         id: attr.id,
         attributeSetId: attr.attributeSetId,
         name: attr.name,
+        code: attr.code,
         type: attr.type,
         isRequired: attr.isRequired,
         isSearchable: attr.isSearchable,

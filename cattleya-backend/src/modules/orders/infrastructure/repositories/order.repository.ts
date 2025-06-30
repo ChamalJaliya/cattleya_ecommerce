@@ -149,12 +149,12 @@ export class OrderRepository implements IOrderRepository {
 
     if (search) {
       where.OR = [
-        { number: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
+        { number: { contains: search } },
+        { email: { contains: search } },
         { user: { 
           OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } }
+            { firstName: { contains: search } },
+            { lastName: { contains: search } }
           ]
         } }
       ];

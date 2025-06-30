@@ -6,6 +6,9 @@ export class CreateAttributeDto {
   name: string;
 
   @IsString()
+  code: string;
+
+  @IsString()
   type: string;
 
   @IsOptional()

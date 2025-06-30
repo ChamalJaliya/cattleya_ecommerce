@@ -26,7 +26,7 @@ export class AddToCartUseCase {
     }
 
     // Check if product is in stock
-    if (product.stockQuantity < dto.quantity) {
+    if (product.stock < dto.quantity) {
       throw new BadRequestException('Insufficient stock');
     }
 

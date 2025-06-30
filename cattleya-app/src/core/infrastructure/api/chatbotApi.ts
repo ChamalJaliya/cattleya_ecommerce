@@ -39,7 +39,7 @@ export interface ProductSearchResult {
   basePrice: number;
   salePrice?: number;
   isOnSale: boolean;
-  stockQuantity: number;
+  stock: number;
   sku?: string;
   defaultSize?: string;
   availableSizes: string[];

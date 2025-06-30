@@ -130,11 +130,12 @@ export default function ProductVariantsPage() {
       const response = await fetch(`/api/products/${productId}`);
       if (response.ok) {
         const data = await response.json();
-        setProduct(data);
+        const productData = data.data || data;
+        setProduct(productData);
         
         // If product has an attribute set, fetch it
-        if (data.attributeSetId) {
-          await fetchAttributeSet(data.attributeSetId);
+        if (productData.attributeSetId) {
+          await fetchAttributeSet(productData.attributeSetId);
         }
       }
     } catch (error) {
@@ -146,7 +147,8 @@ export default function ProductVariantsPage() {
     try {
       const response = await fetch(`/api/attribute-sets/${attributeSetId}/with-attributes`);
       if (response.ok) {
-        const attributeSet = await response.json();
+        const data = await response.json();
+        const attributeSet = data.data || data;
         setProduct(prev => prev ? { ...prev, attributeSet } : null);
       }
     } catch (error) {
@@ -159,7 +161,8 @@ export default function ProductVariantsPage() {
       const response = await fetch(`/api/products/variants/by-product/${productId}`);
       if (response.ok) {
         const data = await response.json();
-        setVariants(data);
+        const variantsData = data.data || data;
+        setVariants(variantsData);
       }
     } catch (error) {
       toast.error('Failed to fetch variants');

@@ -263,3 +263,7 @@ html {
   50% { filter: brightness(1.5); }
   100% { filter: brightness(1); }
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

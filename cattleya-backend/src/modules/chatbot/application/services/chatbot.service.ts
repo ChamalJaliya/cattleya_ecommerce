@@ -535,7 +535,7 @@ export class ChatbotService {
                 product.name, 
                 `User is asking for more details about ${product.name}. Context: ${message}`
               );
-              response = `🌸 **${product.name}** 🌸\n\n${elaborativeDescription}\n\n💰 **Price**: $${product.basePrice}\n📦 **Stock**: ${product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}\n🌿 **Category**: ${product.category.name}`;
+              response = `🌸 **${product.name}** 🌸\n\n${elaborativeDescription}\n\n💰 **Price**: $${product.basePrice}\n📦 **Stock**: ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}\n🌿 **Category**: ${product.category.name}`;
               quickReplies = ['Add to cart', 'Show similar', 'Care tips', 'View details'];
               metadata = { 
                 products: [product], 
@@ -717,12 +717,12 @@ export class ChatbotService {
     
     products.forEach((product, index) => {
       let stockStatus = '';
-      if (product.stockQuantity === 0) {
+      if (product.stock === 0) {
         stockStatus = '❌ *Out of Stock* - But we can notify you when it\'s back!';
-      } else if (product.stockQuantity <= 5) {
-        stockStatus = `🔥 *Limited Stock* - Only ${product.stockQuantity} left!`;
+      } else if (product.stock <= 5) {
+        stockStatus = `🔥 *Limited Stock* - Only ${product.stock} left!`;
       } else {
-        stockStatus = `✅ *In Stock* - ${product.stockQuantity} available`;
+        stockStatus = `✅ *In Stock* - ${product.stock} available`;
       }
       
       const emoji = this.getProductEmoji(product.name, product.category.name);

@@ -125,11 +125,12 @@ export default function ProductDetailPage() {
         const response = await fetch(`/api/products/variants?productId=${productId}`);
         if (response.ok) {
           const data = await response.json();
-          setVariants(data);
+          const variantsData = data.data || data;
+          setVariants(variantsData);
           
           // Auto-select first available variant
-          if (data.length > 0) {
-            const firstActiveVariant = data.find((v: ProductVariant) => v.isActive && v.stock > 0);
+          if (variantsData.length > 0) {
+            const firstActiveVariant = variantsData.find((v: ProductVariant) => v.isActive && v.stock > 0);
             if (firstActiveVariant) {
               setSelectedVariant(firstActiveVariant);
               setSelectedSize(firstActiveVariant.attributes.size as OrchidSize);

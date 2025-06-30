@@ -74,10 +74,11 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     if (filters?.searchQuery) {
+      // For MongoDB, use contains for case-insensitive search
       where.OR = [
-        { name: { contains: filters.searchQuery, mode: 'insensitive' } },
-        { description: { contains: filters.searchQuery, mode: 'insensitive' } },
-        { slug: { contains: filters.searchQuery, mode: 'insensitive' } }
+        { name: { contains: filters.searchQuery } },
+        { description: { contains: filters.searchQuery } },
+        { slug: { contains: filters.searchQuery } }
       ];
     }
 
@@ -471,9 +472,9 @@ export class CategoryRepository implements ICategoryRepository {
     const categories = await this.prisma.category.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-          { slug: { contains: query, mode: 'insensitive' } }
+          { name: { contains: query } },
+          { description: { contains: query } },
+          { slug: { contains: query } }
         ]
       },
       include: {

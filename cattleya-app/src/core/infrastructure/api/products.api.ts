@@ -27,7 +27,7 @@ export interface CreateProductRequest {
   description: string;
   basePrice: number;
   salePrice?: number;
-  stockQuantity: number;
+  stock: number;
   lowStockThreshold: number;
   weight?: number;
   defaultSize: string;

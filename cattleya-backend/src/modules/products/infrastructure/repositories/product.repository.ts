@@ -16,9 +16,83 @@ export class ProductRepository implements IProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(product: Product): Promise<Product> {
-    // For now, return the product as-is since we're focusing on getting compilation to work
-    // TODO: Implement actual Prisma create logic
-    return product;
+    const productData = {
+      name: product.name,
+      slug: product.slug,
+      sku: product.sku,
+      description: product.description,
+      shortDescription: product.shortDescription,
+      basePrice: product.basePrice,
+      salePrice: product.salePrice,
+      isOnSale: product.isOnSale,
+      stock: product.stock,
+      lowStockThreshold: product.lowStockThreshold,
+      trackQuantity: product.trackQuantity,
+      weight: product.weight,
+      dimensions: product.dimensions,
+      defaultSize: product.defaultSize as any, // Cast to Prisma enum
+      availableSizes: product.availableSizes as any[], // Cast to Prisma enum array
+      primaryColors: product.primaryColors,
+      colorPattern: product.colorPattern as any, // Cast to Prisma enum
+      categoryId: product.categoryId,
+      tags: product.tags,
+      metaTitle: product.metaTitle,
+      metaDescription: product.metaDescription,
+      metaKeywords: product.metaKeywords,
+      isActive: product.isActive,
+      isFeatured: product.isFeatured,
+      isDigital: product.isDigital,
+      publishedAt: product.publishedAt,
+    };
+
+    const createdProduct = await this.prisma.product.create({
+      data: {
+        ...productData,
+        images: {
+          create: product.images?.map((image, index) => ({
+            url: image.url,
+            altText: image.altText,
+            isMain: image.isMain,
+            sortOrder: image.sortOrder || index,
+            color: image.color,
+            size: image.size as any, // Cast to Prisma enum
+          })) || [],
+        },
+        attributes: {
+          create: product.attributes?.map((attr) => ({
+            name: attr.name,
+            value: attr.value,
+          })) || [],
+        },
+      },
+      include: {
+        category: true,
+        images: true,
+        attributes: true,
+      },
+    });
+
+    // Create variants separately to avoid complex nested creation
+    if (product.variants && product.variants.length > 0) {
+      for (const variant of product.variants) {
+        await this.prisma.productVariant.create({
+          data: {
+            productId: createdProduct.id,
+            sku: variant.sku,
+            price: variant.price,
+            stock: variant.stock,
+            isActive: true,
+            attributes: variant.attributes ? 
+              variant.attributes.reduce((acc, attr) => {
+                acc[attr.name] = attr.value;
+                return acc;
+              }, {} as Record<string, string>) : {},
+          },
+        });
+      }
+    }
+
+    return this.mapToEntity(createdProduct);
   }
 
   async findById(id: string): Promise<Product | null> {
@@ -69,9 +143,10 @@ export class ProductRepository implements IProductRepository {
     // Build where clause based on query filters
     if (query.filters) {
       if (query.filters.search) {
+        // For MongoDB, use contains for case-insensitive search
         where.OR = [
-          { name: { contains: query.filters.search, mode: 'insensitive' } },
-          { description: { contains: query.filters.search, mode: 'insensitive' } }
+          { name: { contains: query.filters.search } },
+          { description: { contains: query.filters.search } }
         ];
       }
 
@@ -100,7 +175,7 @@ export class ProductRepository implements IProductRepository {
       }
 
       if (query.filters.inStock !== undefined) {
-        where.stockQuantity = query.filters.inStock ? { gt: 0 } : undefined;
+        where.stock = query.filters.inStock ? { gt: 0 } : undefined;
       }
 
       if (query.filters.rating !== undefined && query.filters.rating > 0) {
@@ -164,9 +239,10 @@ export class ProductRepository implements IProductRepository {
     // Apply filters
     if (filters) {
       if (filters.search) {
+        // For MongoDB, use contains for case-insensitive search
         where.OR = [
-          { name: { contains: filters.search, mode: 'insensitive' } },
-          { description: { contains: filters.search, mode: 'insensitive' } }
+          { name: { contains: filters.search } },
+          { description: { contains: filters.search } }
         ];
       }
 
@@ -195,7 +271,7 @@ export class ProductRepository implements IProductRepository {
       }
 
       if (filters.inStock !== undefined) {
-        where.stockQuantity = filters.inStock ? { gt: 0 } : undefined;
+        where.stock = filters.inStock ? { gt: 0 } : undefined;
       }
 
       if (filters.rating !== undefined && filters.rating > 0) {
@@ -271,7 +347,7 @@ export class ProductRepository implements IProductRepository {
       prismaProduct.salePrice,
       prismaProduct.isOnSale,
       prismaProduct.sku,
-      prismaProduct.stockQuantity,
+      prismaProduct.stock,
       prismaProduct.lowStockThreshold,
       prismaProduct.trackQuantity ?? true,
       prismaProduct.weight,

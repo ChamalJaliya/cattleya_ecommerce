@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateAttributeUseCase } from '../../application/use-cases/create-attribute.use-case';
 import { UpdateAttributeUseCase } from '../../application/use-cases/update-attribute.use-case';
@@ -25,8 +25,37 @@ export class AttributesController {
   }
 
   @Get()
-  async findAll() {
-    return this.listAttributes.execute();
+  async findAll(
+    @Query('page') page = '1',
+    @Query('limit') limit = '12',
+    @Query('search') search?: string,
+    @Query('filterType') filterType?: string,
+    @Query('isRequired') isRequired?: string,
+    @Query('isFilterable') isFilterable?: string,
+    @Query('isSearchable') isSearchable?: string,
+    @Query('isComparable') isComparable?: string,
+    @Query('isVisible') isVisible?: string,
+    @Query('hasOptions') hasOptions?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ) {
+    const advancedFilters = {
+      isRequired: isRequired === 'true',
+      isFilterable: isFilterable === 'true',
+      isSearchable: isSearchable === 'true',
+      isComparable: isComparable === 'true',
+      isVisible: isVisible === 'true',
+      hasOptions: hasOptions === 'true',
+    };
+    return this.listAttributes.execute(
+      Number(page),
+      Number(limit),
+      search,
+      filterType,
+      advancedFilters,
+      sortBy,
+      sortOrder
+    );
   }
 
   @Get(':id')

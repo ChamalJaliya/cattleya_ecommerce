@@ -15,7 +15,7 @@ export interface ProductSearchResult {
   basePrice: number;
   salePrice?: number;
   isOnSale: boolean;
-  stockQuantity: number;
+  stock: number;
   sku: string;
   defaultSize: string;
   availableSizes: string[];
@@ -118,7 +118,7 @@ export class ProductIntelligenceService {
         basePrice: product.basePrice,
         salePrice: product.salePrice,
         isOnSale: product.isOnSale,
-        stockQuantity: product.stockQuantity,
+        stock: product.stock,
         sku: product.sku,
         defaultSize: product.defaultSize,
         availableSizes: product.availableSizes,
@@ -266,12 +266,12 @@ export class ProductIntelligenceService {
         return { inStock: false, quantity: 0, status: 'Product not found' };
       }
 
-      const inStock = product.stockQuantity > 0;
+      const inStock = product.stock > 0;
       let status = '';
 
-      if (product.stockQuantity === 0) {
+      if (product.stock === 0) {
         status = 'Out of stock';
-      } else if (product.stockQuantity <= product.lowStockThreshold) {
+      } else if (product.stock <= product.lowStockThreshold) {
         status = 'Low stock';
       } else {
         status = 'In stock';
@@ -279,7 +279,7 @@ export class ProductIntelligenceService {
 
       return {
         inStock,
-        quantity: product.stockQuantity,
+        quantity: product.stock,
         status,
       };
     } catch (error) {
@@ -311,7 +311,7 @@ export class ProductIntelligenceService {
         basePrice: product.basePrice,
         salePrice: product.salePrice,
         isOnSale: product.isOnSale,
-        stockQuantity: product.stockQuantity,
+        stock: product.stock,
         sku: product.sku,
         defaultSize: product.defaultSize,
         availableSizes: product.availableSizes,

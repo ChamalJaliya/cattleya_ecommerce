@@ -1,7 +1,8 @@
 import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsEnum, IsUrl, Min, Max, Length, ArrayMinSize, ValidateNested, IsDateString } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { OrchidSize, ColorPattern, AttributeType } from '../../domain/entities/product.entity';
+import { OrchidSize, ColorPattern } from '../../domain/entities/product.entity';
+import { AttributeType } from '@prisma/client';
 
 export class CreateProductImageDto {
   @ApiProperty({ description: 'Image URL', example: 'https://example.com/image.jpg' })
@@ -35,17 +36,26 @@ export class CreateProductImageDto {
 }
 
 export class CreateProductAttributeDto {
-  @ApiProperty({ example: 'Pot Size' })
+  @ApiProperty({ description: 'Attribute code from attribute set', example: 'orchid_size' })
+  @IsString()
+  code: string;
+
+  @ApiProperty({ description: 'Attribute name', example: 'Size' })
   @IsString()
   name: string;
 
-  @ApiProperty({ example: '4 inch' })
+  @ApiProperty({ description: 'Attribute value', example: 'Mature' })
   @IsString()
   value: string;
 
-  @ApiProperty({ enum: AttributeType, example: AttributeType.TEXT })
+  @ApiProperty({ enum: AttributeType, example: AttributeType.SELECT })
   @IsEnum(AttributeType)
   type: AttributeType;
+
+  @ApiPropertyOptional({ description: 'Attribute set ID this attribute belongs to' })
+  @IsOptional()
+  @IsString()
+  attributeSetId?: string;
 }
 
 export class CreateProductVariantDto {
@@ -74,7 +84,7 @@ export class CreateProductVariantDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  stockQuantity?: number;
+  stock?: number;
 
   @ApiPropertyOptional({ description: 'Orchid size', enum: OrchidSize })
   @IsOptional()
@@ -101,7 +111,7 @@ export class CreateProductVariantDto {
   images?: CreateProductImageDto[];
 
   @ApiPropertyOptional({ 
-    description: 'Variant attributes',
+    description: 'Variant attributes mapped to attribute set',
     type: [CreateProductAttributeDto] 
   })
   @IsOptional()
@@ -157,7 +167,7 @@ export class CreateProductDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  stockQuantity?: number;
+  stock?: number;
 
   @ApiPropertyOptional({ example: 5 })
   @IsOptional()
@@ -198,7 +208,7 @@ export class CreateProductDto {
   @IsString({ each: true })
   primaryColors?: string[];
 
-  @ApiPropertyOptional({ description: 'Color pattern', enum: ColorPattern })
+  @ApiPropertyOptional({ enum: ColorPattern })
   @IsOptional()
   @IsEnum(ColorPattern)
   colorPattern?: ColorPattern;
@@ -206,6 +216,11 @@ export class CreateProductDto {
   @ApiProperty({ description: 'Category ID', example: '507f1f77bcf86cd799439011' })
   @IsString()
   categoryId: string;
+
+  @ApiPropertyOptional({ description: 'Attribute Set ID for product attributes', example: '507f1f77bcf86cd799439012' })
+  @IsOptional()
+  @IsString()
+  attributeSetId?: string;
 
   @ApiPropertyOptional({ description: 'Product images', type: [CreateProductImageDto] })
   @IsOptional()
@@ -220,6 +235,13 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
   variants?: CreateProductVariantDto[];
+
+  @ApiPropertyOptional({ description: 'Product attributes mapped to attribute set', type: [CreateProductAttributeDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductAttributeDto)
+  attributes?: CreateProductAttributeDto[];
 
   @ApiPropertyOptional({ example: ['purple', 'fragrant', 'beginner-friendly'] })
   @IsOptional()

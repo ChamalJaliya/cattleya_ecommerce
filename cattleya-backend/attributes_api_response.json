@@ -1,0 +1,28 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"data":{"data":[{"id":"68619dc7d9ca65b9372c1f74","attributeSetId":"68619dc7d9ca65b9372
+                    c1f73","name":"Product Type","type":"SELECT","isRequired":true,"isSearchable":true,"isF
+                    ilterable":true,"sortOrder...
+RawContent        : HTTP/1.1 200 OK
+                    Vary: Origin, Accept-Encoding
+                    Access-Control-Allow-Credentials: true
+                    Access-Control-Expose-Headers: Content-Disposition
+                    Content-Security-Policy: default-src 'self';style-src 'self'...
+Forms             : {}
+Headers           : {[Vary, Origin, Accept-Encoding], [Access-Control-Allow-Credentials, true], 
+                    [Access-Control-Expose-Headers, Content-Disposition], [Content-Security-Policy, 
+                    default-src 'self';style-src 'self' 'unsafe-inline';script-src 'self';img-src 'self' 
+                    data: https: http:;connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 
+                    http://192.168.1.6:3000;base-uri 'self';font-src 'self' https: data:;form-action 
+                    'self';frame-ancestors 'self';object-src 'none';script-src-attr 
+                    'none';upgrade-insecure-requests]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 3550
+
+
+

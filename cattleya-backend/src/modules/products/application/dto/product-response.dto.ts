@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { OrchidSize, ColorPattern, AttributeType } from '../../domain/entities/product.entity';
+import { OrchidSize, ColorPattern } from '../../domain/entities/product.entity';
+import { AttributeType } from '@prisma/client';
 
 export class ProductImageResponseDto {
   @ApiProperty({ description: 'Image ID', example: '507f1f77bcf86cd799439011' })
@@ -55,7 +56,7 @@ export class ProductVariantResponseDto {
   price: number;
 
   @ApiProperty({ description: 'Stock quantity' })
-  stockQuantity: number;
+  stock: number;
 
   @ApiProperty({ description: 'Whether variant is active' })
   isActive: boolean;
@@ -181,7 +182,7 @@ export class ProductResponseDto {
   sku?: string;
 
   @ApiProperty({ description: 'Stock quantity' })
-  stockQuantity: number;
+  stock: number;
 
   @ApiProperty({ description: 'Low stock threshold' })
   lowStockThreshold: number;

@@ -409,7 +409,7 @@ export const useProductStore = create<ProductState>()(
           }
 
           // Stock filter
-          if (inStockOnly && product.stockQuantity <= 0) {
+          if (inStockOnly && product.stock <= 0) {
             return false;
           }
 

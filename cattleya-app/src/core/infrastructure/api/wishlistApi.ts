@@ -24,7 +24,7 @@ export interface Product {
   basePrice: number;
   displayPrice: number;
   isInStock: boolean;
-  stockQuantity: number;
+  stock: number;
   images: ProductImage[];
   mainImage?: ProductImage;
   category?: ProductCategory;

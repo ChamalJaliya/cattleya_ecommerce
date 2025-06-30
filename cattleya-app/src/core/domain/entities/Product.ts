@@ -9,7 +9,7 @@ export interface Product {
   salePrice?: number;
   costPrice?: number;
   isOnSale: boolean;
-  stockQuantity: number;
+  stock: number;
   lowStockThreshold: number;
   trackQuantity: boolean;
   weight?: number;
@@ -80,7 +80,7 @@ export interface ProductVariant {
   sku: string;
   price: number;
   salePrice?: number;
-  stockQuantity: number;
+  stock: number;
   size: OrchidSize;
   colors: string[]; // Array of hex colors for multicolor support
   isDefault: boolean;

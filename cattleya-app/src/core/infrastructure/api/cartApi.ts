@@ -25,7 +25,7 @@ export interface Product {
   basePrice: number;
   displayPrice: number;
   isInStock: boolean;
-  stockQuantity: number;
+  stock: number;
   images: ProductImage[];
   mainImage?: ProductImage;
   category?: ProductCategory;
@@ -85,7 +85,7 @@ export interface BackendCartItem {
     basePrice: number;
     displayPrice: number;
     isInStock: boolean;
-    stockQuantity: number;
+    stock: number;
     images: ProductImage[];
     category?: ProductCategory;
     averageRating?: number;
